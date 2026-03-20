@@ -89,6 +89,8 @@
   .toast { position: fixed; bottom: 24px; right: 24px; background: var(--ink); color: white; font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 12px 20px; border-left: 3px solid #4ade80; opacity: 0; transform: translateY(8px); transition: all .25s; pointer-events: none; z-index: 999; }
   .toast.show { opacity: 1; transform: translateY(0); }
 
+  .copy-btn { font-family: 'IBM Plex Mono', monospace; font-size: 8px; padding: 2px 7px; border: 1px solid var(--rule); background: var(--bg); color: var(--mid); cursor: pointer; margin-left: 6px; transition: all .15s; }
+  .copy-btn:hover { border-color: var(--green); color: var(--green); }
   footer { border-top: 1px solid var(--rule); padding: 12px 24px; font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--rule); display: flex; justify-content: space-between; }
 </style>
 </head>
@@ -143,7 +145,8 @@
     <div class="sl-header">
       <div class="sl-title">shortlist <span class="sl-count" id="slCount">0</span></div>
       <div class="sl-actions">
-        <button class="sl-btn-hdr share" id="shareBtn" onclick="shareURL()">share_url()</button>
+        <button class="sl-btn-hdr" id="devBtn" onclick="toggleDevView()">dev: show_ids()</button>
+        <button class="sl-btn-hdr share" id="shareBtn" onclick="shareURL()">share_all()</button>
         <button class="sl-btn-hdr" onclick="clearAll()">clear_all()</button>
       </div>
     </div>
@@ -174,6 +177,7 @@ const SAMPLE = "Thank you for calling Farmer Brown Insurance. My name is Sarah, 
 let shortlist = [];
 let genUrl = null;
 let genPrompt = '';
+let genVoiceId = null;
 
 // Load from URL first, then localStorage
 function loadState() {
@@ -233,6 +237,7 @@ async function generate() {
     for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
     genUrl = URL.createObjectURL(new Blob([bytes], { type: 'audio/mpeg' }));
     genPrompt = p;
+    genVoiceId = preview.generated_voice_id || null;
     document.getElementById('outputName').textContent = '"' + p.split(',')[0].trim() + '"';
     document.getElementById('output').classList.add('visible');
     new Audio(genUrl).play();
@@ -248,23 +253,55 @@ function playG() { if (genUrl) new Audio(genUrl).play(); }
 // ── SHORTLIST ─────────────────────────────────────────────────────────
 function nextId() { return 'V' + String(shortlist.length + 1).padStart(3, '0'); }
 
-function addToShortlist() {
+async function addToShortlist() {
   if (!genUrl) { toast('⚠ generate a voice first'); return; }
+  const addBtn = document.getElementById('addBtn');
+  addBtn.textContent = '⏳ saving to library...';
+  addBtn.disabled = true;
+
   const name = genPrompt.split(',')[0].trim().toLowerCase().replace(/\s+/g, '_');
+  const refId = nextId();
+  let realVoiceId = null;
+
+  // Save voice permanently to ElevenLabs
+  if (genVoiceId) {
+    try {
+      const res = await fetch('https://api.elevenlabs.io/v1/text-to-voice/create-voice-from-preview', {
+        method: 'POST',
+        headers: { 'xi-api-key': KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          voice_name: 'fb_' + refId + '_' + name,
+          voice_description: genPrompt,
+          generated_voice_id: genVoiceId,
+          labels: { project: 'farmer_brown', ref: refId }
+        })
+      });
+      if (res.ok) {
+        const saved = await res.json();
+        realVoiceId = saved.voice_id || null;
+      }
+    } catch(e) {
+      console.warn('ElevenLabs save failed:', e);
+    }
+  }
+
   const entry = {
-    id: nextId(),
+    id: refId,
     name: name,
     desc: genPrompt,
+    voiceId: realVoiceId, // real ElevenLabs ID (hidden from John)
     ts: new Date().toLocaleString('en-US', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})
   };
   shortlist.push(entry);
   saveState();
   renderShortlist();
-  const addBtn = document.getElementById('addBtn');
-  addBtn.textContent = '✓ added to shortlist';
+
+  addBtn.textContent = '✓ saved';
   addBtn.style.background = 'var(--green-bg)';
+  addBtn.disabled = false;
   setTimeout(function(){ addBtn.textContent = '+ add_to_shortlist()'; addBtn.style.background = ''; }, 3000);
-  toast('✓ ' + name + ' saved · ID: ' + entry.id);
+  const saved = realVoiceId ? '· voice_id ready' : '· no voice_id (try again)';
+  toast('✓ ' + name + ' · ' + refId + ' ' + saved);
 }
 
 function removeItem(idx) {
@@ -295,7 +332,6 @@ function shareURL() {
 }
 
 function renderShortlist() {
-  const panel = document.getElementById('slPanel');
   const body = document.getElementById('slBody');
   const count = document.getElementById('slCount');
   count.textContent = shortlist.length;
@@ -303,24 +339,63 @@ function renderShortlist() {
     body.innerHTML = '<tr><td colspan="5"><div class="sl-empty">// empty — generate a voice and add it to the shortlist</div></td></tr>';
     return;
   }
-  body.innerHTML = shortlist.map(function(s, i){
-    return '<tr>' +
-      '<td class="tid">'+s.id+'</td>' +
-      '<td class="tname">'+s.name+'</td>' +
-      '<td class="tdesc">'+s.desc.substring(0,50)+(s.desc.length>50?'...':'')+'</td>' +
-      '<td style="font-size:10px;color:var(--muted)">'+s.ts+'</td>' +
+  var rows = '';
+  for (var i = 0; i < shortlist.length; i++) {
+    var s = shortlist[i];
+    var midCol = '';
+    if (devMode) {
+      var vid = s.voiceId || '—';
+      midCol = '<td style="font-family:monospace;font-size:9px;color:var(--green);word-break:break-all">' + vid;
+      if (s.voiceId) {
+        midCol += ' <button class="copy-btn" data-vid="' + s.voiceId + '" onclick="copyVoiceId(this)">copy</button>';
+      }
+      midCol += '</td>';
+    } else {
+      var d = s.desc.length > 48 ? s.desc.substring(0, 48) + '...' : s.desc;
+      midCol = '<td class="tdesc">' + d + '</td>';
+    }
+    rows += '<tr>' +
+      '<td class="tid">' + s.id + '</td>' +
+      '<td class="tname">' + s.name + '</td>' +
+      midCol +
+      '<td style="font-size:10px;color:var(--muted)">' + (s.ts || '') + '</td>' +
       '<td class="taction">' +
-      '<button class="tb-btn play" onclick="playItem('+i+')">&#9654;</button>' +
-      '<button class="tb-btn" onclick="removeItem('+i+')">&#10005;</button>' +
+      '<button class="tb-btn play" data-idx="' + i + '" onclick="shareOne(' + i + ')">&#8679; share</button>' +
+      '<button class="tb-btn" data-idx="' + i + '" onclick="removeItem(' + i + ')">&#10005;</button>' +
       '</td></tr>';
-  }).join('');
+  }
+  body.innerHTML = rows;
 }
 
-// Audio cache for shortlist playback
-const audioCache = {};
-function playItem(idx) {
-  // Can only play if audio URL is still valid in this session
-  toast('audio available in current session only');
+function copyVoiceId(btn) {
+  var vid = btn.getAttribute('data-vid');
+  navigator.clipboard.writeText(vid).then(function() {
+    btn.textContent = 'copied!';
+    setTimeout(function() { btn.textContent = 'copy'; }, 1500);
+  });
+}
+
+
+function shareOne(idx) {
+  const entry = shortlist[idx];
+  if (!entry) return;
+  // Share only this single entry
+  const encoded = btoa(JSON.stringify([entry]));
+  const url = window.location.origin + window.location.pathname + '?sl=' + encoded;
+  navigator.clipboard.writeText(url).then(function(){
+    toast('✓ link for ' + entry.id + ' copied');
+  }).catch(function(){
+    prompt('Copy link for ' + entry.id + ':', url);
+  });
+}
+
+// Dev view: toggle voice_id column
+let devMode = false;
+function toggleDevView() {
+  devMode = !devMode;
+  const btn = document.getElementById('devBtn');
+  btn.textContent = devMode ? 'hide_ids()' : 'dev: show_ids()';
+  renderShortlist();
 }
 
 // ── INIT ──────────────────────────────────────────────────────────────
