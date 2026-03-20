@@ -337,7 +337,7 @@ function shareOne(idx) {
 }
 
 function copyVoiceId(btn) {
-  var vid = deobfuscate(btn.getAttribute('data-vid'));
+  var vid = btn.getAttribute('data-vid');
   navigator.clipboard.writeText(vid).then(function() {
     btn.textContent = 'copied!';
     setTimeout(function() { btn.textContent = 'copy'; }, 1500);
@@ -376,7 +376,7 @@ function renderShortlist() {
       var rawVid = s.voiceId ? deobfuscate(s.voiceId) : '—';
       midCell = '<td class="t-vid">' + rawVid;
       if (s.voiceId) {
-        midCell += ' <button class="copy-btn" data-vid="' + s.voiceId + '" onclick="copyVoiceId(this)">copy</button>';
+        midCell += ' <button class="copy-btn" data-vid="' + rawVid + '" onclick="copyVoiceId(this)">copy</button>';
       }
       midCell += '</td>';
     } else {
