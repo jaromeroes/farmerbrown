@@ -61,8 +61,7 @@
   .btn-add-sl:hover { background: var(--green-bg); border-color: var(--green); color: var(--green); }
 
   /* SHORTLIST */
-  .shortlist { background: var(--white); border: 1px solid var(--rule); display: none; }
-  .shortlist.visible { display: block; }
+  .shortlist { background: var(--white); border: 1px solid var(--rule); display: block; }
   .sl-header { background: var(--ink); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; }
   .sl-title { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .15em; text-transform: uppercase; color: white; display: flex; align-items: center; gap: 8px; }
   .sl-count { background: var(--green); color: white; font-size: 9px; padding: 1px 7px; border-radius: 8px; font-family: 'IBM Plex Mono', monospace; }
@@ -250,18 +249,22 @@ function playG() { if (genUrl) new Audio(genUrl).play(); }
 function nextId() { return 'V' + String(shortlist.length + 1).padStart(3, '0'); }
 
 function addToShortlist() {
-  if (!genUrl) { toast('generate a voice first'); return; }
+  if (!genUrl) { toast('⚠ generate a voice first'); return; }
   const name = genPrompt.split(',')[0].trim().toLowerCase().replace(/\s+/g, '_');
-  shortlist.push({
+  const entry = {
     id: nextId(),
     name: name,
     desc: genPrompt,
     ts: new Date().toLocaleString('en-US', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})
-  });
+  };
+  shortlist.push(entry);
   saveState();
   renderShortlist();
-  document.getElementById('addBtn').textContent = '✓ added';
-  toast(name + ' added to shortlist');
+  const addBtn = document.getElementById('addBtn');
+  addBtn.textContent = '✓ added to shortlist';
+  addBtn.style.background = 'var(--green-bg)';
+  setTimeout(function(){ addBtn.textContent = '+ add_to_shortlist()'; addBtn.style.background = ''; }, 3000);
+  toast('✓ ' + name + ' saved · ID: ' + entry.id);
 }
 
 function removeItem(idx) {
@@ -297,11 +300,9 @@ function renderShortlist() {
   const count = document.getElementById('slCount');
   count.textContent = shortlist.length;
   if (!shortlist.length) {
-    panel.classList.remove('visible');
     body.innerHTML = '<tr><td colspan="5"><div class="sl-empty">// empty — generate a voice and add it to the shortlist</div></td></tr>';
     return;
   }
-  panel.classList.add('visible');
   body.innerHTML = shortlist.map(function(s, i){
     return '<tr>' +
       '<td class="tid">'+s.id+'</td>' +
