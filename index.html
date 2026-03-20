@@ -168,6 +168,27 @@ var genPrompt = '';
 var genVoiceId = null;
 var devMode = false;
 
+// ── OBFUSCATION ──────────────────────────────────────────────────────
+// Simple reversible XOR cipher — keeps voice IDs unrecognizable in URLs
+var _k = 'fb_internal_2026';
+function xorStr(str, key) {
+  var out = '';
+  for (var i = 0; i < str.length; i++) {
+    out += String.fromCharCode(str.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+  }
+  return out;
+}
+function obfuscate(id) {
+  try { return btoa(xorStr(id, _k)).replace(/=/g, ''); } catch(e) { return id; }
+}
+function deobfuscate(enc) {
+  try {
+    var padded = enc + '=='.slice(0, (4 - enc.length % 4) % 4);
+    return xorStr(atob(padded), _k);
+  } catch(e) { return enc; }
+}
+// ─────────────────────────────────────────────────────────────────────
+
 // ── STATE ────────────────────────────────────────────────────────────
 function loadState() {
   try {
@@ -251,7 +272,8 @@ function addToShortlist() {
   var ts = new Date().toLocaleString('en-US', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
 
   function finish(voiceId) {
-    shortlist.push({ id: refId, name: name, desc: genPrompt, voiceId: voiceId || null, ts: ts });
+    var storedId = voiceId ? obfuscate(voiceId) : null;
+    shortlist.push({ id: refId, name: name, desc: genPrompt, voiceId: storedId, ts: ts });
     saveState();
     renderShortlist();
     addBtn.textContent = '✓ saved — ' + refId;
@@ -315,7 +337,7 @@ function shareOne(idx) {
 }
 
 function copyVoiceId(btn) {
-  var vid = btn.getAttribute('data-vid');
+  var vid = deobfuscate(btn.getAttribute('data-vid'));
   navigator.clipboard.writeText(vid).then(function() {
     btn.textContent = 'copied!';
     setTimeout(function() { btn.textContent = 'copy'; }, 1500);
@@ -351,8 +373,8 @@ function renderShortlist() {
     var s = shortlist[i];
     var midCell = '';
     if (devMode) {
-      var vid = s.voiceId || '—';
-      midCell = '<td class="t-vid">' + vid;
+      var rawVid = s.voiceId ? deobfuscate(s.voiceId) : '—';
+      midCell = '<td class="t-vid">' + rawVid;
       if (s.voiceId) {
         midCell += ' <button class="copy-btn" data-vid="' + s.voiceId + '" onclick="copyVoiceId(this)">copy</button>';
       }
