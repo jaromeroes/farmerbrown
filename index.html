@@ -7,91 +7,83 @@
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f5f4f0; --white: #fff; --ink: #0e0e0e;
-    --mid: #555; --muted: #999; --rule: #ddd;
-    --green: #2a6b3c; --green-bg: #edf5ef;
+    --bg:#f5f4f0; --white:#fff; --ink:#0e0e0e;
+    --mid:#555; --muted:#999; --rule:#ddd;
+    --green:#2a6b3c; --green-bg:#edf5ef;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { background: var(--bg); color: var(--ink); font-family: 'IBM Plex Sans', sans-serif; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--ink); font-family:'IBM Plex Sans',sans-serif; }
 
-  /* HERO */
-  .hero { background: var(--ink); padding: 40px 40px 36px; }
-  .hero-eye { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.25em; text-transform: uppercase; color: rgba(255,255,255,0.3); margin-bottom: 10px; }
-  .hero-h1 { font-family: 'IBM Plex Mono', monospace; font-size: clamp(24px,4vw,38px); font-weight: 500; color: white; line-height: 1.15; letter-spacing: -0.02em; }
+  .hero { background:var(--ink); padding:40px 40px 36px; }
+  .hero-eye { font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.25em; text-transform:uppercase; color:rgba(255,255,255,.3); margin-bottom:10px; }
+  .hero-h1 { font-family:'IBM Plex Mono',monospace; font-size:clamp(24px,4vw,38px); font-weight:500; color:white; line-height:1.15; letter-spacing:-.02em; }
 
-  /* LAYOUT */
-  .wrap { max-width: 860px; margin: 0 auto; padding: 40px 24px 80px; }
+  .wrap { max-width:860px; margin:0 auto; padding:40px 24px 80px; }
+  .sec-title { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); margin-bottom:16px; }
 
-  /* SECTION TITLE */
-  .sec-title { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
+  .card { background:var(--white); border:1px solid var(--rule); padding:28px; margin-bottom:24px; }
+  .field-label { font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; display:block; }
+  .field-textarea { width:100%; padding:12px 14px; border:1px solid var(--rule); background:var(--bg); font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--ink); resize:none; outline:none; line-height:1.6; min-height:88px; transition:border-color .15s; }
+  .field-textarea:focus { border-color:var(--ink); }
+  .field-textarea::placeholder { color:var(--muted); }
 
-  /* DESIGNER CARD */
-  .card { background: var(--white); border: 1px solid var(--rule); padding: 28px; margin-bottom: 24px; }
-  .field-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; display: block; }
-  .field-textarea { width: 100%; padding: 12px 14px; border: 1px solid var(--rule); background: var(--bg); font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--ink); resize: none; outline: none; line-height: 1.6; min-height: 88px; transition: border-color .15s; }
-  .field-textarea:focus { border-color: var(--ink); }
-  .field-textarea::placeholder { color: var(--muted); }
+  .presets { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:20px; }
+  .preset { font-family:'IBM Plex Mono',monospace; font-size:10px; padding:5px 12px; border:1px solid var(--rule); background:white; color:var(--mid); cursor:pointer; transition:all .15s; }
+  .preset:hover { border-color:var(--ink); color:var(--ink); }
 
-  /* PRESETS */
-  .presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
-  .preset { font-family: 'IBM Plex Mono', monospace; font-size: 10px; padding: 5px 12px; border: 1px solid var(--rule); background: white; color: var(--mid); cursor: pointer; transition: all .15s; }
-  .preset:hover { border-color: var(--ink); color: var(--ink); }
+  .btn-run { width:100%; margin-top:16px; padding:13px; background:var(--ink); color:white; border:none; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.15em; text-transform:uppercase; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px; transition:background .15s; }
+  .btn-run:hover:not(:disabled) { background:#2a2a2a; }
+  .btn-run:disabled { opacity:.4; cursor:not-allowed; }
+  .spinner { width:13px; height:13px; border:1px solid rgba(255,255,255,.3); border-top-color:white; border-radius:50%; animation:spin .7s linear infinite; display:none; }
+  .btn-run.loading .spinner { display:block; }
+  .btn-run.loading .run-txt { display:none; }
+  @keyframes spin { to { transform:rotate(360deg); } }
 
-  /* BUTTONS */
-  .btn-run { width: 100%; margin-top: 16px; padding: 13px; background: var(--ink); color: white; border: none; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background .15s; }
-  .btn-run:hover:not(:disabled) { background: #2a2a2a; }
-  .btn-run:disabled { opacity: .4; cursor: not-allowed; }
-  .spinner { width: 13px; height: 13px; border: 1px solid rgba(255,255,255,.3); border-top-color: white; border-radius: 50%; animation: spin .7s linear infinite; display: none; }
-  .btn-run.loading .spinner { display: block; }
-  .btn-run.loading .run-txt { display: none; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  /* OUTPUT */
-  .output { margin-top: 16px; border: 1px solid var(--rule); display: none; }
-  .output.visible { display: block; }
-  .output-bar { background: var(--bg); padding: 8px 14px; border-bottom: 1px solid var(--rule); display: flex; align-items: center; justify-content: space-between; }
-  .output-status { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: var(--green); display: flex; align-items: center; gap: 6px; }
-  .pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s ease-in-out infinite; }
+  .output { margin-top:16px; border:1px solid var(--rule); display:none; }
+  .output.visible { display:block; }
+  .output-bar { background:var(--bg); padding:8px 14px; border-bottom:1px solid var(--rule); display:flex; align-items:center; justify-content:space-between; }
+  .output-status { font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:var(--green); display:flex; align-items:center; gap:6px; }
+  .pulse { width:6px; height:6px; border-radius:50%; background:var(--green); animation:pulse 2s ease-in-out infinite; }
   @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.3} }
-  .output-name { font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 500; color: var(--ink); padding: 14px 14px 10px; }
-  .output-actions { padding: 0 14px 14px; display: flex; gap: 8px; flex-wrap: wrap; }
-  .btn-sm { font-family: 'IBM Plex Mono', monospace; font-size: 10px; padding: 7px 14px; border: 1px solid var(--rule); background: white; color: var(--mid); cursor: pointer; transition: all .15s; }
-  .btn-sm:hover { border-color: var(--ink); color: var(--ink); }
-  .btn-add-sl { border-color: var(--green); color: var(--green); }
-  .btn-add-sl:hover { background: var(--green-bg); border-color: var(--green); color: var(--green); }
+  .output-name { font-family:'IBM Plex Mono',monospace; font-size:14px; font-weight:500; color:var(--ink); padding:14px 14px 10px; }
+  .output-actions { padding:0 14px 14px; display:flex; gap:8px; flex-wrap:wrap; }
+  .btn-sm { font-family:'IBM Plex Mono',monospace; font-size:10px; padding:7px 14px; border:1px solid var(--rule); background:white; color:var(--mid); cursor:pointer; transition:all .15s; }
+  .btn-sm:hover { border-color:var(--ink); color:var(--ink); }
+  .btn-add-sl { border-color:var(--green); color:var(--green); }
+  .btn-add-sl:hover { background:var(--green-bg); }
 
-  /* SHORTLIST */
-  .shortlist { background: var(--white); border: 1px solid var(--rule); display: block; }
-  .sl-header { background: var(--ink); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; }
-  .sl-title { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .15em; text-transform: uppercase; color: white; display: flex; align-items: center; gap: 8px; }
-  .sl-count { background: var(--green); color: white; font-size: 9px; padding: 1px 7px; border-radius: 8px; font-family: 'IBM Plex Mono', monospace; }
-  .sl-actions { display: flex; gap: 8px; }
-  .sl-btn-hdr { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: .1em; text-transform: uppercase; padding: 5px 10px; border: 1px solid #444; background: transparent; color: #aaa; cursor: pointer; transition: all .15s; }
-  .sl-btn-hdr:hover { border-color: #aaa; color: white; }
-  .sl-btn-hdr.share { border-color: var(--green); color: #4ade80; }
-  .sl-btn-hdr.share:hover { background: rgba(74,222,128,.1); }
+  .shortlist { background:var(--white); border:1px solid var(--rule); margin-bottom:24px; }
+  .sl-header { background:var(--ink); padding:12px 20px; display:flex; align-items:center; justify-content:space-between; }
+  .sl-title { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.15em; text-transform:uppercase; color:white; display:flex; align-items:center; gap:8px; }
+  .sl-count { background:var(--green); color:white; font-size:9px; padding:1px 7px; border-radius:8px; font-family:'IBM Plex Mono',monospace; }
+  .sl-actions { display:flex; gap:6px; }
+  .sl-btn { font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.1em; text-transform:uppercase; padding:5px 10px; border:1px solid #444; background:transparent; color:#aaa; cursor:pointer; transition:all .15s; }
+  .sl-btn:hover { border-color:#aaa; color:white; }
+  .sl-btn.green { border-color:var(--green); color:#4ade80; }
+  .sl-btn.green:hover { background:rgba(74,222,128,.1); }
 
-  table { width: 100%; border-collapse: collapse; }
-  th { font-family: 'IBM Plex Mono', monospace; font-size: 8px; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); padding: 10px 20px; text-align: left; border-bottom: 1px solid var(--rule); background: var(--bg); font-weight: 400; }
-  td { font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 12px 20px; border-bottom: 1px solid var(--rule); vertical-align: middle; }
-  tr:last-child td { border-bottom: none; }
-  tr:hover td { background: #fafaf8; }
-  td.tid { color: var(--green); font-weight: 500; }
-  td.tname { color: var(--ink); font-weight: 500; }
-  td.tdesc { color: var(--muted); font-size: 10px; max-width: 300px; }
-  .taction { text-align: right; }
-  .tb-btn { font-family: 'IBM Plex Mono', monospace; font-size: 9px; padding: 4px 9px; border: 1px solid var(--rule); background: white; color: var(--muted); cursor: pointer; transition: all .15s; margin-left: 4px; }
-  .tb-btn:hover { border-color: #c00; color: #c00; }
-  .tb-btn.play:hover { border-color: var(--ink); color: var(--ink); }
-  .sl-empty { padding: 24px 20px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); text-align: center; }
+  table { width:100%; border-collapse:collapse; }
+  th { font-family:'IBM Plex Mono',monospace; font-size:8px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); padding:10px 20px; text-align:left; border-bottom:1px solid var(--rule); background:var(--bg); font-weight:400; }
+  td { font-family:'IBM Plex Mono',monospace; font-size:11px; padding:12px 20px; border-bottom:1px solid var(--rule); vertical-align:middle; }
+  tr:last-child td { border-bottom:none; }
+  tr:hover td { background:#fafaf8; }
+  .t-id { color:var(--green); font-weight:500; min-width:52px; }
+  .t-name { color:var(--ink); font-weight:500; }
+  .t-desc { color:var(--muted); font-size:10px; }
+  .t-vid { font-size:9px; color:var(--green); word-break:break-all; max-width:200px; }
+  .t-ts { font-size:10px; color:var(--muted); white-space:nowrap; }
+  .t-act { text-align:right; white-space:nowrap; }
+  .tb-btn { font-family:'IBM Plex Mono',monospace; font-size:9px; padding:4px 9px; border:1px solid var(--rule); background:white; color:var(--muted); cursor:pointer; transition:all .15s; margin-left:4px; }
+  .tb-btn:hover { border-color:var(--ink); color:var(--ink); }
+  .tb-btn.danger:hover { border-color:#c00; color:#c00; }
+  .copy-btn { font-family:'IBM Plex Mono',monospace; font-size:8px; padding:2px 7px; border:1px solid var(--rule); background:var(--bg); color:var(--mid); cursor:pointer; margin-left:6px; transition:all .15s; }
+  .copy-btn:hover { border-color:var(--green); color:var(--green); }
+  .sl-empty { padding:24px 20px; font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); text-align:center; }
 
-  /* TOAST */
-  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--ink); color: white; font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 12px 20px; border-left: 3px solid #4ade80; opacity: 0; transform: translateY(8px); transition: all .25s; pointer-events: none; z-index: 999; }
-  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast { position:fixed; bottom:24px; right:24px; background:var(--ink); color:white; font-family:'IBM Plex Mono',monospace; font-size:11px; padding:12px 20px; border-left:3px solid #4ade80; opacity:0; transform:translateY(8px); transition:all .25s; pointer-events:none; z-index:999; max-width:320px; }
+  .toast.show { opacity:1; transform:translateY(0); }
 
-  .copy-btn { font-family: 'IBM Plex Mono', monospace; font-size: 8px; padding: 2px 7px; border: 1px solid var(--rule); background: var(--bg); color: var(--mid); cursor: pointer; margin-left: 6px; transition: all .15s; }
-  .copy-btn:hover { border-color: var(--green); color: var(--green); }
-  footer { border-top: 1px solid var(--rule); padding: 12px 24px; font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--rule); display: flex; justify-content: space-between; }
+  footer { border-top:1px solid var(--rule); padding:12px 24px; font-family:'IBM Plex Mono',monospace; font-size:9px; color:var(--rule); display:flex; justify-content:space-between; }
 </style>
 </head>
 <body>
@@ -103,7 +95,6 @@
 
 <div class="wrap">
 
-  <!-- DESIGNER -->
   <div class="sec-title">01 / voice_designer</div>
   <div class="card">
     <div style="margin-bottom:18px">
@@ -116,7 +107,7 @@
         <div class="preset" onclick="setP('Neutral female, professional, no regional accent')">Neutral female</div>
         <div class="preset" onclick="setP('Female, Texan accent, approachable and confident')">Female, Texan</div>
         <div class="preset" onclick="setP('Senior male, experienced tone, calm and measured')">Senior male</div>
-        <div class="preset" onclick="setP('Warm male, conversational, like talking to a trusted friend')">Warm male, conversational</div>
+        <div class="preset" onclick="setP('Warm male, conversational, like talking to a trusted friend')">Warm male</div>
       </div>
     </div>
     <label class="field-label">voice_description</label>
@@ -139,20 +130,19 @@
     </div>
   </div>
 
-  <!-- SHORTLIST -->
   <div class="sec-title">02 / shortlist[]</div>
-  <div class="shortlist" id="slPanel">
+  <div class="shortlist">
     <div class="sl-header">
       <div class="sl-title">shortlist <span class="sl-count" id="slCount">0</span></div>
       <div class="sl-actions">
-        <button class="sl-btn-hdr" id="devBtn" onclick="toggleDevView()">dev: show_ids()</button>
-        <button class="sl-btn-hdr share" id="shareBtn" onclick="shareURL()">share_all()</button>
-        <button class="sl-btn-hdr" onclick="clearAll()">clear_all()</button>
+        <button class="sl-btn" id="devBtn" onclick="toggleDev()">dev: show_ids()</button>
+        <button class="sl-btn green" onclick="shareAll()">share_all()</button>
+        <button class="sl-btn" onclick="clearAll()">clear_all()</button>
       </div>
     </div>
     <table>
-      <thead>
-        <tr><th>id</th><th>name</th><th>description</th><th>added</th><th style="text-align:right">actions</th></tr>
+      <thead id="slHead">
+        <tr><th>id</th><th>name</th><th>description</th><th>saved</th><th style="text-align:right">actions</th></tr>
       </thead>
       <tbody id="slBody">
         <tr><td colspan="5"><div class="sl-empty">// empty — generate a voice and add it to the shortlist</div></td></tr>
@@ -163,150 +153,139 @@
 </div>
 
 <div class="toast" id="toast"></div>
-
 <footer>
   <span>farmer_brown / voice_config v1.0 / internal</span>
-  <span id="sessionSpan"></span>
+  <span id="footerSession"></span>
 </footer>
 
 <script>
-const KEY = 'sk_d2f433f6992c2565ff4dbee4f9256e2452049f31cdc2d0e9';
-const SAMPLE = "Thank you for calling Farmer Brown Insurance. My name is Sarah, and I'm here to help you get a free insurance quote today. It'll only take a few minutes. Can I start with your full name?";
+var ELEVEN_KEY = 'sk_d2f433f6992c2565ff4dbee4f9256e2452049f31cdc2d0e9';
+var SAMPLE = "Thank you for calling Farmer Brown Insurance. My name is Sarah, and I'm here to help you get a free insurance quote today. It'll only take a few minutes. Can I start with your full name?";
 
-// ── STATE ─────────────────────────────────────────────────────────────
-let shortlist = [];
-let genUrl = null;
-let genPrompt = '';
-let genVoiceId = null;
+var shortlist = [];
+var genUrl = null;
+var genPrompt = '';
+var genVoiceId = null;
+var devMode = false;
 
-// Load from URL first, then localStorage
+// ── STATE ────────────────────────────────────────────────────────────
 function loadState() {
   try {
-    const p = new URLSearchParams(window.location.search).get('sl');
+    var p = new URLSearchParams(window.location.search).get('sl');
     if (p) { shortlist = JSON.parse(atob(p)); return; }
   } catch(e) {}
   try {
-    const s = localStorage.getItem('vc_sl');
+    var s = localStorage.getItem('vc_sl_fb');
     if (s) shortlist = JSON.parse(s);
   } catch(e) {}
 }
 
 function saveState() {
-  try { localStorage.setItem('vc_sl', JSON.stringify(shortlist)); } catch(e) {}
+  try { localStorage.setItem('vc_sl_fb', JSON.stringify(shortlist)); } catch(e) {}
   try {
-    const enc = btoa(JSON.stringify(shortlist));
-    const url = window.location.pathname + (shortlist.length ? '?sl='+enc : '');
+    var enc = btoa(JSON.stringify(shortlist));
+    var url = window.location.pathname + (shortlist.length ? '?sl=' + enc : '');
     window.history.replaceState(null, '', url);
   } catch(e) {}
 }
 
-// ── TOAST ─────────────────────────────────────────────────────────────
+// ── TOAST ────────────────────────────────────────────────────────────
 function toast(msg) {
-  const t = document.getElementById('toast');
+  var t = document.getElementById('toast');
   t.textContent = msg;
   t.classList.add('show');
-  setTimeout(function(){ t.classList.remove('show'); }, 2200);
+  setTimeout(function() { t.classList.remove('show'); }, 2500);
 }
 
-// ── PRESETS ───────────────────────────────────────────────────────────
+// ── PRESETS ──────────────────────────────────────────────────────────
 function setP(txt) { document.getElementById('prompt').value = txt; }
 
-// ── GENERATE ──────────────────────────────────────────────────────────
-async function generate() {
-  const p = document.getElementById('prompt').value.trim();
+// ── GENERATE ─────────────────────────────────────────────────────────
+function generate() {
+  var p = document.getElementById('prompt').value.trim();
   if (!p) { toast('voice_description cannot be empty'); return; }
-  const btn = document.getElementById('runBtn');
+  var btn = document.getElementById('runBtn');
   btn.classList.add('loading'); btn.disabled = true;
   document.getElementById('output').classList.remove('visible');
   document.getElementById('addBtn').textContent = '+ add_to_shortlist()';
-  try {
-    const res = await fetch('https://api.elevenlabs.io/v1/text-to-voice/create-previews', {
-      method: 'POST',
-      headers: { 'xi-api-key': KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ voice_description: p, text: SAMPLE })
-    });
-    if (!res.ok) {
-      const e = await res.json().catch(function(){ return {}; });
-      throw new Error(e.detail ? (e.detail.message || JSON.stringify(e.detail)) : 'HTTP '+res.status);
-    }
-    const data = await res.json();
-    const preview = data.previews && data.previews[0];
+  document.getElementById('addBtn').style.background = '';
+  genUrl = null; genVoiceId = null;
+
+  fetch('https://api.elevenlabs.io/v1/text-to-voice/create-previews', {
+    method: 'POST',
+    headers: { 'xi-api-key': ELEVEN_KEY, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ voice_description: p, text: SAMPLE })
+  })
+  .then(function(res) {
+    if (!res.ok) return res.json().then(function(e) { throw new Error(e.detail ? (e.detail.message || JSON.stringify(e.detail)) : 'HTTP ' + res.status); });
+    return res.json();
+  })
+  .then(function(data) {
+    var preview = data.previews && data.previews[0];
     if (!preview || !preview.audio_base_64) throw new Error('no audio in response');
-    const bin = atob(preview.audio_base_64);
-    const bytes = new Uint8Array(bin.length);
-    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    var bin = atob(preview.audio_base_64);
+    var bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
     genUrl = URL.createObjectURL(new Blob([bytes], { type: 'audio/mpeg' }));
     genPrompt = p;
     genVoiceId = preview.generated_voice_id || null;
     document.getElementById('outputName').textContent = '"' + p.split(',')[0].trim() + '"';
     document.getElementById('output').classList.add('visible');
     new Audio(genUrl).play();
-  } catch(e) {
-    toast('error: ' + e.message);
-  } finally {
-    btn.classList.remove('loading'); btn.disabled = false;
-  }
+  })
+  .catch(function(e) { toast('error: ' + e.message); })
+  .finally(function() { btn.classList.remove('loading'); btn.disabled = false; });
 }
 
 function playG() { if (genUrl) new Audio(genUrl).play(); }
 
-// ── SHORTLIST ─────────────────────────────────────────────────────────
-function nextId() { return 'V' + String(shortlist.length + 1).padStart(3, '0'); }
-
-async function addToShortlist() {
-  if (!genUrl) { toast('⚠ generate a voice first'); return; }
-  const addBtn = document.getElementById('addBtn');
-  addBtn.textContent = '⏳ saving to library...';
+// ── ADD TO SHORTLIST ─────────────────────────────────────────────────
+function addToShortlist() {
+  if (!genUrl) { toast('generate a voice first'); return; }
+  var addBtn = document.getElementById('addBtn');
+  addBtn.textContent = 'saving...';
   addBtn.disabled = true;
 
-  const name = genPrompt.split(',')[0].trim().toLowerCase().replace(/\s+/g, '_');
-  const refId = nextId();
-  let realVoiceId = null;
+  var name = genPrompt.split(',')[0].trim().toLowerCase().replace(/\s+/g, '_');
+  var refId = 'V' + String(shortlist.length + 1).padStart(3, '0');
+  var ts = new Date().toLocaleString('en-US', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
 
-  // Save voice permanently to ElevenLabs
-  if (genVoiceId) {
-    try {
-      const res = await fetch('https://api.elevenlabs.io/v1/text-to-voice/create-voice-from-preview', {
-        method: 'POST',
-        headers: { 'xi-api-key': KEY, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          voice_name: 'fb_' + refId + '_' + name,
-          voice_description: genPrompt,
-          generated_voice_id: genVoiceId,
-          labels: { project: 'farmer_brown', ref: refId }
-        })
-      });
-      if (res.ok) {
-        const saved = await res.json();
-        realVoiceId = saved.voice_id || null;
-      }
-    } catch(e) {
-      console.warn('ElevenLabs save failed:', e);
-    }
+  function finish(voiceId) {
+    shortlist.push({ id: refId, name: name, desc: genPrompt, voiceId: voiceId || null, ts: ts });
+    saveState();
+    renderShortlist();
+    addBtn.textContent = '✓ saved — ' + refId;
+    addBtn.style.background = 'var(--green-bg)';
+    addBtn.disabled = false;
+    setTimeout(function() { addBtn.textContent = '+ add_to_shortlist()'; addBtn.style.background = ''; }, 3000);
+    toast('✓ ' + name + ' saved as ' + refId + (voiceId ? ' · voice_id ready' : ' · no voice_id'));
   }
 
-  const entry = {
-    id: refId,
-    name: name,
-    desc: genPrompt,
-    voiceId: realVoiceId, // real ElevenLabs ID (hidden from John)
-    ts: new Date().toLocaleString('en-US', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})
-  };
-  shortlist.push(entry);
-  saveState();
-  renderShortlist();
-
-  addBtn.textContent = '✓ saved';
-  addBtn.style.background = 'var(--green-bg)';
-  addBtn.disabled = false;
-  setTimeout(function(){ addBtn.textContent = '+ add_to_shortlist()'; addBtn.style.background = ''; }, 3000);
-  const saved = realVoiceId ? '· voice_id ready' : '· no voice_id (try again)';
-  toast('✓ ' + name + ' · ' + refId + ' ' + saved);
+  if (genVoiceId) {
+    fetch('https://api.elevenlabs.io/v1/text-to-voice/create-voice-from-preview', {
+      method: 'POST',
+      headers: { 'xi-api-key': ELEVEN_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        voice_name: 'fb_' + refId + '_' + name,
+        voice_description: genPrompt,
+        generated_voice_id: genVoiceId,
+        labels: { project: 'farmer_brown', ref: refId }
+      })
+    })
+    .then(function(res) { return res.ok ? res.json() : Promise.resolve({}); })
+    .then(function(data) { finish(data.voice_id || null); })
+    .catch(function() { finish(null); });
+  } else {
+    finish(null);
+  }
 }
 
+// ── SHORTLIST ACTIONS ────────────────────────────────────────────────
 function removeItem(idx) {
   shortlist.splice(idx, 1);
-  shortlist.forEach(function(s, i){ s.id = 'V'+String(i+1).padStart(3,'0'); });
+  for (var i = 0; i < shortlist.length; i++) {
+    shortlist[i].id = 'V' + String(i + 1).padStart(3, '0');
+  }
   saveState();
   renderShortlist();
 }
@@ -318,53 +297,21 @@ function clearAll() {
   renderShortlist();
 }
 
-function shareURL() {
+function shareAll() {
   if (!shortlist.length) { toast('shortlist is empty'); return; }
-  const url = window.location.href;
-  navigator.clipboard.writeText(url).then(function(){
-    document.getElementById('shareBtn').textContent = '✓ copied!';
-    setTimeout(function(){ document.getElementById('shareBtn').textContent = 'share_url()'; }, 2000);
-    toast('URL copied to clipboard');
-  }).catch(function(){
-    // fallback: show the URL
-    prompt('Copy this URL:', url);
-  });
+  var url = window.location.origin + window.location.pathname + '?sl=' + btoa(JSON.stringify(shortlist));
+  navigator.clipboard.writeText(url).then(function() {
+    toast('✓ full shortlist URL copied');
+  }).catch(function() { prompt('Copy this URL:', url); });
 }
 
-function renderShortlist() {
-  const body = document.getElementById('slBody');
-  const count = document.getElementById('slCount');
-  count.textContent = shortlist.length;
-  if (!shortlist.length) {
-    body.innerHTML = '<tr><td colspan="5"><div class="sl-empty">// empty — generate a voice and add it to the shortlist</div></td></tr>';
-    return;
-  }
-  var rows = '';
-  for (var i = 0; i < shortlist.length; i++) {
-    var s = shortlist[i];
-    var midCol = '';
-    if (devMode) {
-      var vid = s.voiceId || '—';
-      midCol = '<td style="font-family:monospace;font-size:9px;color:var(--green);word-break:break-all">' + vid;
-      if (s.voiceId) {
-        midCol += ' <button class="copy-btn" data-vid="' + s.voiceId + '" onclick="copyVoiceId(this)">copy</button>';
-      }
-      midCol += '</td>';
-    } else {
-      var d = s.desc.length > 48 ? s.desc.substring(0, 48) + '...' : s.desc;
-      midCol = '<td class="tdesc">' + d + '</td>';
-    }
-    rows += '<tr>' +
-      '<td class="tid">' + s.id + '</td>' +
-      '<td class="tname">' + s.name + '</td>' +
-      midCol +
-      '<td style="font-size:10px;color:var(--muted)">' + (s.ts || '') + '</td>' +
-      '<td class="taction">' +
-      '<button class="tb-btn play" data-idx="' + i + '" onclick="shareOne(' + i + ')">&#8679; share</button>' +
-      '<button class="tb-btn" data-idx="' + i + '" onclick="removeItem(' + i + ')">&#10005;</button>' +
-      '</td></tr>';
-  }
-  body.innerHTML = rows;
+function shareOne(idx) {
+  var s = shortlist[idx];
+  if (!s) return;
+  var url = window.location.origin + window.location.pathname + '?sl=' + btoa(JSON.stringify([s]));
+  navigator.clipboard.writeText(url).then(function() {
+    toast('✓ link for ' + s.id + ' copied');
+  }).catch(function() { prompt('Copy link for ' + s.id + ':', url); });
 }
 
 function copyVoiceId(btn) {
@@ -375,33 +322,62 @@ function copyVoiceId(btn) {
   });
 }
 
-
-function shareOne(idx) {
-  const entry = shortlist[idx];
-  if (!entry) return;
-  // Share only this single entry
-  const encoded = btoa(JSON.stringify([entry]));
-  const url = window.location.origin + window.location.pathname + '?sl=' + encoded;
-  navigator.clipboard.writeText(url).then(function(){
-    toast('✓ link for ' + entry.id + ' copied');
-  }).catch(function(){
-    prompt('Copy link for ' + entry.id + ':', url);
-  });
-}
-
-// Dev view: toggle voice_id column
-let devMode = false;
-function toggleDevView() {
+function toggleDev() {
   devMode = !devMode;
-  const btn = document.getElementById('devBtn');
-  btn.textContent = devMode ? 'hide_ids()' : 'dev: show_ids()';
+  document.getElementById('devBtn').textContent = devMode ? 'hide_ids()' : 'dev: show_ids()';
   renderShortlist();
 }
 
-// ── INIT ──────────────────────────────────────────────────────────────
+// ── RENDER ───────────────────────────────────────────────────────────
+function renderShortlist() {
+  var body = document.getElementById('slBody');
+  var head = document.getElementById('slHead');
+  document.getElementById('slCount').textContent = shortlist.length;
+
+  if (!shortlist.length) {
+    head.innerHTML = '<tr><th>id</th><th>name</th><th>description</th><th>saved</th><th style="text-align:right">actions</th></tr>';
+    body.innerHTML = '<tr><td colspan="5"><div class="sl-empty">// empty — generate a voice and add it to the shortlist</div></td></tr>';
+    return;
+  }
+
+  if (devMode) {
+    head.innerHTML = '<tr><th>id</th><th>name</th><th>voice_id (elevenlabs)</th><th>saved</th><th style="text-align:right">actions</th></tr>';
+  } else {
+    head.innerHTML = '<tr><th>id</th><th>name</th><th>description</th><th>saved</th><th style="text-align:right">actions</th></tr>';
+  }
+
+  var rows = '';
+  for (var i = 0; i < shortlist.length; i++) {
+    var s = shortlist[i];
+    var midCell = '';
+    if (devMode) {
+      var vid = s.voiceId || '—';
+      midCell = '<td class="t-vid">' + vid;
+      if (s.voiceId) {
+        midCell += ' <button class="copy-btn" data-vid="' + s.voiceId + '" onclick="copyVoiceId(this)">copy</button>';
+      }
+      midCell += '</td>';
+    } else {
+      var d = s.desc.length > 50 ? s.desc.substring(0, 50) + '...' : s.desc;
+      midCell = '<td class="t-desc">' + d + '</td>';
+    }
+    rows += '<tr>' +
+      '<td class="t-id">' + s.id + '</td>' +
+      '<td class="t-name">' + s.name + '</td>' +
+      midCell +
+      '<td class="t-ts">' + (s.ts || '') + '</td>' +
+      '<td class="t-act">' +
+      '<button class="tb-btn" onclick="shareOne(' + i + ')">&#8679; share</button>' +
+      '<button class="tb-btn danger" onclick="removeItem(' + i + ')">&#10005;</button>' +
+      '</td></tr>';
+  }
+  body.innerHTML = rows;
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────
 loadState();
 renderShortlist();
-document.getElementById('sessionSpan').textContent = 'session: ' + Math.random().toString(36).substr(2,8);
+document.getElementById('footerSession').textContent = 'session: ' + Math.random().toString(36).substr(2, 8);
 </script>
 </body>
 </html>
