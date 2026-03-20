@@ -664,15 +664,8 @@
     <!-- HERO BANNER -->
     <div class="hero-banner">
       <div class="hero-banner-inner">
-        <div class="hero-eyebrow">&#9670; internal tools &mdash; ai division</div>
-        <h1 class="hero-h1">Farmer Brown Insurance</h1>
-        <div class="hero-sub-title">Internal AI Tools Hub</div>
-        <p class="hero-tagline">Your team is building the future of insurance — one intelligent agent at a time. This workspace powers the AI infrastructure behind every customer interaction.</p>
-        <div class="hero-stats">
-          <div class="hero-stat"><div class="hero-stat-val">01</div><div class="hero-stat-key">active module</div></div>
-          <div class="hero-stat"><div class="hero-stat-val">∞</div><div class="hero-stat-key">voices possible</div></div>
-          <div class="hero-stat"><div class="hero-stat-val">v1</div><div class="hero-stat-key">ai stack</div></div>
-        </div>
+        <div class="hero-eyebrow">Internal AI Tools Hub &mdash; Farmer Brown Insurance</div>
+        <h1 class="hero-h1">Agent AI Voice<br>Generator</h1>
       </div>
     </div>
 
@@ -765,9 +758,9 @@
         <button class="dev-btn" onclick="document.getElementById('devPanel').classList.toggle('visible')">id_mapping.json</button>
       </div>
       <div class="dev-panel" id="devPanel">
-        <div class="dev-panel-head">// voice id mapping — internal use only</div>
+        <div class="dev-panel-head">// voice_config.json — internal reference</div>
         <table class="dev-table">
-          <thead><tr><th>ref_id</th><th>name</th><th>source</th><th>elevenlabs_voice_id</th></tr></thead>
+          <thead><tr><th>ref_id</th><th>name</th><th>description</th></tr></thead>
           <tbody id="devBody">
             <tr><td colspan="4" style="color:#333;padding:8px">// no entries</td></tr>
           </tbody>
@@ -831,7 +824,7 @@ function isShortlisted(id) { return shortlist.some(function(s){return s.eid===id
 function nextId() { return 'V'+String(shortlist.length+1).padStart(3,'0'); }
 
 function saveShortlist() {
-  try { sessionStorage.setItem('vc_sl', JSON.stringify(shortlist)); } catch(e) {}
+  try { localStorage.setItem('vc_sl', JSON.stringify(shortlist)); } catch(e) {}
   updateURL(shortlist);
   renderShortlist();
   renderDevTable();
@@ -893,10 +886,9 @@ function renderShortlist() {
 
 function renderDevTable() {
   const tb = document.getElementById('devBody');
-  if(!shortlist.length){tb.innerHTML='<tr><td colspan="4" style="color:#333;padding:8px">// no entries</td></tr>';return;}
+  if(!shortlist.length){tb.innerHTML='<tr><td colspan="3" style="color:var(--muted);padding:10px;font-family:monospace">// no entries</td></tr>';return;}
   tb.innerHTML = shortlist.map(function(s){
-    const vid = s.type==='library' ? s.eid : 'pending — save to elevenlabs first';
-    return '<tr><td>'+s.id+'</td><td>'+s.name+'</td><td>'+s.type+'</td><td>'+vid+(s.type==='library'?'<button class="copy-btn" onclick="copyText(\''+s.eid+'\',this)">copy</button>':'')+'</td></tr>';
+    return '<tr><td>'+s.id+'</td><td>'+s.name+'</td><td>'+s.desc.substring(0,60)+(s.desc.length>60?'...':'')+'</td></tr>';
   }).join('');
 }
 
@@ -1025,9 +1017,19 @@ async function generateVoice() {
 function playGenerated(){if(generatedUrl) new Audio(generatedUrl).play();}
 
 function addGeneratedToShortlist(){
-  if(!generatedUrl) return;
-  const name=generatedPrompt.split(',')[0].trim().toLowerCase().replace(/\s+/g,'_');
-  addToShortlist('custom_'+Date.now(), name, 'custom', generatedUrl, generatedPrompt);
+  if(!generatedUrl){ alert('generate a voice first'); return; }
+  const name = generatedPrompt.split(',')[0].trim().toLowerCase().replace(/\s+/g,'_');
+  const eid = 'custom_'+Date.now();
+  const item = {id:nextId(), eid:eid, name:name, type:'custom', audioUrl:generatedUrl, desc:generatedPrompt};
+  shortlist.push(item);
+  saveShortlist();
+  sendToSheets(item);
+  const m = document.getElementById('shortlistModule');
+  m.classList.add('visible');
+  setTimeout(function(){m.scrollIntoView({behavior:'smooth',block:'nearest'});}, 100);
+  // Visual feedback on button
+  const btn = document.querySelector('.btn-mono.btn-add');
+  if(btn){ btn.textContent = '✓ added'; setTimeout(function(){ btn.textContent = '+ add_to_shortlist()'; }, 2000); }
 }
 
 function switchTab(tab, btn) {
@@ -1046,6 +1048,28 @@ function setActiveNav(el) {
   document.querySelectorAll('.sidebar-nav-item').forEach(function(n){n.classList.remove('active');});
   el.classList.add('active');
 }
+
+// ─── GOOGLE SHEETS CONFIG ────────────────────────────────────────────
+// Paste your Google Apps Script Web App URL here after deploying
+const SHEETS_ENDPOINT = '';  // e.g. 'https://script.google.com/macros/s/YOUR_ID/exec'
+
+function sendToSheets(item) {
+  if (!SHEETS_ENDPOINT) return; // skip if not configured
+  const payload = {
+    id: item.id,
+    name: item.name,
+    type: item.type,
+    description: item.desc,
+    timestamp: new Date().toISOString()
+  };
+  fetch(SHEETS_ENDPOINT, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  }).catch(function(e){ console.warn('Sheets sync failed:', e); });
+}
+// ─────────────────────────────────────────────────────────────────────
 
 function copyShareURL() {
   const url = getShareURL();
