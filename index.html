@@ -3,1085 +3,329 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>voice_config — farmer_brown / agent selection</title>
+<title>Agent AI Voice Generator — Farmer Brown</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #f5f4f0;
-    --white: #ffffff;
-    --ink: #0e0e0e;
-    --mid: #555550;
-    --muted: #999990;
-    --rule: #d8d7d2;
-    --accent: #1a1a1a;
-    --green: #2a6b3c;
-    --green-bg: #edf5ef;
-    --red: #8b1a1a;
-    --red-bg: #fdf0f0;
+    --bg: #f5f4f0; --white: #fff; --ink: #0e0e0e;
+    --mid: #555; --muted: #999; --rule: #ddd;
+    --green: #2a6b3c; --green-bg: #edf5ef;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { font-size: 14px; }
-  body {
-    background: var(--bg);
-    color: var(--ink);
-    font-family: 'IBM Plex Sans', sans-serif;
-    min-height: 100vh;
-    line-height: 1.5;
-  }
+  body { background: var(--bg); color: var(--ink); font-family: 'IBM Plex Sans', sans-serif; }
+
+  /* HERO */
+  .hero { background: var(--ink); padding: 40px 40px 36px; }
+  .hero-eye { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.25em; text-transform: uppercase; color: rgba(255,255,255,0.3); margin-bottom: 10px; }
+  .hero-h1 { font-family: 'IBM Plex Mono', monospace; font-size: clamp(24px,4vw,38px); font-weight: 500; color: white; line-height: 1.15; letter-spacing: -0.02em; }
 
   /* LAYOUT */
-  .shell {
-    display: grid;
-    grid-template-columns: 220px 1fr;
-    min-height: 100vh;
-  }
+  .wrap { max-width: 860px; margin: 0 auto; padding: 40px 24px 80px; }
 
-  /* SIDEBAR */
-  aside {
-    background: var(--white);
-    border-right: 1px solid var(--rule);
-    padding: 0;
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-  }
-  .sidebar-top {
-    padding: 24px 20px 20px;
-    border-bottom: 1px solid var(--rule);
-  }
-  .sys-label {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 9px;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 6px;
-  }
-  .sys-title {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--ink);
-  }
-  .sys-version {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    color: var(--muted);
-    margin-top: 2px;
-  }
-  .sidebar-section {
-    padding: 16px 20px 8px;
-    border-bottom: 1px solid var(--rule);
-  }
-  .sidebar-section-label {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 8px;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 10px;
-  }
-  .sidebar-nav-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 7px 10px;
-    border-radius: 2px;
-    cursor: pointer;
-    font-size: 12px;
-    color: var(--mid);
-    margin-bottom: 2px;
-    transition: all 0.15s;
-    font-family: 'IBM Plex Mono', monospace;
-    border: 1px solid transparent;
-  }
-  .sidebar-nav-item:hover { background: var(--bg); color: var(--ink); }
-  .sidebar-nav-item.active { background: var(--ink); color: white; border-color: var(--ink); }
-  .sidebar-nav-item .nav-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; opacity: 0.5; }
-  .sidebar-nav-item.active .nav-dot { opacity: 1; background: #4ade80; }
-  .sidebar-stats { padding: 16px 20px; margin-top: auto; border-top: 1px solid var(--rule); }
-  .stat-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; }
-  .stat-key { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); }
-  .stat-val { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--ink); font-weight: 500; }
-  .stat-val.green { color: var(--green); }
+  /* SECTION TITLE */
+  .sec-title { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); margin-bottom: 16px; }
 
-  /* MAIN */
-  .main { padding: 0; overflow: hidden; }
-
-  /* TOPBAR */
-  .topbar {
-    background: var(--white);
-    border-bottom: 1px solid var(--rule);
-    padding: 14px 32px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-  }
-  .topbar-path {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .topbar-path span { color: var(--ink); }
-  .topbar-right { display: flex; align-items: center; gap: 12px; }
-  .status-pill {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 9px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    padding: 4px 10px;
-    border-radius: 1px;
-    border: 1px solid;
-  }
-  .status-pill.ok { color: var(--green); border-color: var(--green); background: var(--green-bg); }
-  .status-pill.pending { color: var(--red); border-color: var(--red); background: var(--red-bg); }
-
-  /* CONTENT */
-  .content { padding: 32px; }
-
-  /* PAGE HEADER */
-  .page-header {
-    margin-bottom: 32px;
-    padding-bottom: 24px;
-    border-bottom: 1px solid var(--rule);
-  }
-  .page-eyebrow {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 9px;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 8px;
-  }
-  .page-title {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 22px;
-    font-weight: 500;
-    color: var(--ink);
-    margin-bottom: 8px;
-    letter-spacing: -0.02em;
-  }
-  .page-desc {
-    font-size: 13px;
-    color: var(--mid);
-    max-width: 560px;
-    line-height: 1.6;
-    font-weight: 300;
-  }
-
-  /* TABS */
-  .tab-row {
-    display: flex;
-    gap: 0;
-    border-bottom: 1px solid var(--rule);
-    margin-bottom: 28px;
-  }
-  .tab-btn {
-    padding: 10px 20px;
-    border: none;
-    background: none;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    cursor: pointer;
-    border-bottom: 2px solid transparent;
-    margin-bottom: -1px;
-    transition: all 0.15s;
-    letter-spacing: 0.05em;
-  }
-  .tab-btn:hover { color: var(--ink); }
-  .tab-btn.active { color: var(--ink); border-bottom-color: var(--ink); font-weight: 500; }
-  .tab-panel { display: none; }
-  .tab-panel.active { display: block; }
-
-  /* VOICE GRID */
-  .voice-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-bottom: 32px; }
-  .voice-cell {
-    background: var(--white);
-    padding: 20px;
-    transition: background 0.15s;
-    position: relative;
-  }
-  .voice-cell:hover { background: #fafaf8; }
-  .voice-cell.shortlisted { background: #f8faf8; }
-  .voice-cell.shortlisted::before { content: ''; position: absolute; top: 0; left: 0; width: 2px; height: 100%; background: var(--green); }
-
-  .vc-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 4px; gap: 8px; }
-  .vc-name { font-family: 'IBM Plex Mono', monospace; font-size: 15px; font-weight: 500; color: var(--ink); }
-  .vc-tag {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 8px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    padding: 2px 6px;
-    border: 1px solid var(--rule);
-    color: var(--muted);
-    white-space: nowrap;
-    border-radius: 1px;
-  }
-  .vc-tag.f { border-color: #d4b8d4; color: #8a4a8a; background: #faf4fa; }
-  .vc-tag.m { border-color: #b8c8d4; color: #2a4a6a; background: #f4f8fa; }
-
-  .vc-desc { font-size: 11px; color: var(--muted); margin-bottom: 14px; line-height: 1.5; min-height: 30px; }
-
-  .vc-actions { display: flex; gap: 6px; }
-  .btn-mono {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    padding: 6px 12px;
-    border: 1px solid var(--rule);
-    background: white;
-    color: var(--mid);
-    cursor: pointer;
-    transition: all 0.15s;
-    letter-spacing: 0.05em;
-    border-radius: 1px;
-  }
-  .btn-mono:hover { border-color: var(--ink); color: var(--ink); background: var(--bg); }
-  .btn-mono.playing { border-color: var(--ink); color: var(--ink); background: var(--ink); color: white; }
-  .btn-mono.loading { opacity: 0.6; cursor: wait; }
-  .btn-add { border-color: var(--rule); }
-  .btn-add:hover { border-color: var(--green); color: var(--green); background: var(--green-bg); }
-  .voice-cell.shortlisted .btn-add { border-color: var(--green); color: var(--green); background: var(--green-bg); }
-
-  .vc-progress { height: 1px; background: var(--rule); margin-top: 10px; overflow: hidden; display: none; }
-  .voice-cell.playing .vc-progress { display: block; }
-  .vc-progress-fill { height: 100%; background: var(--ink); width: 0%; transition: width 0.1s linear; }
-
-  /* DESIGNER */
-  .designer-wrap { display: grid; grid-template-columns: 1fr 320px; gap: 24px; }
-  @media(max-width:900px){.designer-wrap{grid-template-columns:1fr;}}
-  .designer-main { }
-  .designer-aside { }
-
-  .field-block { margin-bottom: 20px; }
-  .field-label {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 9px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 6px;
-    display: block;
-  }
-  .field-textarea {
-    width: 100%;
-    padding: 12px 14px;
-    border: 1px solid var(--rule);
-    background: var(--white);
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 12px;
-    color: var(--ink);
-    resize: none;
-    outline: none;
-    line-height: 1.6;
-    min-height: 100px;
-    transition: border-color 0.15s;
-    border-radius: 1px;
-  }
+  /* DESIGNER CARD */
+  .card { background: var(--white); border: 1px solid var(--rule); padding: 28px; margin-bottom: 24px; }
+  .field-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; display: block; }
+  .field-textarea { width: 100%; padding: 12px 14px; border: 1px solid var(--rule); background: var(--bg); font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--ink); resize: none; outline: none; line-height: 1.6; min-height: 88px; transition: border-color .15s; }
   .field-textarea:focus { border-color: var(--ink); }
-  .field-textarea::placeholder { color: var(--muted); font-weight: 300; }
+  .field-textarea::placeholder { color: var(--muted); }
 
-  .presets-grid { display: flex; flex-direction: column; gap: 4px; }
-  .preset-item {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    padding: 8px 10px;
-    border: 1px solid var(--rule);
-    background: white;
-    color: var(--mid);
-    cursor: pointer;
-    transition: all 0.15s;
-    text-align: left;
-    line-height: 1.4;
-    border-radius: 1px;
-  }
-  .preset-item:hover { border-color: var(--ink); color: var(--ink); background: var(--bg); }
-  .preset-num { color: var(--muted); margin-right: 8px; }
+  /* PRESETS */
+  .presets { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
+  .preset { font-family: 'IBM Plex Mono', monospace; font-size: 10px; padding: 5px 12px; border: 1px solid var(--rule); background: white; color: var(--mid); cursor: pointer; transition: all .15s; }
+  .preset:hover { border-color: var(--ink); color: var(--ink); }
 
-  .btn-run {
-    width: 100%;
-    padding: 12px;
-    background: var(--ink);
-    color: white;
-    border: none;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: all 0.15s;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    border-radius: 1px;
-  }
+  /* BUTTONS */
+  .btn-run { width: 100%; margin-top: 16px; padding: 13px; background: var(--ink); color: white; border: none; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; transition: background .15s; }
   .btn-run:hover:not(:disabled) { background: #2a2a2a; }
-  .btn-run:disabled { opacity: 0.4; cursor: not-allowed; }
-  .run-spinner { width: 12px; height: 12px; border: 1px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; display: none; }
-  .btn-run.loading .run-spinner { display: block; }
-  .btn-run.loading .run-text { display: none; }
+  .btn-run:disabled { opacity: .4; cursor: not-allowed; }
+  .spinner { width: 13px; height: 13px; border: 1px solid rgba(255,255,255,.3); border-top-color: white; border-radius: 50%; animation: spin .7s linear infinite; display: none; }
+  .btn-run.loading .spinner { display: block; }
+  .btn-run.loading .run-txt { display: none; }
   @keyframes spin { to { transform: rotate(360deg); } }
 
-  .output-block {
-    margin-top: 16px;
-    border: 1px solid var(--rule);
-    background: var(--white);
-    display: none;
-  }
-  .output-block.visible { display: block; }
-  .output-header {
-    padding: 8px 14px;
-    border-bottom: 1px solid var(--rule);
-    background: var(--bg);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .output-status {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 9px;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--green);
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .output-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s ease-in-out infinite; }
-  @keyframes pulse { 0%,100%{opacity:1;}50%{opacity:0.4;} }
-  .output-name {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 13px;
-    font-weight: 500;
-    color: var(--ink);
-    padding: 14px;
-  }
-  .output-actions {
-    padding: 0 14px 14px;
-    display: flex;
-    gap: 6px;
-  }
+  /* OUTPUT */
+  .output { margin-top: 16px; border: 1px solid var(--rule); display: none; }
+  .output.visible { display: block; }
+  .output-bar { background: var(--bg); padding: 8px 14px; border-bottom: 1px solid var(--rule); display: flex; align-items: center; justify-content: space-between; }
+  .output-status { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: .12em; text-transform: uppercase; color: var(--green); display: flex; align-items: center; gap: 6px; }
+  .pulse { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: pulse 2s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1}50%{opacity:.3} }
+  .output-name { font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 500; color: var(--ink); padding: 14px 14px 10px; }
+  .output-actions { padding: 0 14px 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn-sm { font-family: 'IBM Plex Mono', monospace; font-size: 10px; padding: 7px 14px; border: 1px solid var(--rule); background: white; color: var(--mid); cursor: pointer; transition: all .15s; }
+  .btn-sm:hover { border-color: var(--ink); color: var(--ink); }
+  .btn-add-sl { border-color: var(--green); color: var(--green); }
+  .btn-add-sl:hover { background: var(--green-bg); border-color: var(--green); color: var(--green); }
 
   /* SHORTLIST */
-  .shortlist-module {
-    margin-top: 40px;
-    border: 1px solid var(--rule);
-    background: var(--white);
-    display: none;
-  }
-  .shortlist-module.visible { display: block; }
-  .module-header {
-    padding: 12px 20px;
-    border-bottom: 1px solid var(--rule);
-    background: var(--bg);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .module-title {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 10px;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: var(--ink);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .count-chip {
-    background: var(--ink);
-    color: white;
-    font-size: 9px;
-    padding: 1px 6px;
-    border-radius: 8px;
-    font-family: 'IBM Plex Mono', monospace;
-  }
-  .module-action {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 9px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--muted);
-    background: none;
-    border: 1px solid var(--rule);
-    padding: 4px 10px;
-    cursor: pointer;
-    transition: all 0.15s;
-    border-radius: 1px;
-  }
-  .module-action:hover { color: var(--red); border-color: var(--red); }
+  .shortlist { background: var(--white); border: 1px solid var(--rule); display: none; }
+  .shortlist.visible { display: block; }
+  .sl-header { background: var(--ink); padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; }
+  .sl-title { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .15em; text-transform: uppercase; color: white; display: flex; align-items: center; gap: 8px; }
+  .sl-count { background: var(--green); color: white; font-size: 9px; padding: 1px 7px; border-radius: 8px; font-family: 'IBM Plex Mono', monospace; }
+  .sl-actions { display: flex; gap: 8px; }
+  .sl-btn-hdr { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: .1em; text-transform: uppercase; padding: 5px 10px; border: 1px solid #444; background: transparent; color: #aaa; cursor: pointer; transition: all .15s; }
+  .sl-btn-hdr:hover { border-color: #aaa; color: white; }
+  .sl-btn-hdr.share { border-color: var(--green); color: #4ade80; }
+  .sl-btn-hdr.share:hover { background: rgba(74,222,128,.1); }
 
-  .sl-table { width: 100%; border-collapse: collapse; }
-  .sl-table th {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 8px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--muted);
-    padding: 10px 20px;
-    text-align: left;
-    border-bottom: 1px solid var(--rule);
-    font-weight: 400;
-    background: var(--bg);
-  }
-  .sl-table td {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    padding: 12px 20px;
-    border-bottom: 1px solid var(--rule);
-    vertical-align: middle;
-  }
-  .sl-table tr:last-child td { border-bottom: none; }
-  .sl-table tr:hover td { background: #fafaf8; }
-  .sl-id-cell { color: var(--green); font-weight: 500; }
-  .sl-name-cell { color: var(--ink); }
-  .sl-type-cell { color: var(--muted); font-size: 9px; }
-  .sl-action-cell { text-align: right; }
-  .sl-btn {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 9px;
-    padding: 4px 8px;
-    border: 1px solid var(--rule);
-    background: white;
-    color: var(--muted);
-    cursor: pointer;
-    transition: all 0.15s;
-    margin-left: 4px;
-    border-radius: 1px;
-  }
-  .sl-btn:hover { border-color: var(--ink); color: var(--ink); }
-  .sl-btn.danger:hover { border-color: var(--red); color: var(--red); }
+  table { width: 100%; border-collapse: collapse; }
+  th { font-family: 'IBM Plex Mono', monospace; font-size: 8px; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); padding: 10px 20px; text-align: left; border-bottom: 1px solid var(--rule); background: var(--bg); font-weight: 400; }
+  td { font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 12px 20px; border-bottom: 1px solid var(--rule); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #fafaf8; }
+  td.tid { color: var(--green); font-weight: 500; }
+  td.tname { color: var(--ink); font-weight: 500; }
+  td.tdesc { color: var(--muted); font-size: 10px; max-width: 300px; }
+  .taction { text-align: right; }
+  .tb-btn { font-family: 'IBM Plex Mono', monospace; font-size: 9px; padding: 4px 9px; border: 1px solid var(--rule); background: white; color: var(--muted); cursor: pointer; transition: all .15s; margin-left: 4px; }
+  .tb-btn:hover { border-color: #c00; color: #c00; }
+  .tb-btn.play:hover { border-color: var(--ink); color: var(--ink); }
+  .sl-empty { padding: 24px 20px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--muted); text-align: center; }
 
-  .sl-empty {
-    padding: 24px 20px;
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 11px;
-    color: var(--muted);
-    text-align: center;
-  }
+  /* TOAST */
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--ink); color: white; font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 12px 20px; border-left: 3px solid #4ade80; opacity: 0; transform: translateY(8px); transition: all .25s; pointer-events: none; z-index: 999; }
+  .toast.show { opacity: 1; transform: translateY(0); }
 
-  /* ADMIN PANEL */
-  .dev-toggle { text-align: right; margin-top: 8px; }
-  .dev-btn {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 9px;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    color: var(--rule);
-    background: none;
-    border: none;
-    cursor: pointer;
-    transition: color 0.15s;
-    padding: 4px 0;
-  }
-  .dev-btn:hover { color: var(--muted); }
-  .dev-panel {
-    display: none;
-    margin-top: 6px;
-    border: 1px solid var(--rule);
-    background: var(--white);
-    padding: 16px 20px;
-  }
-  .dev-panel.visible { display: block; }
-  .dev-panel-head {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 9px;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 12px;
-  }
-  .dev-table { width: 100%; border-collapse: collapse; }
-  .dev-table th { font-family: 'IBM Plex Mono', monospace; font-size: 8px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--rule); background: var(--bg); }
-  .dev-table td { font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 10px 10px; border-bottom: 1px solid var(--rule); vertical-align: middle; word-break: break-all; }
-  .dev-table tr:hover td { background: var(--bg); }
-  .dev-table td:first-child { color: var(--green); font-weight: 500; }
-  .dev-table td:nth-child(2) { color: var(--ink); font-weight: 500; }
-  .dev-table td:nth-child(3) { color: var(--muted); }
-  .dev-table td:nth-child(4) { color: var(--mid); font-size: 10px; }
-  .copy-btn {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 8px;
-    padding: 3px 8px;
-    border: 1px solid var(--rule);
-    background: var(--bg);
-    color: var(--mid);
-    cursor: pointer;
-    margin-left: 6px;
-    transition: all 0.15s;
-    border-radius: 1px;
-  }
-  .copy-btn:hover { border-color: var(--green); color: var(--green); }
-
-  /* FOOTER */
-  footer {
-    border-top: 1px solid var(--rule);
-    padding: 12px 32px;
-    background: var(--bg);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .footer-left { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--rule); letter-spacing: 0.1em; }
-  .footer-right { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--rule); }
-
-  @media(max-width:768px){
-    .shell{grid-template-columns:1fr;}
-    aside{display:none;}
-    .content{padding:20px;}
-    .voice-grid{grid-template-columns:1fr;}
-  }
-
-  /* HERO BANNER */
-  .hero-banner {
-    background: var(--ink);
-    padding: 48px 32px 40px;
-    position: relative;
-    overflow: hidden;
-  }
-  .hero-banner::before {
-    content: '';
-    position: absolute;
-    top: -40px; right: -40px;
-    width: 280px; height: 280px;
-    border: 1px solid rgba(255,255,255,0.04);
-    border-radius: 50%;
-  }
-  .hero-banner::after {
-    content: '';
-    position: absolute;
-    top: 20px; right: 60px;
-    width: 160px; height: 160px;
-    border: 1px solid rgba(255,255,255,0.04);
-    border-radius: 50%;
-  }
-  .hero-banner-inner { max-width: 700px; position: relative; z-index: 1; }
-  .hero-eyebrow {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 9px;
-    letter-spacing: 0.25em;
-    text-transform: uppercase;
-    color: rgba(255,255,255,0.3);
-    margin-bottom: 12px;
-  }
-  .hero-h1 {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: clamp(28px, 4vw, 42px);
-    font-weight: 500;
-    color: white;
-    line-height: 1.1;
-    letter-spacing: -0.02em;
-    margin-bottom: 4px;
-  }
-  .hero-sub-title {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: clamp(14px, 2vw, 18px);
-    font-weight: 300;
-    color: rgba(255,255,255,0.4);
-    margin-bottom: 20px;
-    letter-spacing: 0.02em;
-  }
-  .hero-tagline {
-    font-size: 13px;
-    color: rgba(255,255,255,0.5);
-    line-height: 1.7;
-    font-weight: 300;
-    max-width: 520px;
-    margin-bottom: 32px;
-  }
-  .hero-stats {
-    display: flex;
-    gap: 32px;
-    border-top: 1px solid rgba(255,255,255,0.08);
-    padding-top: 24px;
-  }
-  .hero-stat {}
-  .hero-stat-val {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 22px;
-    font-weight: 500;
-    color: white;
-    margin-bottom: 2px;
-  }
-  .hero-stat-key {
-    font-family: 'IBM Plex Mono', monospace;
-    font-size: 9px;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    color: rgba(255,255,255,0.25);
-  }
-
+  footer { border-top: 1px solid var(--rule); padding: 12px 24px; font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--rule); display: flex; justify-content: space-between; }
 </style>
 </head>
 <body>
 
-<div class="shell">
-  <!-- SIDEBAR -->
-  <aside>
-    <div class="sidebar-top">
-      <div class="sys-label">client</div>
-      <div class="sys-title">farmer_brown</div>
-      <div class="sys-version">voice_config v1.0 &mdash; internal</div>
-      <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted);margin-top:10px;padding-top:10px;border-top:1px solid var(--rule);letter-spacing:0.05em;line-height:1.6">Farmer Brown Insurance<br>Internal AI Tools Hub</div>
-    </div>
-    <div class="sidebar-section">
-      <div class="sidebar-section-label">modules</div>
-      <div class="sidebar-nav-item active">
-        <div class="nav-dot"></div>voice_design
-      </div>
-    </div>
-    <div class="sidebar-section">
-      <div class="sidebar-section-label">config</div>
-      <div class="sidebar-nav-item" onclick="document.getElementById('shortlistModule').scrollIntoView({behavior:'smooth'});setActiveNav(this)">
-        <div class="nav-dot"></div>shortlist
-      </div>
-      <div class="sidebar-nav-item" onclick="document.getElementById('devPanel').classList.add('visible');document.getElementById('devPanel').scrollIntoView({behavior:'smooth'});setActiveNav(this)">
-        <div class="nav-dot"></div>id_mapping
-      </div>
-    </div>
-    <div class="sidebar-stats">
-      <div class="sidebar-section-label" style="margin-bottom:10px">session</div>
-      <div class="stat-row"><span class="stat-key">shortlisted</span><span class="stat-val green" id="sidebarSlCount">0</span></div>
-      <div class="stat-row"><span class="stat-key">api</span><span class="stat-val green">connected</span></div>
-      <div class="stat-row"><span class="stat-key">client</span><span class="stat-val">farmer_brown</span></div>
-    </div>
-  </aside>
-
-  <!-- MAIN -->
-  <div class="main">
-
-    <!-- HERO BANNER -->
-    <div class="hero-banner">
-      <div class="hero-banner-inner">
-        <div class="hero-eyebrow">Internal AI Tools Hub &mdash; Farmer Brown Insurance</div>
-        <h1 class="hero-h1">Agent AI Voice<br>Generator</h1>
-      </div>
-    </div>
-
-    <div class="topbar">
-      <div class="topbar-path">
-        farmer_brown / voice_config /
-        <span id="topbarTab">design_custom</span>
-      </div>
-      <div class="topbar-right">
-        <div class="status-pill ok">api: ready</div>
-        <div class="status-pill pending" id="statusPill">shortlist: 0</div>
-      </div>
-    </div>
-
-    <div class="content">
-      <div class="page-header">
-        <div class="page-eyebrow">farmer_brown / agent / voice_selection / john</div>
-        <div class="page-title">generate_agent_voice()</div>
-        <p class="page-desc">Describe the voice you want. Generate it, listen to the preview, and add it to your shortlist. When done, use share_url() to send your selection for configuration.</p>
-      </div>
-
-      <!-- DESIGNER -->
-      <div class="tab-panel active" id="tab-designer">
-        <div class="designer-wrap">
-          <div class="designer-main">
-            <div class="field-block">
-              <label class="field-label">voice_description</label>
-              <textarea class="field-textarea" id="voicePrompt" placeholder="A warm, professional female voice with a Southern American accent. Calm and measured, like a trusted insurance advisor. Clear pronunciation, not too fast or slow."></textarea>
-            </div>
-            <button class="btn-run" id="runBtn" onclick="generateVoice()">
-              <div class="run-spinner"></div>
-              <span class="run-text">run generate_voice()</span>
-            </button>
-            <div class="output-block" id="outputBlock">
-              <div class="output-header">
-                <div class="output-status"><div class="output-dot"></div>output_ready</div>
-                <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted);letter-spacing:0.1em">preview_mode</div>
-              </div>
-              <div class="output-name" id="outputName"></div>
-              <div class="output-actions">
-                <button class="btn-mono" onclick="playGenerated()">&#9654; play()</button>
-                <button class="btn-mono" onclick="generateVoice()">&#8635; regenerate()</button>
-                <button class="btn-mono btn-add" onclick="addGeneratedToShortlist()">+ add_to_shortlist()</button>
-              </div>
-            </div>
-          </div>
-          <div class="designer-aside">
-            <div class="field-label" style="margin-bottom:10px">presets[]</div>
-            <div class="presets-grid">
-              <button class="preset-item" onclick="setPrompt(this,'Warm female, Southern American accent, calm and professional')"><span class="preset-num">01</span>Warm female, Southern accent</button>
-              <button class="preset-item" onclick="setPrompt(this,'Middle-aged male, confident and trustworthy, insurance agent')"><span class="preset-num">02</span>Mid-age male, confident</button>
-              <button class="preset-item" onclick="setPrompt(this,'Young female, friendly and energetic, clear American accent')"><span class="preset-num">03</span>Young female, energetic</button>
-              <button class="preset-item" onclick="setPrompt(this,'Mature male, deep voice, reassuring and authoritative')"><span class="preset-num">04</span>Mature male, deep</button>
-              <button class="preset-item" onclick="setPrompt(this,'Neutral female, professional, no regional accent')"><span class="preset-num">05</span>Neutral female, professional</button>
-              <button class="preset-item" onclick="setPrompt(this,'Female, Texan accent, approachable and confident')"><span class="preset-num">06</span>Female, Texan accent</button>
-              <button class="preset-item" onclick="setPrompt(this,'Senior male, experienced tone, calm and measured')"><span class="preset-num">07</span>Senior male, measured</button>
-              <button class="preset-item" onclick="setPrompt(this,'Warm male, conversational, like talking to a trusted friend')"><span class="preset-num">08</span>Warm male, conversational</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- SHORTLIST MODULE -->
-      <div class="shortlist-module" id="shortlistModule">
-        <div class="module-header">
-          <div class="module-title">
-            shortlist[]
-            <span class="count-chip" id="slChip">0</span>
-          </div>
-          <div style="display:flex;gap:6px"><button class="module-action" onclick="copyShareURL()" id="shareBtn">share_url()</button><button class="module-action" onclick="clearShortlist()">clear_all()</button></div>
-        </div>
-        <table class="sl-table">
-          <thead>
-            <tr>
-              <th>id</th>
-              <th>name</th>
-              <th>type</th>
-              <th>description</th>
-              <th style="text-align:right">actions</th>
-            </tr>
-          </thead>
-          <tbody id="slBody">
-            <tr><td colspan="5"><div class="sl-empty">// empty — add voices from library or design_custom</div></td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- DEV PANEL -->
-      <div class="dev-toggle">
-        <button class="dev-btn" onclick="document.getElementById('devPanel').classList.toggle('visible')">id_mapping.json</button>
-      </div>
-      <div class="dev-panel" id="devPanel">
-        <div class="dev-panel-head">// voice_config.json — internal reference</div>
-        <table class="dev-table">
-          <thead><tr><th>ref_id</th><th>name</th><th>description</th></tr></thead>
-          <tbody id="devBody">
-            <tr><td colspan="4" style="color:#333;padding:8px">// no entries</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-    </div>
-
-    <footer>
-      <div class="footer-left">farmer_brown &mdash; voice_config v1.0 &mdash; internal</div>
-      <div class="footer-right">session: <span id="sessionId"></span></div>
-    </footer>
-  </div>
+<div class="hero">
+  <div class="hero-eye">Internal AI Tools Hub &mdash; Farmer Brown Insurance</div>
+  <h1 class="hero-h1">Agent AI Voice<br>Generator</h1>
 </div>
 
+<div class="wrap">
+
+  <!-- DESIGNER -->
+  <div class="sec-title">01 / voice_designer</div>
+  <div class="card">
+    <div style="margin-bottom:18px">
+      <label class="field-label">presets[]</label>
+      <div class="presets">
+        <div class="preset" onclick="setP('Warm female, Southern American accent, calm and professional')">Warm female, Southern</div>
+        <div class="preset" onclick="setP('Middle-aged male, confident and trustworthy, insurance agent')">Mid-age male, confident</div>
+        <div class="preset" onclick="setP('Young female, friendly and energetic, clear American accent')">Young female, energetic</div>
+        <div class="preset" onclick="setP('Mature male, deep voice, reassuring and authoritative')">Mature male, deep</div>
+        <div class="preset" onclick="setP('Neutral female, professional, no regional accent')">Neutral female</div>
+        <div class="preset" onclick="setP('Female, Texan accent, approachable and confident')">Female, Texan</div>
+        <div class="preset" onclick="setP('Senior male, experienced tone, calm and measured')">Senior male</div>
+        <div class="preset" onclick="setP('Warm male, conversational, like talking to a trusted friend')">Warm male, conversational</div>
+      </div>
+    </div>
+    <label class="field-label">voice_description</label>
+    <textarea class="field-textarea" id="prompt" placeholder="A warm, professional female voice with a Southern American accent. Calm and reassuring, like a trusted advisor..."></textarea>
+    <button class="btn-run" id="runBtn" onclick="generate()">
+      <div class="spinner"></div>
+      <span class="run-txt">run generate_voice()</span>
+    </button>
+    <div class="output" id="output">
+      <div class="output-bar">
+        <div class="output-status"><div class="pulse"></div>output_ready</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--muted)">preview_mode</div>
+      </div>
+      <div class="output-name" id="outputName"></div>
+      <div class="output-actions">
+        <button class="btn-sm" onclick="playG()">&#9654; play()</button>
+        <button class="btn-sm" onclick="generate()">&#8635; regenerate()</button>
+        <button class="btn-sm btn-add-sl" id="addBtn" onclick="addToShortlist()">+ add_to_shortlist()</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SHORTLIST -->
+  <div class="sec-title">02 / shortlist[]</div>
+  <div class="shortlist" id="slPanel">
+    <div class="sl-header">
+      <div class="sl-title">shortlist <span class="sl-count" id="slCount">0</span></div>
+      <div class="sl-actions">
+        <button class="sl-btn-hdr share" id="shareBtn" onclick="shareURL()">share_url()</button>
+        <button class="sl-btn-hdr" onclick="clearAll()">clear_all()</button>
+      </div>
+    </div>
+    <table>
+      <thead>
+        <tr><th>id</th><th>name</th><th>description</th><th>added</th><th style="text-align:right">actions</th></tr>
+      </thead>
+      <tbody id="slBody">
+        <tr><td colspan="5"><div class="sl-empty">// empty — generate a voice and add it to the shortlist</div></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<footer>
+  <span>farmer_brown / voice_config v1.0 / internal</span>
+  <span id="sessionSpan"></span>
+</footer>
+
 <script>
-const ELEVEN_KEY = 'sk_d2f433f6992c2565ff4dbee4f9256e2452049f31cdc2d0e9';
-const SAMPLE_TEXT = "Thank you for calling. My name is Sarah, and I'm here to help you get a free builder's risk insurance quote today. It'll only take a few minutes. Can I start with your full name?";
+const KEY = 'sk_d2f433f6992c2565ff4dbee4f9256e2452049f31cdc2d0e9';
+const SAMPLE = "Thank you for calling Farmer Brown Insurance. My name is Sarah, and I'm here to help you get a free insurance quote today. It'll only take a few minutes. Can I start with your full name?";
 
-const VOICES = [
-  {id:'EXAVITQu4vr4xnSDxMaL',name:'sarah',gender:'f',desc:'calm / warm / professional — builds trust immediately'},
-  {id:'21m00Tcm4TlvDq8ikWAM',name:'rachel',gender:'f',desc:'mature / polished / authoritative — real experience'},
-  {id:'cgSgspJ2msm6clMCkdW9',name:'jessica',gender:'f',desc:'bright / friendly / clear — strong first impression'},
-  {id:'LcfcDJNUP1GQjkzn1xUU',name:'emily',gender:'f',desc:'gentle / inviting / soft — puts callers at ease'},
-  {id:'XB0fDUnXU5powFXDhCwa',name:'charlotte',gender:'f',desc:'refined / elegant / composed — quiet confidence'},
-  {id:'jsCqWAovK2LkecY7zXl4',name:'freya',gender:'f',desc:'energetic / genuine / natural — feels real'},
-  {id:'oWAxZDx7w5VEj9dCyTzz',name:'grace',gender:'f',desc:'steady / warm / reassuring — high-trust contexts'},
-  {id:'piTKgcLEGmPE4e6mEKli',name:'nicole',gender:'f',desc:'intimate / clear / caring — personal connection'},
-  {id:'XrExE9yKIg1WjnnlVkGX',name:'matilda',gender:'f',desc:'experienced / friendly / relaxed — warm authority'},
-  {id:'ThT5KcBeYPX3keUQqHPh',name:'dorothy',gender:'f',desc:'classic / crisp / timeless — dependable'},
-  {id:'FGY2WhTYpPnrIDTdsKH5',name:'laura',gender:'f',desc:'smooth / likeable / natural — easy to trust'},
-  {id:'SAz9YHcvj6GT2YYXdXww',name:'river',gender:'f',desc:'warm / effortless / conversational — no friction'},
-  {id:'9BWtsMINqrJLrRacOk9x',name:'aria',gender:'f',desc:'confident / bright / memorable — stands out'},
-  {id:'pNInz6obpgDQGcFmaJgB',name:'adam',gender:'m',desc:'rich / grounded / commanding — instant respect'},
-  {id:'nPczCjzI2devNBz1zQrb',name:'brian',gender:'m',desc:'seasoned / warm / steady — trusted professional'},
-  {id:'iP95p4xoKVk53GoZ742B',name:'chris',gender:'m',desc:'conversational / real / unscripted — genuine'},
-  {id:'onwK4e9ZLuTAKqWW03F9',name:'daniel',gender:'m',desc:'authoritative / precise / sharp — built for business'},
-  {id:'TX3LPaxmHKxFdv7VOQHJ',name:'liam',gender:'m',desc:'energetic / direct / upbeat — without pressure'},
-  {id:'SOYHLrjzK2X1ezoPC6cr',name:'harry',gender:'m',desc:'measured / confident / deliberate — every word counts'},
-  {id:'ErXwobaYiN019PkySvjV',name:'antoni',gender:'m',desc:'smooth / relaxed / engaging — long-form ready'},
-  {id:'TxGEqnHWrfWFTfGW9XjX',name:'josh',gender:'m',desc:'deep / youthful / striking — modern authority'},
-  {id:'yoZ06aMxZJJ28mfd3POQ',name:'sam',gender:'m',desc:'raspy / distinctive / memorable — unforgettable'},
-  {id:'29vD33N1osi05s1kXWwt',name:'drew',gender:'m',desc:'calm / focused / clear — quiet confidence'},
-  {id:'N2lVS1w4EtoT3dr4eOWO',name:'callum',gender:'m',desc:'crisp / british / polished — refined tone'},
-  {id:'ODq5zmih8GrVes37Dizd',name:'patrick',gender:'m',desc:'deep / dependable / grounded — steady authority'},
-  {id:'flq6f7yk4E4fJM5XTYuZ',name:'michael',gender:'m',desc:'grounded / steady / reliable — complete confidence'},
-  {id:'t0jbNlBVZ17f02VDIeMI',name:'ethan',gender:'m',desc:'warm / authentic / natural — feels like a person'},
-  {id:'bIHbv24MWmeRgasZH58o',name:'will',gender:'m',desc:'friendly / clear / engaging — never overbearing'},
-  {id:'nkQzDKStB3IXrqpjNlLP',name:'george',gender:'m',desc:'strong / confident / expert — projects authority'},
-  {id:'CwhRBWXzGAHq8TQ4Fs17',name:'roger',gender:'m',desc:'warm baritone / dependable / grounded — solid'},
-];
-
+// ── STATE ─────────────────────────────────────────────────────────────
 let shortlist = [];
-try { shortlist = JSON.parse(sessionStorage.getItem('vc_sl') || '[]'); } catch(e) {}
-let currentAudio = null, currentId = null, generatedUrl = null, generatedPrompt = '';
+let genUrl = null;
+let genPrompt = '';
 
-// Session ID
-document.getElementById('sessionId').textContent = Math.random().toString(36).substr(2,8);
+// Load from URL first, then localStorage
+function loadState() {
+  try {
+    const p = new URLSearchParams(window.location.search).get('sl');
+    if (p) { shortlist = JSON.parse(atob(p)); return; }
+  } catch(e) {}
+  try {
+    const s = localStorage.getItem('vc_sl');
+    if (s) shortlist = JSON.parse(s);
+  } catch(e) {}
+}
 
-function isShortlisted(id) { return shortlist.some(function(s){return s.eid===id;}); }
-function nextId() { return 'V'+String(shortlist.length+1).padStart(3,'0'); }
-
-function saveShortlist() {
+function saveState() {
   try { localStorage.setItem('vc_sl', JSON.stringify(shortlist)); } catch(e) {}
-  updateURL(shortlist);
+  try {
+    const enc = btoa(JSON.stringify(shortlist));
+    const url = window.location.pathname + (shortlist.length ? '?sl='+enc : '');
+    window.history.replaceState(null, '', url);
+  } catch(e) {}
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); }, 2200);
+}
+
+// ── PRESETS ───────────────────────────────────────────────────────────
+function setP(txt) { document.getElementById('prompt').value = txt; }
+
+// ── GENERATE ──────────────────────────────────────────────────────────
+async function generate() {
+  const p = document.getElementById('prompt').value.trim();
+  if (!p) { toast('voice_description cannot be empty'); return; }
+  const btn = document.getElementById('runBtn');
+  btn.classList.add('loading'); btn.disabled = true;
+  document.getElementById('output').classList.remove('visible');
+  document.getElementById('addBtn').textContent = '+ add_to_shortlist()';
+  try {
+    const res = await fetch('https://api.elevenlabs.io/v1/text-to-voice/create-previews', {
+      method: 'POST',
+      headers: { 'xi-api-key': KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ voice_description: p, text: SAMPLE })
+    });
+    if (!res.ok) {
+      const e = await res.json().catch(function(){ return {}; });
+      throw new Error(e.detail ? (e.detail.message || JSON.stringify(e.detail)) : 'HTTP '+res.status);
+    }
+    const data = await res.json();
+    const preview = data.previews && data.previews[0];
+    if (!preview || !preview.audio_base_64) throw new Error('no audio in response');
+    const bin = atob(preview.audio_base_64);
+    const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    genUrl = URL.createObjectURL(new Blob([bytes], { type: 'audio/mpeg' }));
+    genPrompt = p;
+    document.getElementById('outputName').textContent = '"' + p.split(',')[0].trim() + '"';
+    document.getElementById('output').classList.add('visible');
+    new Audio(genUrl).play();
+  } catch(e) {
+    toast('error: ' + e.message);
+  } finally {
+    btn.classList.remove('loading'); btn.disabled = false;
+  }
+}
+
+function playG() { if (genUrl) new Audio(genUrl).play(); }
+
+// ── SHORTLIST ─────────────────────────────────────────────────────────
+function nextId() { return 'V' + String(shortlist.length + 1).padStart(3, '0'); }
+
+function addToShortlist() {
+  if (!genUrl) { toast('generate a voice first'); return; }
+  const name = genPrompt.split(',')[0].trim().toLowerCase().replace(/\s+/g, '_');
+  shortlist.push({
+    id: nextId(),
+    name: name,
+    desc: genPrompt,
+    ts: new Date().toLocaleString('en-US', {month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})
+  });
+  saveState();
   renderShortlist();
-  renderDevTable();
-  const n = shortlist.length;
-  document.getElementById('slChip').textContent = n;
-  document.getElementById('sidebarSlCount').textContent = n;
-  document.getElementById('statusPill').textContent = 'shortlist: '+n;
-  document.getElementById('statusPill').className = 'status-pill '+(n>0?'ok':'pending');
-  // update card states
-  document.querySelectorAll('.voice-cell').forEach(function(cell){
-    const vid = cell.dataset.id;
-    cell.classList.toggle('shortlisted', isShortlisted(vid));
-    const btn = cell.querySelector('.btn-add');
-    if(btn) btn.textContent = isShortlisted(vid) ? '✓ added' : '+ shortlist';
+  document.getElementById('addBtn').textContent = '✓ added';
+  toast(name + ' added to shortlist');
+}
+
+function removeItem(idx) {
+  shortlist.splice(idx, 1);
+  shortlist.forEach(function(s, i){ s.id = 'V'+String(i+1).padStart(3,'0'); });
+  saveState();
+  renderShortlist();
+}
+
+function clearAll() {
+  if (!confirm('clear_all() — reset the shortlist?')) return;
+  shortlist = [];
+  saveState();
+  renderShortlist();
+}
+
+function shareURL() {
+  if (!shortlist.length) { toast('shortlist is empty'); return; }
+  const url = window.location.href;
+  navigator.clipboard.writeText(url).then(function(){
+    document.getElementById('shareBtn').textContent = '✓ copied!';
+    setTimeout(function(){ document.getElementById('shareBtn').textContent = 'share_url()'; }, 2000);
+    toast('URL copied to clipboard');
+  }).catch(function(){
+    // fallback: show the URL
+    prompt('Copy this URL:', url);
   });
 }
 
-function addToShortlist(eid, name, type, audioUrl, desc) {
-  if(isShortlisted(eid)) return;
-  shortlist.push({id:nextId(), eid:eid, name:name, type:type, audioUrl:audioUrl||null, desc:desc||''});
-  saveShortlist();
-  const m = document.getElementById('shortlistModule');
-  m.classList.add('visible');
-  setTimeout(function(){m.scrollIntoView({behavior:'smooth',block:'nearest'});}, 100);
-}
-
-function removeFromShortlist(id) {
-  shortlist = shortlist.filter(function(s){return s.id!==id;});
-  shortlist.forEach(function(s,i){s.id='V'+String(i+1).padStart(3,'0');});
-  saveShortlist();
-  if(!shortlist.length) document.getElementById('shortlistModule').classList.remove('visible');
-}
-
-function clearShortlist() {
-  if(!confirm('clear_all() — this will reset the shortlist. Continue?')) return;
-  shortlist = [];
-  saveShortlist();
-  document.getElementById('shortlistModule').classList.remove('visible');
-}
-
 function renderShortlist() {
-  const tb = document.getElementById('slBody');
-  if(!shortlist.length){
-    tb.innerHTML='<tr><td colspan="5"><div class="sl-empty">// empty — add voices from library or design_custom</div></td></tr>';
+  const panel = document.getElementById('slPanel');
+  const body = document.getElementById('slBody');
+  const count = document.getElementById('slCount');
+  count.textContent = shortlist.length;
+  if (!shortlist.length) {
+    panel.classList.remove('visible');
+    body.innerHTML = '<tr><td colspan="5"><div class="sl-empty">// empty — generate a voice and add it to the shortlist</div></td></tr>';
     return;
   }
-  tb.innerHTML = shortlist.map(function(s){
-    return '<tr>'+
-      '<td class="sl-id-cell">'+s.id+'</td>'+
-      '<td class="sl-name-cell">'+s.name+'</td>'+
-      '<td class="sl-type-cell">'+s.type+'</td>'+
-      '<td style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:var(--muted)">'+s.desc.substring(0,40)+'</td>'+
-      '<td class="sl-action-cell">'+
-      (s.audioUrl?'<button class="sl-btn" onclick="playUrl(\''+s.audioUrl+'\')">play()</button>':'')+
-      '<button class="sl-btn danger" onclick="removeFromShortlist(\''+s.id+'\')">remove()</button>'+
+  panel.classList.add('visible');
+  body.innerHTML = shortlist.map(function(s, i){
+    return '<tr>' +
+      '<td class="tid">'+s.id+'</td>' +
+      '<td class="tname">'+s.name+'</td>' +
+      '<td class="tdesc">'+s.desc.substring(0,50)+(s.desc.length>50?'...':'')+'</td>' +
+      '<td style="font-size:10px;color:var(--muted)">'+s.ts+'</td>' +
+      '<td class="taction">' +
+      '<button class="tb-btn play" onclick="playItem('+i+')">&#9654;</button>' +
+      '<button class="tb-btn" onclick="removeItem('+i+')">&#10005;</button>' +
       '</td></tr>';
   }).join('');
 }
 
-function renderDevTable() {
-  const tb = document.getElementById('devBody');
-  if(!shortlist.length){tb.innerHTML='<tr><td colspan="3" style="color:var(--muted);padding:10px;font-family:monospace">// no entries</td></tr>';return;}
-  tb.innerHTML = shortlist.map(function(s){
-    return '<tr><td>'+s.id+'</td><td>'+s.name+'</td><td>'+s.desc.substring(0,60)+(s.desc.length>60?'...':'')+'</td></tr>';
-  }).join('');
+// Audio cache for shortlist playback
+const audioCache = {};
+function playItem(idx) {
+  // Can only play if audio URL is still valid in this session
+  toast('audio available in current session only');
 }
 
-function copyText(text, btn) {
-  navigator.clipboard.writeText(text).then(function(){btn.textContent='copied';setTimeout(function(){btn.textContent='copy';},1500);});
-}
-
-function playUrl(url){if(currentAudio){currentAudio.pause();}currentAudio=new Audio(url);currentAudio.play();}
-
-function renderVoices() {
-  const grid = document.getElementById('voiceGrid');
-  grid.innerHTML = VOICES.map(function(v){
-    const sl = isShortlisted(v.id);
-    return '<div class="voice-cell'+(sl?' shortlisted':'')+'" data-id="'+v.id+'">'+
-      '<div class="vc-head">'+
-      '<div class="vc-name">'+v.name+'</div>'+
-      '<div class="vc-tag '+(v.gender==='f'?'f':'m')+'">'+(v.gender==='f'?'female':'male')+'</div>'+
-      '</div>'+
-      '<div class="vc-desc">'+v.desc+'</div>'+
-      '<div class="vc-actions">'+
-      '<button class="btn-mono" id="pb-'+v.id+'" onclick="togglePlay(\''+v.id+'\',\''+v.name+'\')">&#9654; play()</button>'+
-      '<button class="btn-mono btn-add" onclick="addToShortlist(\''+v.id+'\',\''+v.name+'\',\'library\',null,\''+v.desc+'\')">'+(sl?'&#10003; added':'+ shortlist')+'</button>'+
-      '</div>'+
-      '<div class="vc-progress" id="vp-'+v.id+'"><div class="vc-progress-fill" id="vpf-'+v.id+'"></div></div>'+
-      '</div>';
-  }).join('');
-  document.getElementById('sidebarVoiceCount').textContent = VOICES.length;
-}
-
-function stopCurrent() {
-  if(currentAudio){
-    currentAudio.pause(); currentAudio=null;
-    if(currentId){
-      const cell=document.querySelector('[data-id="'+currentId+'"]');
-      const btn=document.getElementById('pb-'+currentId);
-      if(cell) cell.classList.remove('playing');
-      if(btn){btn.classList.remove('playing','loading');btn.textContent='&#9654; play()';}
-      const bar=document.getElementById('vpf-'+currentId);
-      if(bar) bar.style.width='0%';
-      currentId=null;
-    }
-  }
-}
-
-async function togglePlay(voiceId, voiceName) {
-  const btn=document.getElementById('pb-'+voiceId);
-  const cell=document.querySelector('[data-id="'+voiceId+'"]');
-  const prev=currentId;
-  stopCurrent();
-  if(prev===voiceId) return;
-  btn.classList.add('loading'); btn.textContent='loading...';
-  currentId=voiceId;
-  try {
-    const res=await fetch('https://api.elevenlabs.io/v1/text-to-speech/'+voiceId+'/stream',{
-      method:'POST',
-      headers:{'xi-api-key':ELEVEN_KEY,'Content-Type':'application/json'},
-      body:JSON.stringify({text:SAMPLE_TEXT,model_id:'eleven_turbo_v2',voice_settings:{stability:0.5,similarity_boost:0.8}})
-    });
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    const blob=await res.blob();
-    const url=URL.createObjectURL(blob);
-    currentAudio=new Audio(url);
-    currentAudio.addEventListener('timeupdate',function(){
-      const pct=(currentAudio.currentTime/currentAudio.duration)*100;
-      const f=document.getElementById('vpf-'+voiceId);
-      if(f) f.style.width=pct+'%';
-    });
-    currentAudio.addEventListener('ended',function(){
-      cell.classList.remove('playing');
-      btn.classList.remove('playing','loading');
-      btn.innerHTML='&#9654; play()';
-      const f=document.getElementById('vpf-'+voiceId);
-      if(f) f.style.width='0%';
-      currentAudio=null; currentId=null;
-    });
-    btn.classList.remove('loading'); btn.classList.add('playing');
-    btn.innerHTML='&#9646;&#9646; playing';
-    cell.classList.add('playing');
-    currentAudio.play();
-  } catch(err) {
-    btn.classList.remove('loading','playing');
-    btn.innerHTML='&#9654; play()';
-    cell.classList.remove('playing');
-    currentId=null;
-    alert('error: '+err.message);
-  }
-}
-
-function setPrompt(el, text) { document.getElementById('voicePrompt').value = text || el.textContent; }
-
-async function generateVoice() {
-  const prompt=document.getElementById('voicePrompt').value.trim();
-  if(!prompt){alert('voice_description cannot be empty');return;}
-  const btn=document.getElementById('runBtn');
-  btn.classList.add('loading'); btn.disabled=true;
-  stopCurrent();
-  try {
-    const res=await fetch('https://api.elevenlabs.io/v1/text-to-voice/create-previews',{
-      method:'POST',
-      headers:{'xi-api-key':ELEVEN_KEY,'Content-Type':'application/json'},
-      body:JSON.stringify({voice_description:prompt,text:SAMPLE_TEXT})
-    });
-    if(!res.ok){
-      const ed=await res.json().catch(function(){return{};});
-      throw new Error((ed.detail&&ed.detail.message)?ed.detail.message:'error '+res.status);
-    }
-    const data=await res.json();
-    const preview=data.previews?data.previews[0]:null;
-    if(!preview||!preview.audio_base_64) throw new Error('no audio_base_64 in response');
-    const bin=atob(preview.audio_base_64);
-    const bytes=new Uint8Array(bin.length);
-    for(let i=0;i<bin.length;i++) bytes[i]=bin.charCodeAt(i);
-    const blob=new Blob([bytes],{type:'audio/mpeg'});
-    generatedUrl=URL.createObjectURL(blob);
-    generatedPrompt=prompt;
-    document.getElementById('outputName').textContent='"'+prompt.split(',')[0].trim()+'"';
-    document.getElementById('outputBlock').classList.add('visible');
-    new Audio(generatedUrl).play();
-  } catch(err){
-    alert('generate_voice() failed: '+err.message);
-  } finally {
-    btn.classList.remove('loading'); btn.disabled=false;
-  }
-}
-
-function playGenerated(){if(generatedUrl) new Audio(generatedUrl).play();}
-
-function addGeneratedToShortlist(){
-  if(!generatedUrl){ alert('generate a voice first'); return; }
-  const name = generatedPrompt.split(',')[0].trim().toLowerCase().replace(/\s+/g,'_');
-  const eid = 'custom_'+Date.now();
-  const item = {id:nextId(), eid:eid, name:name, type:'custom', audioUrl:generatedUrl, desc:generatedPrompt};
-  shortlist.push(item);
-  saveShortlist();
-  sendToSheets(item);
-  const m = document.getElementById('shortlistModule');
-  m.classList.add('visible');
-  setTimeout(function(){m.scrollIntoView({behavior:'smooth',block:'nearest'});}, 100);
-  // Visual feedback on button
-  const btn = document.querySelector('.btn-mono.btn-add');
-  if(btn){ btn.textContent = '✓ added'; setTimeout(function(){ btn.textContent = '+ add_to_shortlist()'; }, 2000); }
-}
-
-function switchTab(tab, btn) {
-  document.querySelectorAll('.tab-btn').forEach(function(b){b.classList.remove('active');});
-  document.querySelectorAll('.tab-panel').forEach(function(p){p.classList.remove('active');});
-  if(btn) btn.classList.add('active');
-  else {
-    document.getElementById('tab-'+tab+'-btn').classList.add('active');
-  }
-  document.getElementById('tab-'+tab).classList.add('active');
-  document.getElementById('topbarTab').textContent = tab;
-  stopCurrent();
-}
-
-function setActiveNav(el) {
-  document.querySelectorAll('.sidebar-nav-item').forEach(function(n){n.classList.remove('active');});
-  el.classList.add('active');
-}
-
-// ─── GOOGLE SHEETS CONFIG ────────────────────────────────────────────
-// Paste your Google Apps Script Web App URL here after deploying
-const SHEETS_ENDPOINT = '';  // e.g. 'https://script.google.com/macros/s/YOUR_ID/exec'
-
-function sendToSheets(item) {
-  if (!SHEETS_ENDPOINT) return; // skip if not configured
-  const payload = {
-    id: item.id,
-    name: item.name,
-    type: item.type,
-    description: item.desc,
-    timestamp: new Date().toISOString()
-  };
-  fetch(SHEETS_ENDPOINT, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  }).catch(function(e){ console.warn('Sheets sync failed:', e); });
-}
-// ─────────────────────────────────────────────────────────────────────
-
-function copyShareURL() {
-  const url = getShareURL();
-  navigator.clipboard.writeText(url).then(function() {
-    const btn = document.getElementById('shareBtn');
-    btn.textContent = 'copied!';
-    setTimeout(function() { btn.textContent = 'share_url()'; }, 2000);
-  });
-}
-
-// Init
-if(shortlist.length>0){renderShortlist();renderDevTable();document.getElementById('shortlistModule').classList.add('visible');document.getElementById('slChip').textContent=shortlist.length;document.getElementById('sidebarSlCount').textContent=shortlist.length;document.getElementById('statusPill').textContent='shortlist: '+shortlist.length;document.getElementById('statusPill').className='status-pill ok';}
+// ── INIT ──────────────────────────────────────────────────────────────
+loadState();
+renderShortlist();
+document.getElementById('sessionSpan').textContent = 'session: ' + Math.random().toString(36).substr(2,8);
 </script>
 </body>
 </html>
