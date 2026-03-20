@@ -489,8 +489,8 @@
   .dev-panel {
     display: none;
     margin-top: 6px;
-    border: 1px solid #222;
-    background: #0e0e0e;
+    border: 1px solid var(--rule);
+    background: var(--white);
     padding: 16px 20px;
   }
   .dev-panel.visible { display: block; }
@@ -499,28 +499,30 @@
     font-size: 9px;
     letter-spacing: 0.2em;
     text-transform: uppercase;
-    color: #444;
+    color: var(--muted);
     margin-bottom: 12px;
   }
   .dev-table { width: 100%; border-collapse: collapse; }
-  .dev-table th { font-family: 'IBM Plex Mono', monospace; font-size: 8px; letter-spacing: 0.15em; text-transform: uppercase; color: #333; padding: 4px 8px; text-align: left; border-bottom: 1px solid #222; }
-  .dev-table td { font-family: 'IBM Plex Mono', monospace; font-size: 10px; padding: 8px 8px; border-bottom: 1px solid #181818; vertical-align: middle; word-break: break-all; }
-  .dev-table td:first-child { color: #4ade80; font-weight: 500; }
-  .dev-table td:nth-child(2) { color: #aaa; }
-  .dev-table td:nth-child(3) { color: #444; }
-  .dev-table td:nth-child(4) { color: #444; font-size: 9px; }
+  .dev-table th { font-family: 'IBM Plex Mono', monospace; font-size: 8px; letter-spacing: 0.15em; text-transform: uppercase; color: var(--muted); padding: 6px 10px; text-align: left; border-bottom: 1px solid var(--rule); background: var(--bg); }
+  .dev-table td { font-family: 'IBM Plex Mono', monospace; font-size: 11px; padding: 10px 10px; border-bottom: 1px solid var(--rule); vertical-align: middle; word-break: break-all; }
+  .dev-table tr:hover td { background: var(--bg); }
+  .dev-table td:first-child { color: var(--green); font-weight: 500; }
+  .dev-table td:nth-child(2) { color: var(--ink); font-weight: 500; }
+  .dev-table td:nth-child(3) { color: var(--muted); }
+  .dev-table td:nth-child(4) { color: var(--mid); font-size: 10px; }
   .copy-btn {
     font-family: 'IBM Plex Mono', monospace;
     font-size: 8px;
-    padding: 2px 6px;
-    border: 1px solid #333;
-    background: transparent;
-    color: #444;
+    padding: 3px 8px;
+    border: 1px solid var(--rule);
+    background: var(--bg);
+    color: var(--mid);
     cursor: pointer;
     margin-left: 6px;
     transition: all 0.15s;
+    border-radius: 1px;
   }
-  .copy-btn:hover { border-color: #4ade80; color: #4ade80; }
+  .copy-btn:hover { border-color: var(--green); color: var(--green); }
 
   /* FOOTER */
   footer {
@@ -540,6 +542,86 @@
     .content{padding:20px;}
     .voice-grid{grid-template-columns:1fr;}
   }
+
+  /* HERO BANNER */
+  .hero-banner {
+    background: var(--ink);
+    padding: 48px 32px 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-banner::before {
+    content: '';
+    position: absolute;
+    top: -40px; right: -40px;
+    width: 280px; height: 280px;
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: 50%;
+  }
+  .hero-banner::after {
+    content: '';
+    position: absolute;
+    top: 20px; right: 60px;
+    width: 160px; height: 160px;
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: 50%;
+  }
+  .hero-banner-inner { max-width: 700px; position: relative; z-index: 1; }
+  .hero-eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.3);
+    margin-bottom: 12px;
+  }
+  .hero-h1 {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: clamp(28px, 4vw, 42px);
+    font-weight: 500;
+    color: white;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    margin-bottom: 4px;
+  }
+  .hero-sub-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: clamp(14px, 2vw, 18px);
+    font-weight: 300;
+    color: rgba(255,255,255,0.4);
+    margin-bottom: 20px;
+    letter-spacing: 0.02em;
+  }
+  .hero-tagline {
+    font-size: 13px;
+    color: rgba(255,255,255,0.5);
+    line-height: 1.7;
+    font-weight: 300;
+    max-width: 520px;
+    margin-bottom: 32px;
+  }
+  .hero-stats {
+    display: flex;
+    gap: 32px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+    padding-top: 24px;
+  }
+  .hero-stat {}
+  .hero-stat-val {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 22px;
+    font-weight: 500;
+    color: white;
+    margin-bottom: 2px;
+  }
+  .hero-stat-key {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.25);
+  }
+
 </style>
 </head>
 <body>
@@ -551,13 +633,11 @@
       <div class="sys-label">client</div>
       <div class="sys-title">farmer_brown</div>
       <div class="sys-version">voice_config v1.0 &mdash; internal</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:8px;color:var(--muted);margin-top:10px;padding-top:10px;border-top:1px solid var(--rule);letter-spacing:0.05em;line-height:1.6">Farmer Brown Insurance<br>Internal AI Tools Hub</div>
     </div>
     <div class="sidebar-section">
       <div class="sidebar-section-label">modules</div>
-      <div class="sidebar-nav-item active" onclick="switchTab('library',null);setActiveNav(this)">
-        <div class="nav-dot"></div>voice_library
-      </div>
-      <div class="sidebar-nav-item" onclick="switchTab('designer',null);setActiveNav(this)">
+      <div class="sidebar-nav-item active">
         <div class="nav-dot"></div>voice_design
       </div>
     </div>
@@ -572,7 +652,6 @@
     </div>
     <div class="sidebar-stats">
       <div class="sidebar-section-label" style="margin-bottom:10px">session</div>
-      <div class="stat-row"><span class="stat-key">voices</span><span class="stat-val" id="sidebarVoiceCount">30</span></div>
       <div class="stat-row"><span class="stat-key">shortlisted</span><span class="stat-val green" id="sidebarSlCount">0</span></div>
       <div class="stat-row"><span class="stat-key">api</span><span class="stat-val green">connected</span></div>
       <div class="stat-row"><span class="stat-key">client</span><span class="stat-val">farmer_brown</span></div>
@@ -581,10 +660,26 @@
 
   <!-- MAIN -->
   <div class="main">
+
+    <!-- HERO BANNER -->
+    <div class="hero-banner">
+      <div class="hero-banner-inner">
+        <div class="hero-eyebrow">&#9670; internal tools &mdash; ai division</div>
+        <h1 class="hero-h1">Farmer Brown Insurance</h1>
+        <div class="hero-sub-title">Internal AI Tools Hub</div>
+        <p class="hero-tagline">Your team is building the future of insurance — one intelligent agent at a time. This workspace powers the AI infrastructure behind every customer interaction.</p>
+        <div class="hero-stats">
+          <div class="hero-stat"><div class="hero-stat-val">01</div><div class="hero-stat-key">active module</div></div>
+          <div class="hero-stat"><div class="hero-stat-val">∞</div><div class="hero-stat-key">voices possible</div></div>
+          <div class="hero-stat"><div class="hero-stat-val">v1</div><div class="hero-stat-key">ai stack</div></div>
+        </div>
+      </div>
+    </div>
+
     <div class="topbar">
       <div class="topbar-path">
         farmer_brown / voice_config /
-        <span id="topbarTab">library</span>
+        <span id="topbarTab">design_custom</span>
       </div>
       <div class="topbar-right">
         <div class="status-pill ok">api: ready</div>
@@ -595,23 +690,12 @@
     <div class="content">
       <div class="page-header">
         <div class="page-eyebrow">farmer_brown / agent / voice_selection / john</div>
-        <div class="page-title">select_agent_voice()</div>
-        <p class="page-desc">Preview any voice below. Add favorites to your shortlist — the system will generate an ID mapping for each selection. When done, share your shortlist and configuration will proceed.</p>
-      </div>
-
-      <!-- TABS -->
-      <div class="tab-row">
-        <button class="tab-btn active" onclick="switchTab('library',this)" id="tab-library-btn">01 / library</button>
-        <button class="tab-btn" onclick="switchTab('designer',this)" id="tab-designer-btn">02 / design_custom</button>
-      </div>
-
-      <!-- LIBRARY -->
-      <div class="tab-panel active" id="tab-library">
-        <div class="voice-grid" id="voiceGrid"></div>
+        <div class="page-title">generate_agent_voice()</div>
+        <p class="page-desc">Describe the voice you want. Generate it, listen to the preview, and add it to your shortlist. When done, use share_url() to send your selection for configuration.</p>
       </div>
 
       <!-- DESIGNER -->
-      <div class="tab-panel" id="tab-designer">
+      <div class="tab-panel active" id="tab-designer">
         <div class="designer-wrap">
           <div class="designer-main">
             <div class="field-block">
@@ -658,7 +742,7 @@
             shortlist[]
             <span class="count-chip" id="slChip">0</span>
           </div>
-          <button class="module-action" onclick="clearShortlist()">clear_all()</button>
+          <div style="display:flex;gap:6px"><button class="module-action" onclick="copyShareURL()" id="shareBtn">share_url()</button><button class="module-action" onclick="clearShortlist()">clear_all()</button></div>
         </div>
         <table class="sl-table">
           <thead>
@@ -748,6 +832,7 @@ function nextId() { return 'V'+String(shortlist.length+1).padStart(3,'0'); }
 
 function saveShortlist() {
   try { sessionStorage.setItem('vc_sl', JSON.stringify(shortlist)); } catch(e) {}
+  updateURL(shortlist);
   renderShortlist();
   renderDevTable();
   const n = shortlist.length;
@@ -962,8 +1047,16 @@ function setActiveNav(el) {
   el.classList.add('active');
 }
 
+function copyShareURL() {
+  const url = getShareURL();
+  navigator.clipboard.writeText(url).then(function() {
+    const btn = document.getElementById('shareBtn');
+    btn.textContent = 'copied!';
+    setTimeout(function() { btn.textContent = 'share_url()'; }, 2000);
+  });
+}
+
 // Init
-renderVoices();
 if(shortlist.length>0){renderShortlist();renderDevTable();document.getElementById('shortlistModule').classList.add('visible');document.getElementById('slChip').textContent=shortlist.length;document.getElementById('sidebarSlCount').textContent=shortlist.length;document.getElementById('statusPill').textContent='shortlist: '+shortlist.length;document.getElementById('statusPill').className='status-pill ok';}
 </script>
 </body>
