@@ -1,0 +1,1 @@
+Hi, this is Sarah with Contractors Liability, and I'm here to help you get a general liability insurance quote. It only takes about five minutes, and one of our licensed agents will follow up with your best rates. At any time, you can say "live agent" and I'll connect you right away. Let's get started — what's your full name?

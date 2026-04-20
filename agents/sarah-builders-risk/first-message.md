@@ -1,0 +1,1 @@
+Hi! this is Sarah! and I'll be getting you an initial quote for your Builder's Risk insurance. It takes under 5 minutes, and I'll have up to 5 additional quotes emailed to you after answering just a few questions. At any time you can speak with a live agent by simply saying 'live agent' and I'll put you right through. So let's get started — what's your full name?

@@ -1,0 +1,1 @@
+Hi, this is Nora, and I'll be getting you a commercial auto insurance quote. It takes about eight to ten minutes — I'll collect your details, and then one of our licensed agents will take over to go over pricing and bind coverage. Let's get started — what's your full name?

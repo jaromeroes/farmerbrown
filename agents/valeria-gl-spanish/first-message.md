@@ -1,0 +1,1 @@
+Hola, soy Valeria de Contractors Liability, y estoy aquí para ayudarle a obtener una cotización de seguro de responsabilidad general. Solo toma unos cinco minutos, y uno de nuestros agentes con licencia le dará seguimiento con las mejores tarifas. En cualquier momento puede decir "agente en vivo" y lo conecto de inmediato. Para comenzar, ¿me puede dar su nombre completo?

@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Call Center Architecture — Farmer Brown Insurance</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#f5f4f0; --white:#fff; --ink:#0e0e0e;
+    --mid:#555; --muted:#999; --rule:#ddd;
+    --green:#2a6b3c; --green-bg:#edf5ef; --green-line:#6a9e7a;
+    --amber:#b8711a; --amber-bg:#faf1e5;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--ink); font-family:'IBM Plex Sans',sans-serif; }
+
+  .hero { background:var(--ink); padding:48px 40px 44px; }
+  .hero-inner { max-width:1184px; margin:0 auto; padding:0 32px; }
+  .hero-eye { font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.25em; text-transform:uppercase; color:rgba(255,255,255,.3); margin-bottom:12px; }
+  .hero-h1 { font-family:'IBM Plex Mono',monospace; font-size:clamp(24px,4vw,40px); font-weight:500; color:white; line-height:1.1; letter-spacing:-.02em; }
+  .hero-sub { font-family:'IBM Plex Sans',sans-serif; font-size:13px; color:rgba(255,255,255,.55); margin-top:18px; max-width:640px; line-height:1.55; }
+
+  .wrap { max-width:1184px; margin:0 auto; padding:48px 32px 80px; }
+  .sec-title { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); margin-bottom:20px; }
+  .sec { margin-bottom:56px; }
+
+  /* ─── FLOW CANVAS ───────────────────────────────────────────────── */
+  .flow {
+    position:relative;
+    width:1120px;
+    height:880px;
+    margin:0 auto;
+    background:var(--white);
+    border:1px solid var(--rule);
+  }
+  .flow-arrows { position:absolute; inset:0; pointer-events:none; width:1120px; height:880px; }
+
+  .lane-tag {
+    position:absolute;
+    left:24px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:9px;
+    letter-spacing:.2em;
+    text-transform:uppercase;
+    color:var(--muted);
+  }
+
+  .node {
+    position:absolute;
+    background:var(--white);
+    border:1px solid var(--rule);
+    padding:14px 16px;
+    width:200px;
+    transition:transform .2s, box-shadow .2s;
+  }
+  .node:hover { transform:translateY(-2px); box-shadow:0 4px 14px rgba(0,0,0,.04); }
+  .node-kind { font-family:'IBM Plex Mono',monospace; font-size:8px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+  .node-name { font-family:'IBM Plex Mono',monospace; font-size:14px; font-weight:500; color:var(--ink); margin-bottom:4px; }
+  .node-sub { font-family:'IBM Plex Sans',sans-serif; font-size:11px; color:var(--mid); line-height:1.45; }
+
+  .node.site { background:var(--ink); border-color:var(--ink); }
+  .node.site .node-kind { color:rgba(255,255,255,.4); }
+  .node.site .node-name { color:white; }
+  .node.site .node-sub { color:rgba(255,255,255,.55); font-family:'IBM Plex Mono',monospace; font-size:10px; }
+
+  .node.receptionist { border-left:2px solid var(--ink); }
+
+  .node.specialist { border-left:2px solid var(--green); width:196px; }
+  .node.specialist .node-name::after { content:' ●'; color:var(--green); font-size:10px; vertical-align:middle; }
+
+  .node.outcome { border-left:2px solid var(--amber); width:240px; }
+  .node.outcome.agent { border-left:2px solid var(--ink); }
+
+  /* specialist pool frame */
+  .pool-frame {
+    position:absolute;
+    left:40px; right:40px;
+    top:420px; height:220px;
+    border:1px dashed var(--rule);
+    border-radius:2px;
+    pointer-events:none;
+  }
+  .pool-label {
+    position:absolute;
+    top:-10px;
+    left:24px;
+    background:var(--white);
+    padding:0 12px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:9px;
+    letter-spacing:.2em;
+    text-transform:uppercase;
+    color:var(--muted);
+  }
+
+  /* arrow labels */
+  .arrow-label {
+    position:absolute;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:9px;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    padding:3px 8px;
+    background:var(--white);
+    color:var(--green);
+    border:1px solid var(--green-line);
+    border-radius:1px;
+    pointer-events:none;
+    z-index:2;
+    white-space:nowrap;
+  }
+  .arrow-label.alt { color:var(--amber); border-color:var(--amber); }
+
+  /* ─── TABLES ────────────────────────────────────────────────────── */
+  .table-card { background:var(--white); border:1px solid var(--rule); overflow:hidden; }
+  table { width:100%; border-collapse:collapse; }
+  th { font-family:'IBM Plex Mono',monospace; font-size:8px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted); padding:12px 20px; text-align:left; border-bottom:1px solid var(--rule); background:var(--bg); font-weight:400; }
+  td { font-family:'IBM Plex Sans',sans-serif; font-size:12px; padding:14px 20px; border-bottom:1px solid var(--rule); vertical-align:middle; }
+  tr:last-child td { border-bottom:none; }
+  .t-id { font-family:'IBM Plex Mono',monospace; color:var(--green); font-weight:500; font-size:11px; }
+  .t-name { font-family:'IBM Plex Mono',monospace; color:var(--ink); font-weight:500; font-size:12px; }
+  .t-role { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); }
+  .t-note { font-size:11px; color:var(--mid); }
+
+  .pill { display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:9px; padding:2px 8px; border-radius:2px; letter-spacing:.08em; text-transform:uppercase; margin-right:4px; }
+  .pill.quote { background:var(--green-bg); color:var(--green); }
+  .pill.appt { background:var(--amber-bg); color:var(--amber); }
+  .pill.transfer { background:#f3f3f0; color:var(--mid); }
+
+  /* coverage matrix */
+  .matrix th:first-child, .matrix td:first-child { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink); }
+  .matrix td { text-align:center; }
+  .matrix td:first-child { text-align:left; }
+  .dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--green); }
+  .dot.off { background:var(--rule); }
+
+  footer { max-width:1184px; margin:0 auto; padding:16px 32px 40px; font-family:'IBM Plex Mono',monospace; font-size:9px; color:var(--muted); display:flex; justify-content:space-between; border-top:1px solid var(--rule); }
+
+  /* Principles grid */
+  .principles { padding:28px 32px; }
+  .p-grid { display:grid; grid-template-columns:1fr 1fr; gap:28px 48px; }
+  .p-eye { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.18em; text-transform:uppercase; color:var(--green); margin-bottom:6px; }
+  .p-body { font-size:13px; color:var(--mid); line-height:1.55; }
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-eye">Internal &mdash; Farmer Brown Insurance</div>
+    <h1 class="hero-h1">Inbound Call Flow<br>&amp; Agent Routing</h1>
+    <p class="hero-sub">A tiered routing system that handles inbound sales calls across three websites. Every call follows the same shape: arrival &rarr; receptionist triage &rarr; product specialist &rarr; resolution (instant quote, scheduled appointment, or licensed agent).</p>
+  </div>
+</section>
+
+<div class="wrap">
+
+  <!-- ════════════════════════════════════════════════════════════════
+       01 / CALL FLOW ARCHITECTURE
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="sec">
+    <div class="sec-title">01 / call_flow_architecture</div>
+
+    <div class="flow">
+
+      <!-- arrows SVG overlay -->
+      <svg class="flow-arrows" viewBox="0 0 1120 880" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arrow-green" markerWidth="10" markerHeight="10" refX="7" refY="5" orient="auto">
+            <path d="M0,0 L7,5 L0,10" fill="none" stroke="#6a9e7a" stroke-width="1.4"/>
+          </marker>
+          <marker id="arrow-amber" markerWidth="10" markerHeight="10" refX="7" refY="5" orient="auto">
+            <path d="M0,0 L7,5 L0,10" fill="none" stroke="#b8711a" stroke-width="1.4"/>
+          </marker>
+          <marker id="arrow-ink" markerWidth="10" markerHeight="10" refX="7" refY="5" orient="auto">
+            <path d="M0,0 L7,5 L0,10" fill="none" stroke="#0e0e0e" stroke-width="1.4"/>
+          </marker>
+        </defs>
+
+        <!-- Tier 1 sites centers (x): 220, 560, 900. Site node bottom at y≈130 -->
+        <!-- Tier 2 receptionist centers (x): 220, 560, 900. Top at y=210 -->
+        <line x1="220" y1="138" x2="220" y2="202" stroke="#0e0e0e" stroke-width="1.4" marker-end="url(#arrow-ink)"/>
+        <line x1="560" y1="138" x2="560" y2="202" stroke="#0e0e0e" stroke-width="1.4" marker-end="url(#arrow-ink)"/>
+        <line x1="900" y1="138" x2="900" y2="202" stroke="#0e0e0e" stroke-width="1.4" marker-end="url(#arrow-ink)"/>
+
+        <!-- Tier 2 bottom ≈ 330. Tier 3 pool top edge at y=420 -->
+        <path d="M 220 335 C 220 370, 220 390, 220 418" fill="none" stroke="#6a9e7a" stroke-width="1.4" marker-end="url(#arrow-green)"/>
+        <path d="M 560 335 C 560 370, 560 390, 560 418" fill="none" stroke="#6a9e7a" stroke-width="1.4" marker-end="url(#arrow-green)"/>
+        <path d="M 900 335 C 900 370, 900 390, 900 418" fill="none" stroke="#6a9e7a" stroke-width="1.4" marker-end="url(#arrow-green)"/>
+
+        <!-- Receptionist fallbacks: 3 feeders merge into a common channel on the RIGHT of the pool -->
+        <!-- (existing quote, confusion, caller asks for a person) -->
+        <path d="M 320 305 Q 720 310, 1060 350" fill="none" stroke="#b8711a" stroke-width="1.2" stroke-dasharray="4,3"/>
+        <path d="M 660 305 Q 900 320, 1060 350" fill="none" stroke="#b8711a" stroke-width="1.2" stroke-dasharray="4,3"/>
+        <path d="M 1000 310 Q 1040 325, 1060 350" fill="none" stroke="#b8711a" stroke-width="1.2" stroke-dasharray="4,3"/>
+        <!-- Main fallback channel (right of pool) down to licensed agent -->
+        <path d="M 1060 350 C 1075 500, 1075 700, 900 732" fill="none" stroke="#b8711a" stroke-width="1.4" stroke-dasharray="5,4" marker-end="url(#arrow-amber)"/>
+
+        <!-- Pool bottom ≈ 640. Tier 4 outcomes top at y=740 -->
+        <!-- 3 outcomes centered at x: 220, 560, 900 -->
+        <path d="M 220 640 C 220 680, 220 708, 220 732" fill="none" stroke="#6a9e7a" stroke-width="1.4" marker-end="url(#arrow-green)"/>
+        <path d="M 560 640 C 560 680, 560 708, 560 732" fill="none" stroke="#6a9e7a" stroke-width="1.4" marker-end="url(#arrow-green)"/>
+        <path d="M 880 640 C 870 680, 840 708, 830 732" fill="none" stroke="#b8711a" stroke-width="1.3" stroke-dasharray="5,4" marker-end="url(#arrow-amber)"/>
+      </svg>
+
+      <!-- Horizontal lane tags (left edge) -->
+      <span class="lane-tag" style="top:16px;">01 &middot; entry</span>
+      <span class="lane-tag" style="top:182px;">02 &middot; triage</span>
+      <span class="lane-tag" style="top:400px;">03 &middot; specialists</span>
+      <span class="lane-tag" style="top:712px;">04 &middot; resolution</span>
+
+      <!-- ─── Tier 1: Incoming sites ────────────────────────────── -->
+      <div class="node site" style="left:120px; top:40px;">
+        <div class="node-kind">site.01</div>
+        <div class="node-name">Farmer Brown</div>
+        <div class="node-sub">farmerbrown.com</div>
+      </div>
+      <div class="node site" style="left:460px; top:40px;">
+        <div class="node-kind">site.02</div>
+        <div class="node-name">Contractors Liability</div>
+        <div class="node-sub">contractorsliability.com</div>
+      </div>
+      <div class="node site" style="left:800px; top:40px;">
+        <div class="node-kind">site.03</div>
+        <div class="node-name">Builders Risk</div>
+        <div class="node-sub">buildersrisk.net</div>
+      </div>
+
+      <!-- ─── Tier 2: Receptionists ─────────────────────────────── -->
+      <div class="node receptionist" style="left:120px; top:210px;">
+        <div class="node-kind">receptionist</div>
+        <div class="node-name">Emma</div>
+        <div class="node-sub">Triages new vs. existing, then routes by product.</div>
+      </div>
+      <div class="node receptionist" style="left:460px; top:210px;">
+        <div class="node-kind">receptionist</div>
+        <div class="node-name">Olivia</div>
+        <div class="node-sub">Same flow as Emma, with Contractors Liability branding.</div>
+      </div>
+      <div class="node receptionist" style="left:800px; top:210px;">
+        <div class="node-kind">receptionist</div>
+        <div class="node-name">Grace</div>
+        <div class="node-sub">Two-step menu &mdash; Builder's Risk is the default on this line.</div>
+      </div>
+
+      <!-- ─── Tier 3: Specialist pool frame ─────────────────────── -->
+      <div class="pool-frame">
+        <span class="pool-label">specialists[] &middot; shared across all sites</span>
+      </div>
+
+      <!-- ─── Tier 3: 5 Specialists (x centers: 120, 320, 520, 720, 920 → left: 20, 220, 420, 620, 820 for 200 wide; need to fit inside pool frame 40..1080) ── -->
+      <!-- Use centers: 160, 350, 540, 730, 920. Left: 62, 252, 442, 632, 822 -->
+      <div class="node specialist" style="left:62px; top:452px;">
+        <div class="node-kind">builder's risk</div>
+        <div class="node-name">Jennifer</div>
+        <div class="node-sub">Real-time quote in under 5 minutes.</div>
+      </div>
+      <div class="node specialist" style="left:272px; top:452px;">
+        <div class="node-kind">general liability</div>
+        <div class="node-name">Sarah</div>
+        <div class="node-sub">Instant pricing via carrier network.</div>
+      </div>
+      <div class="node specialist" style="left:482px; top:452px;">
+        <div class="node-kind">workers' comp</div>
+        <div class="node-name">Wendy</div>
+        <div class="node-sub">Flash quote for standard cases; appointment otherwise.</div>
+      </div>
+      <div class="node specialist" style="left:692px; top:452px;">
+        <div class="node-kind">commercial auto</div>
+        <div class="node-name">Nora</div>
+        <div class="node-sub">Collects fleet details, hands off for pricing.</div>
+      </div>
+      <div class="node specialist" style="left:902px; top:452px;">
+        <div class="node-kind">home &amp; auto</div>
+        <div class="node-name">Rachel</div>
+        <div class="node-sub">Short intake + books an appointment during the call.</div>
+      </div>
+
+      <!-- ─── Tier 4: Resolutions (3 outcomes, 240 wide) ────────── -->
+      <!-- Centers at 220, 560, 900. Left: 100, 440, 780 -->
+      <div class="node outcome" style="left:100px; top:740px;">
+        <div class="node-kind">resolution.a</div>
+        <div class="node-name">Instant quote</div>
+        <div class="node-sub">Price delivered on-call &mdash; caller decides next step.</div>
+      </div>
+      <div class="node outcome" style="left:440px; top:740px;">
+        <div class="node-kind">resolution.b</div>
+        <div class="node-name">Appointment</div>
+        <div class="node-sub">Booked into the team's calendar before the call ends.</div>
+      </div>
+      <div class="node outcome agent" style="left:780px; top:740px;">
+        <div class="node-kind">resolution.c</div>
+        <div class="node-name">Licensed agent</div>
+        <div class="node-sub">Warm transfer &mdash; existing quotes, complex cases, or caller preference.</div>
+      </div>
+
+      <!-- ─── Arrow labels ──────────────────────────────────────── -->
+      <span class="arrow-label" style="left:178px; top:364px;">new quote</span>
+      <span class="arrow-label" style="left:518px; top:364px;">new quote</span>
+      <span class="arrow-label" style="left:858px; top:364px;">new quote</span>
+
+      <span class="arrow-label alt" style="top:370px; left:985px;">existing &middot; fallback</span>
+
+      <span class="arrow-label" style="left:174px; top:686px;">pricing ready</span>
+      <span class="arrow-label" style="left:520px; top:686px;">scheduled</span>
+      <span class="arrow-label alt" style="left:846px; top:686px;">escalate</span>
+
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       02 / AGENTS
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="sec">
+    <div class="sec-title">02 / agents[]</div>
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:80px">tier</th>
+            <th>agent</th>
+            <th>role</th>
+            <th>resolution</th>
+            <th style="width:120px">call length</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="t-id">L2</td>
+            <td class="t-name">Emma</td>
+            <td class="t-role">receptionist &middot; farmerbrown.com</td>
+            <td><span class="pill transfer">routes only</span></td>
+            <td class="t-note">~30&ndash;60 s</td>
+          </tr>
+          <tr>
+            <td class="t-id">L2</td>
+            <td class="t-name">Olivia</td>
+            <td class="t-role">receptionist &middot; contractorsliability.com</td>
+            <td><span class="pill transfer">routes only</span></td>
+            <td class="t-note">~30&ndash;60 s</td>
+          </tr>
+          <tr>
+            <td class="t-id">L2</td>
+            <td class="t-name">Grace</td>
+            <td class="t-role">receptionist &middot; buildersrisk.net</td>
+            <td><span class="pill transfer">routes only</span></td>
+            <td class="t-note">~30&ndash;60 s</td>
+          </tr>
+          <tr>
+            <td class="t-id">L3</td>
+            <td class="t-name">Jennifer</td>
+            <td class="t-role">specialist &middot; builder's risk</td>
+            <td><span class="pill quote">instant quote</span><span class="pill appt">appointment</span></td>
+            <td class="t-note">~5 min</td>
+          </tr>
+          <tr>
+            <td class="t-id">L3</td>
+            <td class="t-name">Sarah</td>
+            <td class="t-role">specialist &middot; general liability</td>
+            <td><span class="pill quote">instant quote</span><span class="pill appt">appointment</span></td>
+            <td class="t-note">~5&ndash;7 min</td>
+          </tr>
+          <tr>
+            <td class="t-id">L3</td>
+            <td class="t-name">Wendy</td>
+            <td class="t-role">specialist &middot; workers' compensation</td>
+            <td><span class="pill quote">flash quote</span><span class="pill appt">appointment</span></td>
+            <td class="t-note">~5&ndash;8 min</td>
+          </tr>
+          <tr>
+            <td class="t-id">L3</td>
+            <td class="t-name">Nora</td>
+            <td class="t-role">specialist &middot; commercial auto</td>
+            <td><span class="pill appt">appointment</span><span class="pill transfer">warm transfer</span></td>
+            <td class="t-note">~8&ndash;12 min</td>
+          </tr>
+          <tr>
+            <td class="t-id">L3</td>
+            <td class="t-name">Rachel</td>
+            <td class="t-role">specialist &middot; home &amp; auto</td>
+            <td><span class="pill appt">appointment</span></td>
+            <td class="t-note">~3&ndash;5 min</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       03 / COVERAGE MATRIX
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="sec">
+    <div class="sec-title">03 / site_coverage_matrix</div>
+    <div class="table-card">
+      <table class="matrix">
+        <thead>
+          <tr>
+            <th>product</th>
+            <th>farmerbrown.com</th>
+            <th>contractorsliability.com</th>
+            <th>buildersrisk.net</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Builder's Risk &middot; Jennifer</td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td></tr>
+          <tr><td>General Liability &middot; Sarah</td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td></tr>
+          <tr><td>Workers' Compensation &middot; Wendy</td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td></tr>
+          <tr><td>Commercial Auto &middot; Nora</td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td></tr>
+          <tr><td>Home &amp; Auto &middot; Rachel</td><td><span class="dot"></span></td><td><span class="dot"></span></td><td><span class="dot"></span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       04 / PRINCIPLES
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="sec">
+    <div class="sec-title">04 / design_principles</div>
+    <div class="table-card principles">
+      <div class="p-grid">
+        <div>
+          <div class="p-eye">&middot; single entry, many paths</div>
+          <div class="p-body">Every caller on every site sees the same first question &mdash; "new quote or existing?" &mdash; before the flow branches by product. Predictable triage, zero dead ends.</div>
+        </div>
+        <div>
+          <div class="p-eye">&middot; specialists, not generalists</div>
+          <div class="p-body">Each product has its own specialist with its own script, tone, and data requirements. A Builder's Risk caller never feels like they're filling out a Home &amp; Auto form.</div>
+        </div>
+        <div>
+          <div class="p-eye">&middot; audible handoffs</div>
+          <div class="p-body">Receptionists and specialists use distinct voices, so the caller audibly recognizes when they've been connected to the right expert &mdash; not just a different prompt.</div>
+        </div>
+        <div>
+          <div class="p-eye">&middot; graceful escalation</div>
+          <div class="p-body">Any caller who is confused, frustrated, or asking for a person is routed to a licensed agent within seconds. The system never insists on automation when a human is the right answer.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <span>farmer_brown &middot; call_center_architecture &middot; v1.1 &middot; internal</span>
+  <span>2026</span>
+</footer>
+
+</body>
+</html>

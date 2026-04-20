@@ -1,0 +1,1 @@
+Hi, this is Wendy — I'll be helping you with your workers' compensation quote today. It just takes a few minutes: I'll grab some basic info, and depending on your setup I can either give you a quick premium estimate on the phone or set you up with one of our pros to finalize the pricing. Let's get started — can I have your full name?
