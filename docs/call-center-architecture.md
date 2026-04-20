@@ -1,5 +1,5 @@
 # Farmer Brown — Call Center Architecture
-**Version:** v3.5
+**Version:** v3.6
 **Last updated:** 2026-04-20
 **Status:** English Sales + English Service both deployed across all 3 sites. Spanish variants pending.
 
@@ -26,7 +26,7 @@ After that, the Spanish flow mirrors English exactly, fully translated.
 | Inbound line | First action |
 |--------------|--------------|
 | English Sales | "Are you looking for a new quote, or do you already have a policy with us?" → if new: continue to coverage question → if existing: transfer to live agent |
-| English Service | "How can we help you today?" |
+| English Service | "Thank you for calling [site], this is [name] — are you calling about a payment, a claim, or a certificate of insurance?" → closed-menu triage (see SERVICE Branch) |
 | Spanish | "¿Llama por ventas o por servicio?" → then mirrors English |
 
 **Fallback rule (applies to ALL agents at ALL times):**  
@@ -126,11 +126,19 @@ Alternate menu (if "something else"):
 
 ## SERVICE Branch
 
-| Reason | Action |
-|--------|--------|
-| Payment | Transfer to live agent |
-| Claim | Transfer to live agent |
-| Certificate of Insurance | AI-handled flow (see below) |
+**First question — ALL sites, ALL service lines (closed menu):**
+"Thank you for calling [site], this is [name] — are you calling about a payment, a claim, or a certificate of insurance?"
+
+The menu is deliberately closed to the 3 AI-handleable intents. If the caller names something outside the menu (cancel, renewal, add vehicle, update address, billing change, etc.), the receptionist acknowledges that it's a valid service request and transfers to a live agent with a specific opener — **not** the confusion fallback, because this is valid intent, just not one the AI can serve.
+
+| Caller intent | Action |
+|---|---|
+| Payment (pay bill, card expired, autopay) | Transfer to live agent with Payment opener |
+| Claim (accident, loss, damage, file a claim) | Transfer to live agent with Claim opener |
+| Certificate of Insurance (COI, cert, additional insured) | AI-handled flow (see below) |
+| Other service (cancel, renewal, change coverage, etc.) | Transfer to live agent with "that's not something I can help with directly" opener |
+| Sales lead on Service line (new quote, product name) | Transfer to live agent with "sounds like sales" opener |
+| Confusion / no progress after 2 attempts | Rule 5 fallback → transfer to live agent |
 
 ### Certificate of Insurance (COI) — Conversational Flow
 

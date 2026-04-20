@@ -98,9 +98,9 @@ Deploy script: [scripts/create-live-agent-proxies.js](scripts/create-live-agent-
 #### Emma — Farmer Brown Receptionist (EN Service) ✅ active
 - **Assistant ID:** `a1720268-a855-410e-bb7f-687910995dba`
 - **Squad ID:** `05d75043-5f37-4d46-8225-9a95d1cbb7c3` (Farmer Brown — Service EN Squad)
-- **Version:** v1.0
+- **Version:** v1.1
 - **Config:** `agents/receptionist-farmerbrown-service/`
-- **Deploy scripts:** `scripts/create-receptionist-fb-service.js`, `scripts/create-squad-fb-service.js`
+- **Deploy scripts:** `scripts/create-receptionist-fb-service.js`, `scripts/update-receptionist-fb-service.js`, `scripts/create-squad-fb-service.js`
 - **Line:** farmerbrown.com English Service
 - **Flow:** Triage (Payment / Claim / COI / Sales-misroute) + inline 6-step COI flow (policyholder → additional insured → endorsements → contact → expedited-with-review quid-pro-quo → H&A cross-sell with SMS app). No L3 handoff — COI runs entirely inside Emma Service.
 - **Squad members (2):** Emma Service + FB Live Agent Proxy
@@ -110,9 +110,9 @@ Deploy script: [scripts/create-live-agent-proxies.js](scripts/create-live-agent-
 #### Olivia — Contractors Liability Receptionist (EN Service) ✅ active
 - **Assistant ID:** `e4597689-cf8c-4801-96af-302bdbc0eb2a`
 - **Squad ID:** `f80194e9-3989-4b18-b058-161b37ba5e22` (Contractors Liability — Service EN Squad)
-- **Version:** v1.0
+- **Version:** v1.1
 - **Config:** `agents/receptionist-contractorsliability-service/`
-- **Deploy scripts:** `scripts/create-receptionist-cl-service.js`, `scripts/create-squad-cl-service.js`
+- **Deploy scripts:** `scripts/create-receptionist-cl-service.js`, `scripts/update-receptionist-cl-service.js`, `scripts/create-squad-cl-service.js`
 - **Line:** contractorsliability.com English Service
 - **Flow:** Mirrors Emma Service with CL branding.
 - **Squad members (2):** Olivia Service + CL Live Agent Proxy
@@ -121,9 +121,9 @@ Deploy script: [scripts/create-live-agent-proxies.js](scripts/create-live-agent-
 #### Grace — Builders Risk Receptionist (EN Service) ✅ active
 - **Assistant ID:** `9f4ae2af-1286-41e6-894c-c09fd3d7d6c3`
 - **Squad ID:** `64e52ce6-64e7-4ea9-9cc3-6ae4478fba65` (Builders Risk — Service EN Squad)
-- **Version:** v1.0
+- **Version:** v1.1
 - **Config:** `agents/receptionist-buildersrisk-service/`
-- **Deploy scripts:** `scripts/create-receptionist-br-service.js`, `scripts/create-squad-br-service.js`
+- **Deploy scripts:** `scripts/create-receptionist-br-service.js`, `scripts/update-receptionist-br-service.js`, `scripts/create-squad-br-service.js`
 - **Line:** buildersrisk.net English Service
 - **Flow:** Mirrors Emma Service with BR branding.
 - **Squad members (2):** Grace Service + BR Live Agent Proxy

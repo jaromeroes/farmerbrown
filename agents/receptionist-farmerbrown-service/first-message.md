@@ -1,1 +1,1 @@
-Thank you for calling Farmer Brown Insurance, this is Emma — how can I help you today?
+Thank you for calling Farmer Brown Insurance, this is Emma — are you calling about a payment, a claim, or a certificate of insurance?

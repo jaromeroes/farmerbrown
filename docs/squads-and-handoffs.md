@@ -171,9 +171,9 @@ All assistants use OpenAI GPT-4o, ElevenLabs voice. Receptionists use Deepgram n
 
 | Agent | Site | Assistant ID | VAPI Name | Voice |
 |-------|------|--------------|-----------|-------|
-| Emma Service | farmerbrown.com | `a1720268-a855-410e-bb7f-687910995dba` | `Emma — FB Receptionist EN Service v1.0` | `WlKo88ukhZlZ4fjsOQFI` |
-| Olivia Service | contractorsliability.com | `e4597689-cf8c-4801-96af-302bdbc0eb2a` | `Olivia — CL Receptionist EN Service v1.0` | `WlKo88ukhZlZ4fjsOQFI` |
-| Grace Service | buildersrisk.net | `9f4ae2af-1286-41e6-894c-c09fd3d7d6c3` | `Grace — BR Receptionist EN Service v1.0` | `WlKo88ukhZlZ4fjsOQFI` |
+| Emma Service | farmerbrown.com | `a1720268-a855-410e-bb7f-687910995dba` | `Emma — FB Receptionist EN Service v1.1` | `WlKo88ukhZlZ4fjsOQFI` |
+| Olivia Service | contractorsliability.com | `e4597689-cf8c-4801-96af-302bdbc0eb2a` | `Olivia — CL Receptionist EN Service v1.1` | `WlKo88ukhZlZ4fjsOQFI` |
+| Grace Service | buildersrisk.net | `9f4ae2af-1286-41e6-894c-c09fd3d7d6c3` | `Grace — BR Receptionist EN Service v1.1` | `WlKo88ukhZlZ4fjsOQFI` |
 
 All six L2 receptionists share the single L2-tier voice, distinct from the L3-tier voice used by specialists (`Ne7VRnu9eE7lobTDr8Pw`) — so callers audibly hear the tier change on handoff. Distinctive voices per individual agent (one-per-assistant) remain a TODO. The L2/L3 voices currently in production actually sound near-identical — see user feedback memory; replacing them is deferred.
 
