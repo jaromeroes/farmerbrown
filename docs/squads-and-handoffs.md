@@ -1,7 +1,7 @@
 # Squads & Handoffs — Implementation Reference
-**Version:** 1.1
-**Last updated:** 2026-04-17
-**Status:** English sales layer deployed across all 3 sites (GL + BR + CA + H&A). Service and Spanish variants pending.
+**Version:** 1.2
+**Last updated:** 2026-04-20
+**Status:** English Sales (3 sites) + English Service (3 sites) deployed. Spanish variants pending.
 
 This document describes how the multi-agent call center is wired together in VAPI. It is the authoritative reference for the squad architecture, the deployed assistants, the transfer tools, and the conventions for adding new agents or lines.
 
@@ -107,10 +107,49 @@ All four squads below are live in the Farmer Brown org (`198209e2-169f-46ac-af2e
   - Jennifer, Sarah, Nora, Rachel, Wendy (L3, terminal)
   - FB / CL / BR Live Agent Proxies (L3ᴴ, terminal)
 
-**Shared deploy scripts (all 4 squads):**
+**Shared deploy scripts (Sales — all 4 squads):**
 - `scripts/create-receptionist-{fb,cl,br}-sales.js`, `scripts/update-receptionist-{fb,cl,br}-sales.js`
 - `scripts/create-squad-{fb,cl,br}-sales.js`, `scripts/create-squad-test.js`, `scripts/create-dispatcher.js`
 - `scripts/update-squads-add-nora.js` → `update-squads-add-rachel.js` → `update-squads-add-live-agent-proxy.js` → `update-squads-add-wendy.js` (latest state)
+
+### 3.5 Farmer Brown — Service EN Squad
+- **Squad ID:** `05d75043-5f37-4d46-8225-9a95d1cbb7c3`
+- **Line:** farmerbrown.com English Service
+- **Members (2):**
+  - Emma Service (L2) → assistantDestinations: [FB Live Agent Handoff v1.0]
+  - FB Live Agent Proxy (L3ᴴ, terminal)
+
+### 3.6 Contractors Liability — Service EN Squad
+- **Squad ID:** `f80194e9-3989-4b18-b058-161b37ba5e22`
+- **Line:** contractorsliability.com English Service
+- **Members (2):**
+  - Olivia Service (L2) → assistantDestinations: [CL Live Agent Handoff v1.0]
+  - CL Live Agent Proxy (L3ᴴ, terminal)
+
+### 3.7 Builders Risk — Service EN Squad
+- **Squad ID:** `64e52ce6-64e7-4ea9-9cc3-6ae4478fba65`
+- **Line:** buildersrisk.net English Service
+- **Members (2):**
+  - Grace Service (L2) → assistantDestinations: [BR Live Agent Handoff v1.0]
+  - BR Live Agent Proxy (L3ᴴ, terminal)
+
+### 3.8 Test Squad — Service EN (all sites)
+- **Squad ID:** `d989f711-a436-421d-a3c8-ce06b570ad40`
+- **Phone number attached:** to be provisioned by client (attach to this `squadId`, not to any `assistantId`)
+- **Purpose:** parallel to the Sales Test Squad — single-number entry point for testing all three Service flows.
+- **Members (7):**
+  - Test Dispatcher Service (L1) → Emma Service, Olivia Service, Grace Service
+  - Emma Service (L2) → FB Live Agent Proxy
+  - Olivia Service (L2) → CL Live Agent Proxy
+  - Grace Service (L2) → BR Live Agent Proxy
+  - FB / CL / BR Live Agent Proxies (L3ᴴ, terminal)
+
+**Deploy scripts (Service — all 4 squads):**
+- `scripts/create-receptionist-{fb,cl,br}-service.js`
+- `scripts/create-dispatcher-service.js`
+- `scripts/create-squad-{fb,cl,br}-service.js`, `scripts/create-squad-test-service.js`
+
+**Service squad design note:** Unlike the Sales squads (7 members each — L2 receptionist + 5 specialists + live-agent proxy), Service squads have only 2 members. No L3 specialists exist for Service because the COI flow runs inline inside the receptionist. Payment and Claim are direct transfers to the live-agent proxy. See [`call-center-architecture.md`](call-center-architecture.md) §SERVICE Branch for the product-level rationale, and [`superpowers/specs/2026-04-20-service-receptionists-en-design.md`](superpowers/specs/2026-04-20-service-receptionists-en-design.md) §D1 for the architectural decision.
 
 ---
 
@@ -120,13 +159,25 @@ All assistants use OpenAI GPT-4o, ElevenLabs voice. Receptionists use Deepgram n
 
 ### Receptionists (L2)
 
+**Sales:**
+
 | Agent | Site | Assistant ID | VAPI Name | Voice |
 |-------|------|--------------|-----------|-------|
 | Emma | farmerbrown.com | `71c72af4-b87a-43cb-8f0a-661c3febe8ea` | `Emma — FB Receptionist EN Sales v1.9` | `WlKo88ukhZlZ4fjsOQFI` |
 | Olivia | contractorsliability.com | `b5f88994-e045-4996-9f2c-056516e9cf01` | `Olivia — CL Receptionist EN Sales v1.7` | `WlKo88ukhZlZ4fjsOQFI` |
 | Grace | buildersrisk.net | `fa2897bb-00ee-4680-af00-0e31abeed228` | `Grace — BR Receptionist EN Sales v1.7` | `WlKo88ukhZlZ4fjsOQFI` |
 
-All three L2 receptionists share a single L2-tier voice (`WlKo88ukhZlZ4fjsOQFI`), distinct from the L3-tier voice used by specialists (`Ne7VRnu9eE7lobTDr8Pw`) — so callers audibly hear the tier change on handoff. Distinctive voices per individual agent (one-per-assistant) remain a TODO.
+**Service:**
+
+| Agent | Site | Assistant ID | VAPI Name | Voice |
+|-------|------|--------------|-----------|-------|
+| Emma Service | farmerbrown.com | `a1720268-a855-410e-bb7f-687910995dba` | `Emma — FB Receptionist EN Service v1.0` | `WlKo88ukhZlZ4fjsOQFI` |
+| Olivia Service | contractorsliability.com | `e4597689-cf8c-4801-96af-302bdbc0eb2a` | `Olivia — CL Receptionist EN Service v1.0` | `WlKo88ukhZlZ4fjsOQFI` |
+| Grace Service | buildersrisk.net | `9f4ae2af-1286-41e6-894c-c09fd3d7d6c3` | `Grace — BR Receptionist EN Service v1.0` | `WlKo88ukhZlZ4fjsOQFI` |
+
+All six L2 receptionists share the single L2-tier voice, distinct from the L3-tier voice used by specialists (`Ne7VRnu9eE7lobTDr8Pw`) — so callers audibly hear the tier change on handoff. Distinctive voices per individual agent (one-per-assistant) remain a TODO. The L2/L3 voices currently in production actually sound near-identical — see user feedback memory; replacing them is deferred.
+
+**Naming convention:** same first names in Sales and Service (Emma → Emma, Olivia → Olivia, Grace → Grace) so the caller recognizes "the same person" across lines. VAPI `name` uniqueness is preserved via the `Sales` / `Service` suffix in the version string.
 
 ### Specialists (L3)
 
@@ -149,11 +200,12 @@ All three L2 receptionists share a single L2-tier voice (`WlKo88ukhZlZ4fjsOQFI`)
 
 These proxies exist to work around a VAPI LLM bias: when a receptionist has both `assistantDestinations` (squad handoffs) AND an explicit `transferCall` tool at the same time, the LLM almost always picks the named tool, even when routing should go to a specialist. By moving live-agent escalation into the squad as another `type: "assistant"` destination, every route uses the same implicit `transferCall` and the LLM chooses purely by name/description. See [memory: feedback_vapi_squad_tool_disambiguation](../../.claude/projects/-Users-jose-Developer-farmerbrown/memory/feedback_vapi_squad_tool_disambiguation.md) for the full incident notes.
 
-### Dispatcher (L1)
+### Dispatchers (L1, test-only)
 
-| Agent | Assistant ID | VAPI Name |
-|-------|--------------|-----------|
-| Test Dispatcher | `753657c6-3ed4-487c-8c39-1f65fa4f8287` | `Test Dispatcher v1.0` |
+| Agent | Scope | Assistant ID | VAPI Name |
+|-------|-------|--------------|-----------|
+| Test Dispatcher | Sales | `753657c6-3ed4-487c-8c39-1f65fa4f8287` | `Test Dispatcher v1.0` |
+| Test Dispatcher Service | Service | `e8a656cf-3017-4b3b-9dd7-78d8e85186ad` | `Test Dispatcher Service v1.0` |
 
 ---
 
@@ -241,8 +293,8 @@ For unit-level testing of a single agent in isolation, call the assistant direct
 
 ## 10. What's not built yet
 
-- **Service branch (EN):** all 3 sites. Includes the Certificate of Insurance conversational flow and payment/claim live-agent transfers.
 - **Spanish variants:** all 3 sites. Pattern: single number that first asks "¿Ventas o servicio?", then mirrors the English flow in Spanish.
+- **COI backend endpoints (pending Tyler):** `send_review_sms`, `send_home_auto_application_sms`, `send_urgent_coi_alert`, `submit_coi_form`. Until delivered, Service v1.0 speaks the promises verbally without tool calls — see Rule 12 in the Service receptionists' system prompts. Priority: urgent-alert endpoint first (otherwise expedited COI requests only live in transcripts). Tracked in `docs/client-notes-pending.md`.
 - **`submit_wc_form` for Wendy:** not wired — WC intake data (demographics + payroll sub-flow + contract cross-sell list) lives in the call transcript only. When backend endpoint ships, add silent checkpoints at the end of Step 1, Step 3, and before Step 5.
 - **Rachel's application sender:** `send_home_auto_application` (SMS / email) pending backend. Rachel still says "I'll send you an application" verbally during Step 4 — when the tool ships, wire a silent call at the top of that step.
 - **`submit_commercial_auto_form` backend endpoint:** Nora's data only lives in the call transcript today.

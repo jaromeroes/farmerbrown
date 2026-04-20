@@ -1,7 +1,7 @@
 # Farmer Brown — Call Center Architecture
-**Version:** v3.4
+**Version:** v3.5
 **Last updated:** 2026-04-20
-**Status:** English Sales layer fully deployed across all 3 sites (GL, BR, CA, H&A, WC). Service and Spanish variants pending.
+**Status:** English Sales + English Service both deployed across all 3 sites. Spanish variants pending.
 
 > **Implementation note:** this document describes the intended product design. For the current state of what is actually deployed in VAPI (squad IDs, assistant IDs, handoff wiring, deploy scripts), see [`squads-and-handoffs.md`](squads-and-handoffs.md).
 
@@ -227,12 +227,15 @@ When caller opts into expedited service (Step 5 = Yes + review agreed), immediat
 
 | Agent | Language | Status | Extension |
 |-------|----------|--------|-----------|
-| Emma — Receptionist (farmerbrown.com Sales) | EN | ✅ active v1.3 | — |
-| Olivia — Receptionist (contractorsliability.com Sales) | EN | ✅ active v1.1 | — |
-| Grace — Receptionist (buildersrisk.net Sales) | EN | ✅ active v1.1 | — |
-| Receptionists — Service variants (all sites) | EN | ❌ to build | — |
+| Emma — Receptionist (farmerbrown.com Sales) | EN | ✅ active v1.9 | — |
+| Olivia — Receptionist (contractorsliability.com Sales) | EN | ✅ active v1.7 | — |
+| Grace — Receptionist (buildersrisk.net Sales) | EN | ✅ active v1.7 | — |
+| Emma — Receptionist (farmerbrown.com Service) | EN | ✅ active v1.0 | — |
+| Olivia — Receptionist (contractorsliability.com Service) | EN | ✅ active v1.0 | — |
+| Grace — Receptionist (buildersrisk.net Service) | EN | ✅ active v1.0 | — |
 | Receptionists — Spanish variants (all sites) | ES | ❌ to build | — |
-| Test Dispatcher (test-only L1 multiplexer) | EN | ✅ active v1.0 | — |
+| Test Dispatcher — Sales (test-only L1 multiplexer) | EN | ✅ active v1.0 | — |
+| Test Dispatcher Service (test-only L1 multiplexer) | EN | ✅ active v1.0 | — |
 | Jennifer — Builder's Risk | EN | ✅ active v2.3 | 227 |
 | Sarah — General Liability | EN | ✅ active v1.1 | 229 |
 | Valeria — General Liability | ES | ✅ active v1.0 (not yet in any squad) | 229 |
@@ -240,7 +243,7 @@ When caller opts into expedited service (Step 5 = Yes + review agreed), immediat
 | Rachel — Home & Auto (intake) | EN | ✅ active v2.3 — books Angie on Calendly in-call | 223 |
 | Wendy — Workers' Compensation | EN | ✅ active v1.0 — flash $1465 for no-payroll path + Calendly round-robin booking | 228 |
 
-**Squad deployment status:** 3 production sales squads (FB / CL / BR) + 1 test squad. See [`squads-and-handoffs.md`](squads-and-handoffs.md) for IDs and member wiring.
+**Squad deployment status:** 3 production sales squads + 3 production service squads + 2 test squads (1 Sales, 1 Service). See [`squads-and-handoffs.md`](squads-and-handoffs.md) for IDs and member wiring.
 
 **Spanish note:** All agents need Spanish equivalents. Implementation order: English first, Spanish second. Sarah (EN) → Valeria (ES) is the existing pattern to follow.
 

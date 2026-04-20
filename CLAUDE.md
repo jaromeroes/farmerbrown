@@ -35,7 +35,7 @@ Full architecture documented in `docs/call-center-architecture.md`.
 ### Receptionist — Central Router
 One receptionist per phone line (9 total across 3 sites × 3 lines). Each line = its own Squad. See `docs/call-center-architecture.md`.
 
-**Status:** V1 deployed for farmerbrown.com EN Sales only. Other lines pending.
+**Status:** EN Sales (3 sites) + EN Service (3 sites) deployed. Spanish variants pending.
 
 #### Emma — Farmer Brown Receptionist (EN Sales) ✅ active
 - **Assistant ID:** `71c72af4-b87a-43cb-8f0a-661c3febe8ea`
@@ -95,8 +95,51 @@ Deploy script: [scripts/create-live-agent-proxies.js](scripts/create-live-agent-
 - **Squad members (12):** Dispatcher + Emma + Olivia + Grace + Jennifer + Sarah + Nora + Rachel + Wendy + FB/CL/BR Live Agent Proxies
 - **Phone number attached:** `+18884356365` (Toll Free - Farmer's Brown) — attached to `squadId`, not `assistantId`. Required for assistantDestinations handoffs to work.
 
-#### Pending receptionists (same pattern, different first message + menu)
-- Emma / Olivia / Grace EN Service variants — service branch: COI flow + payment/claim transfers
+#### Emma — Farmer Brown Receptionist (EN Service) ✅ active
+- **Assistant ID:** `a1720268-a855-410e-bb7f-687910995dba`
+- **Squad ID:** `05d75043-5f37-4d46-8225-9a95d1cbb7c3` (Farmer Brown — Service EN Squad)
+- **Version:** v1.0
+- **Config:** `agents/receptionist-farmerbrown-service/`
+- **Deploy scripts:** `scripts/create-receptionist-fb-service.js`, `scripts/create-squad-fb-service.js`
+- **Line:** farmerbrown.com English Service
+- **Flow:** Triage (Payment / Claim / COI / Sales-misroute) + inline 6-step COI flow (policyholder → additional insured → endorsements → contact → expedited-with-review quid-pro-quo → H&A cross-sell with SMS app). No L3 handoff — COI runs entirely inside Emma Service.
+- **Squad members (2):** Emma Service + FB Live Agent Proxy
+- **Tools:** none — same pattern as Sales v1.8+; every transfer is a squad destination
+- **Pending backends:** `send_review_sms`, `send_home_auto_application_sms`, `send_urgent_coi_alert`, `submit_coi_form` — all deferred to Tyler (see `docs/client-notes-pending.md`). V1 speaks the promises in future tense per Rule 12, without tool calls.
+
+#### Olivia — Contractors Liability Receptionist (EN Service) ✅ active
+- **Assistant ID:** `e4597689-cf8c-4801-96af-302bdbc0eb2a`
+- **Squad ID:** `f80194e9-3989-4b18-b058-161b37ba5e22` (Contractors Liability — Service EN Squad)
+- **Version:** v1.0
+- **Config:** `agents/receptionist-contractorsliability-service/`
+- **Deploy scripts:** `scripts/create-receptionist-cl-service.js`, `scripts/create-squad-cl-service.js`
+- **Line:** contractorsliability.com English Service
+- **Flow:** Mirrors Emma Service with CL branding.
+- **Squad members (2):** Olivia Service + CL Live Agent Proxy
+- **Tools:** none
+
+#### Grace — Builders Risk Receptionist (EN Service) ✅ active
+- **Assistant ID:** `9f4ae2af-1286-41e6-894c-c09fd3d7d6c3`
+- **Squad ID:** `64e52ce6-64e7-4ea9-9cc3-6ae4478fba65` (Builders Risk — Service EN Squad)
+- **Version:** v1.0
+- **Config:** `agents/receptionist-buildersrisk-service/`
+- **Deploy scripts:** `scripts/create-receptionist-br-service.js`, `scripts/create-squad-br-service.js`
+- **Line:** buildersrisk.net English Service
+- **Flow:** Mirrors Emma Service with BR branding.
+- **Squad members (2):** Grace Service + BR Live Agent Proxy
+- **Tools:** none
+
+#### Test Dispatcher Service — Single-number multiplexer for testing ✅ active
+- **Assistant ID:** `e8a656cf-3017-4b3b-9dd7-78d8e85186ad`
+- **Squad ID:** `d989f711-a436-421d-a3c8-ce06b570ad40` (Test Squad — Service EN (all sites))
+- **Version:** v1.0
+- **Config:** `agents/test-dispatcher-service/`
+- **Deploy scripts:** `scripts/create-dispatcher-service.js`, `scripts/create-squad-test-service.js`
+- **Role:** Parallel to the Sales Test Dispatcher — routes test calls to Emma / Olivia / Grace Service.
+- **Squad members (7):** Dispatcher Service + Emma Service + Olivia Service + Grace Service + FB/CL/BR Live Agent Proxies
+- **Phone number:** to be attached by user (separate number from the Sales test line)
+
+#### Pending receptionists
 - ES variants — "¿Ventas o servicio?" + Spanish flow mirroring EN
 
 ### Sarah — General Liability (contractorsliability.com)
