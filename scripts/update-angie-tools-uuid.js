@@ -1,11 +1,14 @@
-const VAPI_KEY = '7ce0a320-9cbf-4d1c-9c5a-d00dfcace63c';
+const VAPI_KEY = process.env.VAPI_KEY;
+if (!VAPI_KEY) { console.error('VAPI_KEY env var is not set. Copy .env.example to .env and export it.'); process.exit(1); }
 
 const TOOLS = {
   check_availability_angie: '253df17f-2b43-4880-ad51-d5a3f2a4e655',
   book_appointment_angie:   '35ff8b09-0a1f-4694-adb7-208f2a893434'
 };
 
-const API_KEY = '3a8c4681-8dbe-4cdb-a8fb-20477cfdef88';
+const API_KEY = process.env.CALFORCE_AGENT_KEY;
+if (!API_KEY) { console.error('CALFORCE_AGENT_KEY env var is not set. Copy .env.example to .env and export it.'); process.exit(1); }
+
 const BASE = 'https://farmerbrown-bi.calforce.pro/api/calendly';
 const ANGIE_UUID = '901112a8-95fa-40bc-8f30-e6c99ae4276c';
 

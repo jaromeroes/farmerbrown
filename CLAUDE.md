@@ -12,8 +12,16 @@ Internal tools hub for Farmer Brown Insurance. We build and manage VAPI voice ag
 - **Scripts:** Node.js (no dependencies, uses native fetch)
 
 ## VAPI Credentials
-- **API Key:** `7ce0a320-9cbf-4d1c-9c5a-d00dfcace63c`
+- **API Key:** `$VAPI_KEY` env var (see `.env.example`). Rotate via VAPI dashboard; never commit the value.
 - **Org ID:** `198209e2-169f-46ac-af2e-1e409ca93de3`
+
+## Calforce backend credentials
+- **Agent API Key:** `$CALFORCE_AGENT_KEY` env var (see `.env.example`). Used as `agent_api_key` query param for `farmerbrown-bi.calforce.pro/api/*` endpoints.
+
+## Local setup
+1. `cp .env.example .env` and fill in `VAPI_KEY` + `CALFORCE_AGENT_KEY`.
+2. `export $(grep -v '^#' .env | xargs)` (or source it via your shell profile).
+3. Run any `scripts/*.js` — they read from `process.env.VAPI_KEY` / `process.env.CALFORCE_AGENT_KEY` and exit early if missing.
 
 ## Call Center Architecture
 Full architecture documented in `docs/call-center-architecture.md`.
@@ -188,21 +196,21 @@ Deploy script: [scripts/create-live-agent-proxies.js](scripts/create-live-agent-
 
 ### Calendly (scheduling)
 - **Base URL:** `https://farmerbrown-bi.calforce.pro/api`
-- **API Key:** `agent_api_key=3a8c4681-8dbe-4cdb-a8fb-20477cfdef88` (query param)
+- **API Key:** `agent_api_key=${CALFORCE_AGENT_KEY}` (query param)
 - **Docs:** `apis/calendly-api.md`
 - **Endpoints:** timezones, available_times, book_event
 
 ### Builders Risk (quote submission)
 - **URL:** `https://farmerbrown-bi.calforce.pro/api/builders_risk_submissions/update_by_email`
 - **Method:** PATCH (upsert by email)
-- **Auth:** `agent_api_key=3a8c4681-8dbe-4cdb-a8fb-20477cfdef88` (query param)
+- **Auth:** `agent_api_key=${CALFORCE_AGENT_KEY}` (query param)
 - **Docs:** `apis/builders-risk-api.md`
 - **Premium formula:** `(coverage × constructionRate × deductibleMod × 1.15) × 1.30`
 
 ### General Liability (quote submission) — PENDING backend
 - **URL:** `https://farmerbrown-bi.calforce.pro/api/gl_submissions/update_by_email`
 - **Method:** PATCH (upsert by email)
-- **Auth:** `agent_api_key=3a8c4681-8dbe-4cdb-a8fb-20477cfdef88` (query param)
+- **Auth:** `agent_api_key=${CALFORCE_AGENT_KEY}` (query param)
 - **Docs:** `apis/gl-submissions-api.md`
 - **No premium formula** — GL requires manual underwriting by licensed agent
 

@@ -1,4 +1,8 @@
-const VAPI_KEY = '7ce0a320-9cbf-4d1c-9c5a-d00dfcace63c';
+const VAPI_KEY = process.env.VAPI_KEY;
+if (!VAPI_KEY) { console.error('VAPI_KEY env var is not set. Copy .env.example to .env and export it.'); process.exit(1); }
+
+const CALFORCE_AGENT_KEY = process.env.CALFORCE_AGENT_KEY;
+if (!CALFORCE_AGENT_KEY) { console.error('CALFORCE_AGENT_KEY env var is not set. Copy .env.example to .env and export it.'); process.exit(1); }
 
 const TOOLS = {
   check_availability: 'dd2504ab-c665-493f-915d-345b0696017f',
@@ -14,7 +18,7 @@ async function fixCheckAvailability() {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      url: 'https://farmerbrown-bi.calforce.pro/api/calendly/available_times?agent_api_key=3a8c4681-8dbe-4cdb-a8fb-20477cfdef88&timezone={{timezone}}'
+      url: `https://farmerbrown-bi.calforce.pro/api/calendly/available_times?agent_api_key=${CALFORCE_AGENT_KEY}&timezone={{timezone}}`
     })
   });
 

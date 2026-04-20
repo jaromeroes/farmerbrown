@@ -4,7 +4,7 @@
 `PATCH https://farmerbrown-bi.calforce.pro/api/builders_risk_submissions/update_by_email`
 
 ## Authentication
-`agent_api_key=3a8c4681-8dbe-4cdb-a8fb-20477cfdef88` as query parameter.
+`agent_api_key=${CALFORCE_AGENT_KEY}` as query parameter.
 
 ## How it works
 Upserts a record by email — creates on first call, updates on subsequent calls. This means multiple checkpoints during a single call all update the same record instead of creating duplicates.

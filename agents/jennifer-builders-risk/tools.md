@@ -10,7 +10,7 @@ Submits or updates a builders risk insurance quote by email. Uses PATCH to upser
 ### VAPI Tool Config
 - **Type:** apiRequest
 - **Method:** PATCH
-- **URL:** `https://farmerbrown-bi.calforce.pro/api/builders_risk_submissions/update_by_email?agent_api_key=3a8c4681-8dbe-4cdb-a8fb-20477cfdef88`
+- **URL:** `https://farmerbrown-bi.calforce.pro/api/builders_risk_submissions/update_by_email?agent_api_key=${CALFORCE_AGENT_KEY}`
 
 ### Body Schema
 ```json
@@ -104,7 +104,7 @@ Fetches available appointment slots from Calendly. Used before offering appointm
     }
   },
   "server": {
-    "url": "https://farmerbrown-bi.calforce.pro/api/calendly/available_times?agent_api_key=3a8c4681-8dbe-4cdb-a8fb-20477cfdef88",
+    "url": "https://farmerbrown-bi.calforce.pro/api/calendly/available_times?agent_api_key=${CALFORCE_AGENT_KEY}",
     "method": "GET"
   }
 }
@@ -152,7 +152,7 @@ Books a confirmed appointment via Calendly. Called after the caller selects a ti
     }
   },
   "server": {
-    "url": "https://farmerbrown-bi.calforce.pro/api/calendly/book_event?agent_api_key=3a8c4681-8dbe-4cdb-a8fb-20477cfdef88",
+    "url": "https://farmerbrown-bi.calforce.pro/api/calendly/book_event?agent_api_key=${CALFORCE_AGENT_KEY}",
     "method": "POST",
     "headers": {
       "Content-Type": "application/json"

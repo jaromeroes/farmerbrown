@@ -116,7 +116,7 @@ Fetches available appointment slots from Calendly.
 
 - **Tool ID:** `dd2504ab-c665-493f-915d-345b0696017f`
 - **Type:** function (apiRequest GET)
-- **URL:** `https://farmerbrown-bi.calforce.pro/api/calendly/available_times?agent_api_key=3a8c4681-8dbe-4cdb-a8fb-20477cfdef88`
+- **URL:** `https://farmerbrown-bi.calforce.pro/api/calendly/available_times?agent_api_key=${CALFORCE_AGENT_KEY}`
 - **Parameters:** timezone (enum of US timezones)
 - **Returns:** UTC times for the next 6 days
 
@@ -128,7 +128,7 @@ Books a confirmed appointment via Calendly.
 
 - **Tool ID:** `642280ea-5ea0-4d1e-a7fe-35439016de10`
 - **Type:** function (apiRequest POST)
-- **URL:** `https://farmerbrown-bi.calforce.pro/api/calendly/book_event?agent_api_key=3a8c4681-8dbe-4cdb-a8fb-20477cfdef88`
+- **URL:** `https://farmerbrown-bi.calforce.pro/api/calendly/book_event?agent_api_key=${CALFORCE_AGENT_KEY}`
 - **Parameters:** name, email, phone_number, timezone, start_time (ISO8601 UTC)
 
 ---

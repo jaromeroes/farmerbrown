@@ -6,7 +6,7 @@ https://farmerbrown-bi.calforce.pro/api
 ```
 
 ## Authentication
-All endpoints require `agent_api_key=3a8c4681-8dbe-4cdb-a8fb-20477cfdef88` as query parameter.
+All endpoints require `agent_api_key=${CALFORCE_AGENT_KEY}` as query parameter.
 
 ---
 

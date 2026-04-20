@@ -1,8 +1,11 @@
-const VAPI_KEY = '7ce0a320-9cbf-4d1c-9c5a-d00dfcace63c';
+const VAPI_KEY = process.env.VAPI_KEY;
+if (!VAPI_KEY) { console.error('VAPI_KEY env var is not set. Copy .env.example to .env and export it.'); process.exit(1); }
+
+const API_KEY = process.env.CALFORCE_AGENT_KEY;
+if (!API_KEY) { console.error('CALFORCE_AGENT_KEY env var is not set. Copy .env.example to .env and export it.'); process.exit(1); }
 
 // Angie's Calendly event_type_uuid (pinned in URL query so the LLM never sees it)
 const ANGIE_UUID = '901112a8-95fa-40bc-8f30-e6c99ae4276c';
-const API_KEY = '3a8c4681-8dbe-4cdb-a8fb-20477cfdef88';
 const BASE = 'https://farmerbrown-bi.calforce.pro/api/calendly';
 
 const TZ_ENUM = [

@@ -1,4 +1,5 @@
-const VAPI_KEY = '7ce0a320-9cbf-4d1c-9c5a-d00dfcace63c';
+const VAPI_KEY = process.env.VAPI_KEY;
+if (!VAPI_KEY) { console.error('VAPI_KEY env var is not set. Copy .env.example to .env and export it.'); process.exit(1); }
 
 const TOOL_IDS = {
   transfer_to_live_agent_contractors_liability: '05bc12e6-ee8a-44cf-8abd-816244480509'
