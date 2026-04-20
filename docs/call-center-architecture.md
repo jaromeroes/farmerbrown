@@ -1,6 +1,6 @@
 # Farmer Brown — Call Center Architecture
-**Version:** v3.3
-**Last updated:** 2026-04-18
+**Version:** v3.4
+**Last updated:** 2026-04-20
 **Status:** English Sales layer fully deployed across all 3 sites (GL, BR, CA, H&A, WC). Service and Spanish variants pending.
 
 > **Implementation note:** this document describes the intended product design. For the current state of what is actually deployed in VAPI (squad IDs, assistant IDs, handoff wiring, deploy scripts), see [`squads-and-handoffs.md`](squads-and-handoffs.md).
@@ -166,19 +166,32 @@ Confirm at the end:
 **Step 4 — Additional insured contact**  
 "Do you have a phone number or email for the additional insured so we can send the certificate directly to them?"
 
-**Step 5 — Urgency**  
-"Do you need this right away, or is a 24-hour turnaround okay for you?"
+**Step 5 — Turn-around & expedited service**  
+"Looks like I have all of your information and our usual turn-around time is 24 hours. Do you need expedited service to get it within 1 hour?"
 
-- **Right away:**  
-  "Understood — I'm flagging this as urgent. One of our agents will call you back within one business hour to make sure we get this to you as quickly as possible. While I have you — would you mind leaving us a quick review? I'll send a link to your phone right now."  
-  → Send SMS with review link  
-  → Send urgent internal alert (see COI Urgent Alert below)
+- **No (24 hours is fine):**  
+  "Perfect — we'll have your certificate ready within 24 hours and send it directly to you."  
+  → continue to Step 6
 
-- **24 hours:**  
-  "Perfect — we'll have your certificate ready within 24 hours and send it directly to you. Is there anything else I can help you with?"
+- **Yes (expedited):**  
+  "OK, we're on it. For expedited service, we simply ask that you give us a review within the hour. Do you agree?"
+  - **No:** fall back to 24-hour turn-around → continue to Step 6
+  - **Yes:** "Thank you — I'll send you a text with a review link right now."  
+    → Send SMS with review link  
+    → Send urgent internal alert (see COI Urgent Alert below)  
+    → continue to Step 6
+
+**Step 6 — Cross-sell Home & Auto (COI-specific)**  
+> COI-only variant of the cross-sell. Does NOT hand off to Rachel — closes the call with an SMS application link. Always asked at end of COI regardless of urgency choice.
+
+"Finally, would you like a quote for your auto, home insurance, or both? Our average client saves over $1,300 a year."
+
+- **No:** close politely ("Thanks for calling — have a great day.").
+- **Yes:** "Perfect — I'll send you a text with a quick application. Once we get it back, we'll get right to work!"  
+  → Send SMS with Home & Auto application link
 
 ### COI Urgent — Internal Alert
-When caller says "right away", immediately notify the team with:
+When caller opts into expedited service (Step 5 = Yes + review agreed), immediately notify the team with:
 - Policyholder name + phone number on file
 - Additional insured: name / address / city / state / zip
 - Endorsements requested
