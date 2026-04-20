@@ -185,9 +185,9 @@ Emma Sales has 11 numbered rules. The Service version inherits most and modifies
 
 | Rule | Change |
 |---|---|
-| R1 — Be fast | **Scoped to triage only.** Step 1 must complete in ≤20s. Steps 2-7 (COI) are deliberately slow (2-4 min). Prompt must make this explicit to prevent rushed readbacks. |
+| R1 — Be fast | **Scoped to triage only.** Step 1 must complete in ≤20s. Steps 2-7 (COI) are deliberately slow — **target end-to-end COI duration 2-4 min**. The prompt must state this target verbatim and instruct the agent never to rush readbacks (especially the additional-insured address in Step 3 and the endorsements list in Step 4). |
 | R2 — Silent tool calls | Unchanged |
-| R3 — Never collect quote data | **Removed.** In COI the receptionist collects additional insured details, endorsements, etc. |
+| R3 — Never collect quote data | **Removed.** In COI the receptionist collects additional insured details, endorsements, etc. **Mitigating sentence to include in V1 prompt verbatim:** "Do not collect caller identity fields (name, phone, email, address) unless the caller volunteered them inside the COI flow (Steps 2-5). If the caller starts giving sales-like data outside the COI flow, politely redirect to Sales via the proxy handoff." This prevents the agent from opportunistically data-gathering during triage. |
 | R4 — When in doubt, transfer | Unchanged |
 | R5 — Fallback (confusion/stuck) | Unchanged |
 | R6 — One question at a time | Unchanged. **Especially critical** in the 3-endorsement checklist (waiver of subrogation / primary and non-contributory / products and completed ops). |
@@ -215,7 +215,14 @@ Emma Sales has 11 numbered rules. The Service version inherits most and modifies
 - "Contractors Liability" / "CL" / "contractors" → Olivia Service
 - "Builders Risk" / "BR" / "builders" → Grace Service
 
-**Critical rules:** reduced set (5 rules): fast (≤20s), silent tool calls, never collect data, speak destination before transferring, no backend/no tools.
+**Critical rules:** reduced set, 5 rules verbatim:
+1. **Be fast** — complete in ≤20 seconds. No small talk.
+2. **Silent tool calls** — never narrate technical actions.
+3. **Never collect caller data** — no name, email, or intent beyond site choice.
+4. **Speak destination before transferring** — "Connecting you to {name} now, one moment." (same as Sales dispatcher R11 pattern).
+5. **No backend, no tools** — the dispatcher has zero entries in `toolIds`; all routing is via squad `transferCall` destinations.
+
+The Sales dispatcher's garbled-transcription rule (R10) is not needed here because the 3 site names are phonetically distinct; handle unclear answers with a single re-ask, then end the call politely.
 
 ---
 
@@ -260,8 +267,10 @@ Total 7 members.
 
 ### 5.3 Phone numbers
 
-- **Production:** user will attach 3 VAPI phone numbers to the 3 production squads via the VAPI dashboard, one per site. Not in scope for deploy scripts.
-- **Test:** user will provision one VAPI phone number and attach it to the `Test Squad — Service EN`'s `squadId` (never to an `assistantId` — `assistantDestinations` only fire when the call enters via the squad). User will provide the number after squads are deployed so we can smoke-test.
+**Critical binding rule:** every phone number (production AND test) must be attached to the **squad's `squadId`**, never to an individual `assistantId`. VAPI only injects the implicit `assistantDestinations` handoff capability when the call enters through the squad — a number attached directly to an assistant bypasses the squad and the handoffs silently fail. This is the same bug that forced us to bind the Sales test number to the squad (`CLAUDE.md` Test Dispatcher section, "attached to `squadId`, not `assistantId`"). Deploy notes must reinforce this for every number attachment.
+
+- **Production:** user will attach 3 VAPI phone numbers to the 3 production squads' `squadId` via the VAPI dashboard, one per site. Not in scope for deploy scripts.
+- **Test:** user will provision one VAPI phone number and attach it to the `Test Squad — Service EN`'s `squadId`. User will provide the number after squads are deployed so we can smoke-test.
 
 ---
 
