@@ -72,6 +72,10 @@
   .node.outcome { border-left:2px solid var(--amber); width:240px; }
   .node.outcome.agent { border-left:2px solid var(--ink); }
 
+  .node.intent { border-left:2px solid var(--amber); width:180px; }
+  .node.intent.self { border-left:2px solid var(--green); }
+  .node.intent.self .node-name::after { content:' ●'; color:var(--green); font-size:10px; vertical-align:middle; }
+
   /* specialist pool frame */
   .pool-frame {
     position:absolute;
@@ -150,17 +154,17 @@
   <div class="hero-inner">
     <div class="hero-eye">Internal &mdash; Farmer Brown Insurance</div>
     <h1 class="hero-h1">Inbound Call Flow<br>&amp; Agent Routing</h1>
-    <p class="hero-sub">A tiered routing system that handles inbound sales calls across three websites. Every call follows the same shape: arrival &rarr; receptionist triage &rarr; product specialist &rarr; resolution (instant quote, scheduled appointment, or licensed agent).</p>
+    <p class="hero-sub">A tiered routing system that handles inbound calls across three websites, split by intent. Sales lines route new quotes to product specialists. Service lines run a closed-menu triage with an in-call certificate-of-insurance flow. English lines only &mdash; Spanish variants will be documented separately once implemented.</p>
   </div>
 </section>
 
 <div class="wrap">
 
   <!-- ════════════════════════════════════════════════════════════════
-       01 / CALL FLOW ARCHITECTURE
+       01 / SALES FLOW
        ═══════════════════════════════════════════════════════════════ -->
   <div class="sec">
-    <div class="sec-title">01 / call_flow_architecture</div>
+    <div class="sec-title">01 / sales_flow</div>
 
     <div class="flow">
 
@@ -264,7 +268,7 @@
       <div class="node specialist" style="left:482px; top:452px;">
         <div class="node-kind">workers' comp</div>
         <div class="node-name">Wendy</div>
-        <div class="node-sub">Flash quote for standard cases; appointment otherwise.</div>
+        <div class="node-sub">Flash $1,465 quote for the ~90% no-payroll case. Appointment otherwise.</div>
       </div>
       <div class="node specialist" style="left:692px; top:452px;">
         <div class="node-kind">commercial auto</div>
@@ -274,7 +278,7 @@
       <div class="node specialist" style="left:902px; top:452px;">
         <div class="node-kind">home &amp; auto</div>
         <div class="node-name">Rachel</div>
-        <div class="node-sub">Short intake + books an appointment during the call.</div>
+        <div class="node-sub">Short intake, then books Angie on Calendly before the call ends.</div>
       </div>
 
       <!-- ─── Tier 4: Resolutions (3 outcomes, 240 wide) ────────── -->
@@ -310,10 +314,178 @@
   </div>
 
   <!-- ════════════════════════════════════════════════════════════════
-       02 / AGENTS
+       02 / SERVICE FLOW
        ═══════════════════════════════════════════════════════════════ -->
   <div class="sec">
-    <div class="sec-title">02 / agents[]</div>
+    <div class="sec-title">02 / service_flow</div>
+
+    <div class="flow">
+
+      <!-- arrows SVG overlay -->
+      <svg class="flow-arrows" viewBox="0 0 1120 880" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arrow-green-2" markerWidth="10" markerHeight="10" refX="7" refY="5" orient="auto">
+            <path d="M0,0 L7,5 L0,10" fill="none" stroke="#6a9e7a" stroke-width="1.4"/>
+          </marker>
+          <marker id="arrow-amber-2" markerWidth="10" markerHeight="10" refX="7" refY="5" orient="auto">
+            <path d="M0,0 L7,5 L0,10" fill="none" stroke="#b8711a" stroke-width="1.4"/>
+          </marker>
+          <marker id="arrow-ink-2" markerWidth="10" markerHeight="10" refX="7" refY="5" orient="auto">
+            <path d="M0,0 L7,5 L0,10" fill="none" stroke="#0e0e0e" stroke-width="1.4"/>
+          </marker>
+        </defs>
+
+        <!-- Tier 1 → Tier 2 (black, solid) -->
+        <line x1="220" y1="138" x2="220" y2="202" stroke="#0e0e0e" stroke-width="1.4" marker-end="url(#arrow-ink-2)"/>
+        <line x1="560" y1="138" x2="560" y2="202" stroke="#0e0e0e" stroke-width="1.4" marker-end="url(#arrow-ink-2)"/>
+        <line x1="900" y1="138" x2="900" y2="202" stroke="#0e0e0e" stroke-width="1.4" marker-end="url(#arrow-ink-2)"/>
+
+        <!-- Tier 2 → pool top (green) -->
+        <path d="M 220 335 C 220 370, 220 390, 220 408" fill="none" stroke="#6a9e7a" stroke-width="1.4" marker-end="url(#arrow-green-2)"/>
+        <path d="M 560 335 C 560 370, 560 390, 560 408" fill="none" stroke="#6a9e7a" stroke-width="1.4" marker-end="url(#arrow-green-2)"/>
+        <path d="M 900 335 C 900 370, 900 390, 900 408" fill="none" stroke="#6a9e7a" stroke-width="1.4" marker-end="url(#arrow-green-2)"/>
+
+        <!-- COI intent → COI completed (green solid) -->
+        <path d="M 560 538 C 500 620, 300 700, 220 732" fill="none" stroke="#6a9e7a" stroke-width="1.4" marker-end="url(#arrow-green-2)"/>
+
+        <!-- 4 amber dashed arrows converging on Live agent -->
+        <path d="M 160 538 C 230 640, 620 720, 790 732" fill="none" stroke="#b8711a" stroke-width="1.3" stroke-dasharray="5,4" marker-end="url(#arrow-amber-2)"/>
+        <path d="M 360 538 C 420 640, 700 720, 795 732" fill="none" stroke="#b8711a" stroke-width="1.3" stroke-dasharray="5,4" marker-end="url(#arrow-amber-2)"/>
+        <path d="M 760 538 C 770 620, 795 700, 800 732" fill="none" stroke="#b8711a" stroke-width="1.3" stroke-dasharray="5,4" marker-end="url(#arrow-amber-2)"/>
+        <path d="M 960 538 C 910 620, 840 700, 810 732" fill="none" stroke="#b8711a" stroke-width="1.3" stroke-dasharray="5,4" marker-end="url(#arrow-amber-2)"/>
+      </svg>
+
+      <!-- Horizontal lane tags (left edge) -->
+      <span class="lane-tag" style="top:16px;">01 &middot; entry</span>
+      <span class="lane-tag" style="top:182px;">02 &middot; triage</span>
+      <span class="lane-tag" style="top:394px;">03 &middot; intents</span>
+      <span class="lane-tag" style="top:712px;">04 &middot; resolution</span>
+
+      <!-- ─── Tier 1: Service sites ─────────────────────────────── -->
+      <div class="node site" style="left:120px; top:40px;">
+        <div class="node-kind">site.01 &middot; service</div>
+        <div class="node-name">Farmer Brown</div>
+        <div class="node-sub">farmerbrown.com</div>
+      </div>
+      <div class="node site" style="left:460px; top:40px;">
+        <div class="node-kind">site.02 &middot; service</div>
+        <div class="node-name">Contractors Liability</div>
+        <div class="node-sub">contractorsliability.com</div>
+      </div>
+      <div class="node site" style="left:800px; top:40px;">
+        <div class="node-kind">site.03 &middot; service</div>
+        <div class="node-name">Builders Risk</div>
+        <div class="node-sub">buildersrisk.net</div>
+      </div>
+
+      <!-- ─── Tier 2: Service receptionists ─────────────────────── -->
+      <div class="node receptionist" style="left:120px; top:210px;">
+        <div class="node-kind">receptionist &middot; service</div>
+        <div class="node-name">Emma</div>
+        <div class="node-sub">Closed-menu triage. Runs the COI flow inline &mdash; no specialist handoff.</div>
+      </div>
+      <div class="node receptionist" style="left:460px; top:210px;">
+        <div class="node-kind">receptionist &middot; service</div>
+        <div class="node-name">Olivia</div>
+        <div class="node-sub">Same flow as Emma, with Contractors Liability branding.</div>
+      </div>
+      <div class="node receptionist" style="left:800px; top:210px;">
+        <div class="node-kind">receptionist &middot; service</div>
+        <div class="node-name">Grace</div>
+        <div class="node-sub">Same flow as Emma, with Builders Risk branding.</div>
+      </div>
+
+      <!-- ─── Intents pool frame ────────────────────────────────── -->
+      <div class="pool-frame" style="top:410px; height:140px;">
+        <span class="pool-label">intents[] &middot; closed menu &middot; same at every site</span>
+      </div>
+
+      <!-- ─── Tier 3: 5 intents (centers 160, 360, 560, 760, 960) ── -->
+      <div class="node intent" style="left:70px; top:452px;">
+        <div class="node-kind">intent.01</div>
+        <div class="node-name">Payment</div>
+        <div class="node-sub">Card, autopay, billing change.</div>
+      </div>
+      <div class="node intent" style="left:270px; top:452px;">
+        <div class="node-kind">intent.02</div>
+        <div class="node-name">Claim</div>
+        <div class="node-sub">Accident, loss, damage report.</div>
+      </div>
+      <div class="node intent self" style="left:470px; top:452px;">
+        <div class="node-kind">intent.03 &middot; ai-handled</div>
+        <div class="node-name">COI</div>
+        <div class="node-sub">Certificate of insurance &mdash; resolved in-call.</div>
+      </div>
+      <div class="node intent" style="left:670px; top:452px;">
+        <div class="node-kind">intent.04</div>
+        <div class="node-name">Other service</div>
+        <div class="node-sub">Cancel, renewal, add vehicle, coverage change.</div>
+      </div>
+      <div class="node intent" style="left:870px; top:452px;">
+        <div class="node-kind">intent.05</div>
+        <div class="node-name">Sales misroute</div>
+        <div class="node-sub">New-quote caller on the service line.</div>
+      </div>
+
+      <!-- ─── Tier 4: Resolutions ───────────────────────────────── -->
+      <div class="node outcome" style="left:100px; top:740px;">
+        <div class="node-kind">resolution.a</div>
+        <div class="node-name">COI completed</div>
+        <div class="node-sub">Certificate request captured and queued. No warm transfer.</div>
+      </div>
+      <div class="node outcome agent" style="left:640px; top:740px; width:320px;">
+        <div class="node-kind">resolution.b</div>
+        <div class="node-name">Licensed agent</div>
+        <div class="node-sub">Warm transfer with 1 of 4 openers: payment, claim, other service, or sales misroute.</div>
+      </div>
+
+      <!-- ─── Arrow labels ──────────────────────────────────────── -->
+      <span class="arrow-label" style="left:308px; top:660px;">self-service</span>
+      <span class="arrow-label alt" style="left:470px; top:692px;">transfer &middot; 4 openers</span>
+
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       03 / COI FLOW DETAIL
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="sec">
+    <div class="sec-title">03 / coi_flow_detail</div>
+    <div class="table-card principles">
+      <div class="p-grid" style="grid-template-columns:1fr 1fr 1fr;">
+        <div>
+          <div class="p-eye">step.01 &middot; policyholder</div>
+          <div class="p-body">Confirm caller identity using the phone number on file. If different, ask for business name and the phone on file.</div>
+        </div>
+        <div>
+          <div class="p-eye">step.02 &middot; additional insured</div>
+          <div class="p-body">Collect name, street, city, state, ZIP of the party to be listed on the certificate. Slow readback to confirm before continuing.</div>
+        </div>
+        <div>
+          <div class="p-eye">step.03 &middot; endorsements</div>
+          <div class="p-body">Walk through three common options &mdash; waiver of subrogation, primary &amp; non-contributory, products &amp; completed operations &mdash; one by one.</div>
+        </div>
+        <div>
+          <div class="p-eye">step.04 &middot; contact</div>
+          <div class="p-body">Capture a phone or email for the additional insured when available, so the certificate can be sent directly.</div>
+        </div>
+        <div>
+          <div class="p-eye">step.05 &middot; turn-around</div>
+          <div class="p-body">Standard 24h. Expedited 1h offered as a quid pro quo: a review from the caller in return. If accepted: SMS review link + urgent internal alert.</div>
+        </div>
+        <div>
+          <div class="p-eye">step.06 &middot; cross-sell</div>
+          <div class="p-body">Ask about Home &amp; Auto. If yes, promise an SMS application link &mdash; does not hand off to Rachel, closes the call in place.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       04 / AGENTS
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="sec">
+    <div class="sec-title">04 / agents[]</div>
     <div class="table-card">
       <table>
         <thead>
@@ -329,23 +501,44 @@
           <tr>
             <td class="t-id">L2</td>
             <td class="t-name">Emma</td>
-            <td class="t-role">receptionist &middot; farmerbrown.com</td>
+            <td class="t-role">receptionist &middot; farmerbrown.com &middot; sales</td>
             <td><span class="pill transfer">routes only</span></td>
             <td class="t-note">~30&ndash;60 s</td>
           </tr>
           <tr>
             <td class="t-id">L2</td>
             <td class="t-name">Olivia</td>
-            <td class="t-role">receptionist &middot; contractorsliability.com</td>
+            <td class="t-role">receptionist &middot; contractorsliability.com &middot; sales</td>
             <td><span class="pill transfer">routes only</span></td>
             <td class="t-note">~30&ndash;60 s</td>
           </tr>
           <tr>
             <td class="t-id">L2</td>
             <td class="t-name">Grace</td>
-            <td class="t-role">receptionist &middot; buildersrisk.net</td>
+            <td class="t-role">receptionist &middot; buildersrisk.net &middot; sales</td>
             <td><span class="pill transfer">routes only</span></td>
             <td class="t-note">~30&ndash;60 s</td>
+          </tr>
+          <tr>
+            <td class="t-id">L2</td>
+            <td class="t-name">Emma</td>
+            <td class="t-role">receptionist &middot; farmerbrown.com &middot; service</td>
+            <td><span class="pill quote">COI self-service</span><span class="pill transfer">transfer</span></td>
+            <td class="t-note">~30 s &ndash; 5 min</td>
+          </tr>
+          <tr>
+            <td class="t-id">L2</td>
+            <td class="t-name">Olivia</td>
+            <td class="t-role">receptionist &middot; contractorsliability.com &middot; service</td>
+            <td><span class="pill quote">COI self-service</span><span class="pill transfer">transfer</span></td>
+            <td class="t-note">~30 s &ndash; 5 min</td>
+          </tr>
+          <tr>
+            <td class="t-id">L2</td>
+            <td class="t-name">Grace</td>
+            <td class="t-role">receptionist &middot; buildersrisk.net &middot; service</td>
+            <td><span class="pill quote">COI self-service</span><span class="pill transfer">transfer</span></td>
+            <td class="t-note">~30 s &ndash; 5 min</td>
           </tr>
           <tr>
             <td class="t-id">L3</td>
@@ -365,7 +558,7 @@
             <td class="t-id">L3</td>
             <td class="t-name">Wendy</td>
             <td class="t-role">specialist &middot; workers' compensation</td>
-            <td><span class="pill quote">flash quote</span><span class="pill appt">appointment</span></td>
+            <td><span class="pill quote">flash $1,465</span><span class="pill appt">appointment</span></td>
             <td class="t-note">~5&ndash;8 min</td>
           </tr>
           <tr>
@@ -388,10 +581,10 @@
   </div>
 
   <!-- ════════════════════════════════════════════════════════════════
-       03 / COVERAGE MATRIX
+       05 / COVERAGE MATRIX
        ═══════════════════════════════════════════════════════════════ -->
   <div class="sec">
-    <div class="sec-title">03 / site_coverage_matrix</div>
+    <div class="sec-title">05 / site_coverage_matrix</div>
     <div class="table-card">
       <table class="matrix">
         <thead>
@@ -414,10 +607,79 @@
   </div>
 
   <!-- ════════════════════════════════════════════════════════════════
-       04 / PRINCIPLES
+       06 / PENDING INTEGRATIONS
        ═══════════════════════════════════════════════════════════════ -->
   <div class="sec">
-    <div class="sec-title">04 / design_principles</div>
+    <div class="sec-title">06 / pending_integrations</div>
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:90px">priority</th>
+            <th>integration</th>
+            <th>purpose</th>
+            <th style="width:180px">status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="pill" style="background:var(--amber-bg); color:var(--amber);">critical</span></td>
+            <td class="t-name">COI urgent alert</td>
+            <td class="t-note">Internal ping (email + Slack recommended) fired when a caller accepts expedited COI service. Without it, an expedited lead lives only in the transcript.</td>
+            <td class="t-role">backend pending</td>
+          </tr>
+          <tr>
+            <td><span class="pill" style="background:var(--green-bg); color:var(--green);">high</span></td>
+            <td class="t-name">SMS &middot; review link</td>
+            <td class="t-note">Sent when the caller accepts the expedited-service quid pro quo (1-hour turnaround in exchange for a review).</td>
+            <td class="t-role">backend pending</td>
+          </tr>
+          <tr>
+            <td><span class="pill" style="background:var(--green-bg); color:var(--green);">high</span></td>
+            <td class="t-name">SMS &middot; Home &amp; Auto application</td>
+            <td class="t-note">Sent at end of COI cross-sell and at end of Rachel's intake. Today both agents promise it verbally, no tool fires.</td>
+            <td class="t-role">backend pending</td>
+          </tr>
+          <tr>
+            <td><span class="pill" style="background:var(--green-bg); color:var(--green);">high</span></td>
+            <td class="t-name">submit_coi_form</td>
+            <td class="t-note">POST certificate contents to CRM (policyholder, additional insured, endorsements, contact). Same pattern as submit_quote.</td>
+            <td class="t-role">backend pending</td>
+          </tr>
+          <tr>
+            <td><span class="pill transfer">medium</span></td>
+            <td class="t-name">submit_wc_form</td>
+            <td class="t-note">Persist Wendy's intake data. Today lives only in call transcript.</td>
+            <td class="t-role">backend pending</td>
+          </tr>
+          <tr>
+            <td><span class="pill transfer">medium</span></td>
+            <td class="t-name">submit_commercial_auto_form</td>
+            <td class="t-note">Persist Nora's intake data. Today lives only in call transcript.</td>
+            <td class="t-role">backend pending</td>
+          </tr>
+          <tr>
+            <td><span class="pill transfer">strategic</span></td>
+            <td class="t-name">Hawksoft integration</td>
+            <td class="t-note">Final destination for all leads. Today the pipeline ends in Calforce.</td>
+            <td class="t-role">not started</td>
+          </tr>
+          <tr>
+            <td><span class="pill transfer">non-blocker</span></td>
+            <td class="t-name">Email follow-up sequences</td>
+            <td class="t-note">Per-product drip after each quote type (GL, BR, WC, Auto). Copy TBD with client.</td>
+            <td class="t-role">content pending</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════
+       07 / PRINCIPLES
+       ═══════════════════════════════════════════════════════════════ -->
+  <div class="sec">
+    <div class="sec-title">07 / design_principles</div>
     <div class="table-card principles">
       <div class="p-grid">
         <div>
@@ -443,8 +705,8 @@
 </div>
 
 <footer>
-  <span>farmer_brown &middot; call_center_architecture &middot; v1.1 &middot; internal</span>
-  <span>2026</span>
+  <span>farmer_brown &middot; call_center_architecture &middot; v1.3 &middot; internal</span>
+  <span>2026-04-22</span>
 </footer>
 
 </body>
