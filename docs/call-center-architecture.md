@@ -1,44 +1,74 @@
 # Farmer Brown — Call Center Architecture
-**Version:** v3.6
-**Last updated:** 2026-04-20
-**Status:** English Sales + English Service both deployed across all 3 sites. Spanish variants pending.
+**Version:** v4.0
+**Last updated:** 2026-04-27
+**Status:** Target architecture — 3 phone numbers (one per site) with unified per-site receptionists that triage Sales / Service / Spanish at the entry point. Migration from v3.6 (9-number / 6-receptionist model) is pending; v3.6 is still what runs in production today.
 
 > **Implementation note:** this document describes the intended product design. For the current state of what is actually deployed in VAPI (squad IDs, assistant IDs, handoff wiring, deploy scripts), see [`squads-and-handoffs.md`](squads-and-handoffs.md).
 
----
-
-## Phone Numbers — 9 total (3 per site)
-
-| Site | EN Sales | EN Service | ES (Sales + Service) |
-|------|----------|------------|----------------------|
-| buildersrisk.net | ✅ | ✅ | ✅ |
-| contractorsliability.com | ✅ | ✅ | ✅ |
-| farmerbrown.com | ✅ | ✅ | ✅ |
-
-Language is determined by the inbound number — no language detection needed.  
-Spanish line is a single number: first question is "¿Llama por ventas o por servicio?"  
-After that, the Spanish flow mirrors English exactly, fully translated.
+> **Migration note (v3.6 → v4.0):** the production deployment as of 2026-04-27 still uses the v3.6 architecture — 9 phone lines (3 per site × EN Sales / EN Service / ES) and 6 receptionists (Emma / Olivia / Grace × Sales + Service). The v4.0 collapse to 3 numbers / 3 receptionists requires (a) decommissioning the EN Service receptionists and folding their flows into a single per-site agent that triages at the entry point, (b) building bilingual triage so the Spanish branch is a sub-flow inside each per-site agent rather than a dedicated number, and (c) re-pointing toll-free numbers in Twilio. This document describes the v4.0 target; the migration steps are tracked separately.
 
 ---
 
-## Receptionist Agent (to be named — one per site, 3 variants)
+## Phone Numbers — 3 total (one per site)
 
-| Inbound line | First action |
-|--------------|--------------|
-| English Sales | "Are you looking for a new quote, or do you already have a policy with us?" → if new: continue to coverage question → if existing: transfer to live agent |
-| English Service | "Thank you for calling [site], this is [name] — are you calling about a payment, a claim, or a certificate of insurance?" → closed-menu triage (see SERVICE Branch) |
-| Spanish | "¿Llama por ventas o por servicio?" → then mirrors English |
+| Site | Toll-Free | Status |
+|------|-----------|--------|
+| contractorsliability.com | `+1 (888) 435-6365` | Already in VAPI; remains as-is, will host the new unified CL receptionist |
+| buildersrisk.net | `+1 (888) 293-4492` | Already in VAPI; remains as-is, will host the new unified BR receptionist |
+| farmerbrown.com | `+1 (888) 496-2029` | **New** — repurposed from the legacy "Farmerbrown Builders Risk" toll-free in the master Twilio account (was dormant: 1 call in 90 days, no public listings). Needs to be re-pointed from TwiML Bin to `https://api.vapi.ai/twilio/inbound_call` and renamed to "Toll-Free – FB AI Agent" before going live. |
 
-**Fallback rule (applies to ALL agents at ALL times):**  
-If the agent is confused, gets stuck, or cannot handle the request:  
-> "I'm sorry, I'm having a little trouble with that. Let me connect you with one of our agents right away — one moment please."  
+Optional QA / test number: `+1 (702) 710-8075` (LasVegas Test Phone) currently attached to the Test Dispatcher Squad — keep as a dedicated test gateway separate from the 3 production numbers, or release if not needed.
+
+Language is no longer determined by the inbound number — every site number triages language at the entry point (see "Entry-point triage" below).
+
+---
+
+## Entry-point triage (every site)
+
+Every call lands on the per-site receptionist for that toll-free. The agent's first action is a single triage question that classifies the call into one of three paths: **Sales**, **Service**, or **Spanish**.
+
+**Opening question (English):**
+> "Thank you for calling [site name]. Are you looking for a new quote, do you need help with an existing policy, or would you prefer to continue in Spanish?"
+
+| Caller answer | Routes to |
+|---------------|-----------|
+| New quote / pricing / "I'm shopping" | SALES branch (see below) |
+| Existing policy / payment / claim / certificate / change | SERVICE branch (see below) |
+| Spanish / "español" | Spanish sub-flow — agent switches to Spanish and re-asks "¿Llama por ventas o por servicio?", then continues into the Sales or Service branch in Spanish |
+
+**Implementation note for Spanish:** the Spanish branch is a sub-flow inside the same per-site receptionist (bilingual agent), not a separate number or a separate receptionist. After the language switch, the same Sales / Service flow content runs translated, and routes to Spanish-capable specialists (Valeria for GL ES, future Spanish equivalents for the other product lines).
+
+**Fallback rule (applies to ALL agents at ALL times):**
+If the agent is confused, gets stuck, or cannot handle the request:
+> "I'm sorry, I'm having a little trouble with that. Let me connect you with one of our agents right away — one moment please."
 → Transfer to live agent immediately.
+
+**Silence-timeout rule (applies to ALL agents at ALL times, all branches, all conversation steps):**
+If the caller goes silent for ~7 seconds at any point in the conversation, the agent proactively offers a live agent rather than waiting indefinitely:
+> "Are you still there? Would you like me to connect you with a live agent?"
+- If the caller responds and wants to continue with the AI: resume the flow where it stopped.
+- If the caller asks for a live agent, doesn't respond again, or sounds frustrated: transfer immediately.
+- The 7-second threshold is the target; tune in implementation based on VAPI's silence-detection capabilities.
+
+---
+
+## Receptionist Agent (one per site)
+
+Each site has a single unified receptionist that owns the entry-point triage and the routing into Sales / Service / Spanish flows. The Sales and Service flow content (described in the sections below) is unchanged from v3.6 — what changes is that a single agent now handles all three channels for its site instead of three separate agents per site.
+
+| Site | Receptionist (working name) | Toll-free |
+|------|------------------------------|-----------|
+| contractorsliability.com | Olivia (unified) | +1 (888) 435-6365 |
+| buildersrisk.net | Grace (unified) | +1 (888) 293-4492 |
+| farmerbrown.com | Emma (unified) | +1 (888) 496-2029 |
+
+The names Emma / Olivia / Grace are reused from v3.6 to preserve brand familiarity, but each one becomes a single agent (rather than a Sales variant + a Service variant).
 
 ---
 
 ## SALES Branch
 
-**First question — ALL sites, ALL sales lines:**  
+**First question — ALL sites, after the Sales path is selected at triage:**
 "Are you looking for a new quote, or do you already have a policy with us?"
 
 | Answer | Action |
@@ -70,6 +100,22 @@ Alternate menu (if "something else"):
 3. Commercial Auto → Nora ✅ (ext. 221)
 4. Builder's Risk → Jennifer ✅ (ext. 227)
 5. Home and Auto → Rachel ✅ (Home & Auto flow — see below)
+
+---
+
+## General Liability (Sarah / Valeria) — Buy Now Close
+> **Applies to General Liability quotes only** (Contractors Liability product). Does NOT apply to Builder's Risk (Jennifer), Workers' Comp (Wendy), Commercial Auto (Nora), or Home & Auto (Rachel).
+
+After Sarah (EN) or Valeria (ES) delivers the GL premium quote in-call, ask the buy-now question before going into cross-sell or close:
+
+> "Would you like to purchase this policy now and get your policy started with your certificate of insurance right away?"
+
+| Caller answer | Action |
+|---|---|
+| **Yes** | "Perfect — let me set up an appointment with one of our pros and we will get right on it." → [Calendly API — round-robin] → book appointment with the **`BUY NOW`** priority flag set, so the team knows to call back immediately. Confirm date/time → **Appointment closing** (see global rule below). Skip standard cross-sell; the buy-now appointment supersedes it. |
+| **No** | Continue with the standard cross-sell + close. |
+
+**`BUY NOW` flag implementation:** the Calendly booking API call should include a tag, custom field, or note that the assignee can see at a glance — for example, "BUY NOW — caller wants to bind GL policy + COI immediately, callback ASAP". Exact mechanism depends on the Calendly event-type configuration (custom question, default note, or post-booking webhook to a CRM). To be confirmed during implementation.
 
 ---
 
@@ -126,16 +172,19 @@ Alternate menu (if "something else"):
 
 ## SERVICE Branch
 
-**First question — ALL sites, ALL service lines (closed menu):**
-"Thank you for calling [site], this is [name] — are you calling about a payment, a claim, or a certificate of insurance?"
+**First question — ALL sites, after the Service path is selected at triage (closed menu, with explicit live-agent escape):**
+"May I help you with certificates of insurance, payments, claims — or you can say 'live agent' anytime."
+
+(The opening greeting "Thank you for calling [site], this is [name]" already happened at triage; the Service branch picks up directly with this menu. **Order matters:** COI is mentioned first because it is the only AI-handled intent — the others all transfer. The explicit "live agent anytime" prompt gives callers an immediate escape hatch.)
 
 The menu is deliberately closed to the 3 AI-handleable intents. If the caller names something outside the menu (cancel, renewal, add vehicle, update address, billing change, etc.), the receptionist acknowledges that it's a valid service request and transfers to a live agent with a specific opener — **not** the confusion fallback, because this is valid intent, just not one the AI can serve.
 
 | Caller intent | Action |
 |---|---|
+| Certificate of Insurance (COI, cert, additional insured) | AI-handled flow (see below) |
 | Payment (pay bill, card expired, autopay) | Transfer to live agent with Payment opener |
 | Claim (accident, loss, damage, file a claim) | Transfer to live agent with Claim opener |
-| Certificate of Insurance (COI, cert, additional insured) | AI-handled flow (see below) |
+| Live agent (caller says "live agent" at any point in the menu) | Transfer to live agent immediately, no menu repeat |
 | Other service (cancel, renewal, change coverage, etc.) | Transfer to live agent with "that's not something I can help with directly" opener |
 | Sales lead on Service line (new quote, product name) | Transfer to live agent with "sounds like sales" opener |
 | Confusion / no progress after 2 attempts | Rule 5 fallback → transfer to live agent |
@@ -233,27 +282,24 @@ When caller opts into expedited service (Step 5 = Yes + review agreed), immediat
 
 ## Agent Inventory
 
+> **Note:** Receptionists collapse from 6 (v3.6: Sales + Service variant per site) to 3 (v4.0: one unified per site) once the migration is executed. The table below shows the v4.0 target. The 6 v3.6 receptionists currently in production are listed as "to be merged" — see `squads-and-handoffs.md` for IDs.
+
 | Agent | Language | Status | Extension |
 |-------|----------|--------|-----------|
-| Emma — Receptionist (farmerbrown.com Sales) | EN | ✅ active v1.9 | — |
-| Olivia — Receptionist (contractorsliability.com Sales) | EN | ✅ active v1.7 | — |
-| Grace — Receptionist (buildersrisk.net Sales) | EN | ✅ active v1.7 | — |
-| Emma — Receptionist (farmerbrown.com Service) | EN | ✅ active v1.0 | — |
-| Olivia — Receptionist (contractorsliability.com Service) | EN | ✅ active v1.0 | — |
-| Grace — Receptionist (buildersrisk.net Service) | EN | ✅ active v1.0 | — |
-| Receptionists — Spanish variants (all sites) | ES | ❌ to build | — |
-| Test Dispatcher — Sales (test-only L1 multiplexer) | EN | ✅ active v1.0 | — |
-| Test Dispatcher Service (test-only L1 multiplexer) | EN | ✅ active v1.0 | — |
+| Emma — Receptionist (farmerbrown.com — unified) | EN + ES (bilingual) | 🔄 to build (merges Emma Sales v1.9 + Emma Service v1.0) | — |
+| Olivia — Receptionist (contractorsliability.com — unified) | EN + ES (bilingual) | 🔄 to build (merges Olivia Sales v1.7 + Olivia Service v1.0) | — |
+| Grace — Receptionist (buildersrisk.net — unified) | EN + ES (bilingual) | 🔄 to build (merges Grace Sales v1.7 + Grace Service v1.0) | — |
+| Test Dispatcher (test-only L1 multiplexer) | EN | ✅ active v1.0 — keep for QA | — |
 | Jennifer — Builder's Risk | EN | ✅ active v2.3 | 227 |
 | Sarah — General Liability | EN | ✅ active v1.1 | 229 |
-| Valeria — General Liability | ES | ✅ active v1.0 (not yet in any squad) | 229 |
-| Nora — Commercial Auto | EN | ✅ active v1.0 (wired into all 3 sales squads) | 221 |
+| Valeria — General Liability | ES | ✅ active v1.0 (will be wired into the Spanish branch of all 3 unified receptionists) | 229 |
+| Nora — Commercial Auto | EN | ✅ active v1.0 | 221 |
 | Rachel — Home & Auto (intake) | EN | ✅ active v2.3 — books Angie on Calendly in-call | 223 |
 | Wendy — Workers' Compensation | EN | ✅ active v1.0 — flash $1465 for no-payroll path + Calendly round-robin booking | 228 |
 
-**Squad deployment status:** 3 production sales squads + 3 production service squads + 2 test squads (1 Sales, 1 Service). See [`squads-and-handoffs.md`](squads-and-handoffs.md) for IDs and member wiring.
+**Squad deployment status (target v4.0):** 3 production unified squads (one per site) + 1 test squad. The current production has 8 squads (3 sales + 3 service + 2 test) and will be consolidated as part of the migration. See [`squads-and-handoffs.md`](squads-and-handoffs.md) for IDs and member wiring.
 
-**Spanish note:** All agents need Spanish equivalents. Implementation order: English first, Spanish second. Sarah (EN) → Valeria (ES) is the existing pattern to follow.
+**Spanish note:** Spanish becomes a sub-flow inside each unified receptionist (bilingual agent), not a separate set of agents. Specialists called from the Spanish branch must have Spanish equivalents — Sarah (EN) → Valeria (ES) is the existing pattern; the other specialists (Jennifer, Nora, Rachel, Wendy) still need ES variants built.
 
 ---
 
@@ -278,7 +324,8 @@ Voice designer: open `index.html` from the repo root to preview new ElevenLabs v
 | Integration | Notes |
 |-------------|-------|
 | Hawksoft | Final destination for all leads |
-| Calendly | Appointment booking for Home & Auto |
+| Calendly | Appointment booking for Home & Auto + GL Buy Now (with `BUY NOW` priority flag) |
+| COI submit endpoint | Send captured COI data to **certificates@farmerbrown.com** (pending — coordinate with Tyler) |
 | COI urgent alert | SMS / email / Slack to ops team (to decide) |
 | Review SMS trigger | Sent when COI is flagged as urgent |
 | Home & Auto application link | Sent via SMS/email after booking |
