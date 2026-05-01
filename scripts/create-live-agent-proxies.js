@@ -11,13 +11,21 @@ const TRANSFER_TOOLS = {
 // Shared voice (TODO: distinctive voices — not critical for a proxy that speaks once)
 const VOICE_ID = 'Ne7VRnu9eE7lobTDr8Pw';
 
-const SYSTEM_PROMPT_TEMPLATE = (toolName) => `You are a silent SIP transfer proxy. The previous receptionist has ALREADY spoken the transfer line ("Connecting you to a licensed agent now, one moment") before handing you the call — you do NOT speak anything else.
+// IMPORTANT — proxy LLM activation pattern (verified 2026-05-01).
+// With firstMessage:'' + firstMessageMode:'assistant-speaks-first', VAPI plays
+// no message and never gives the proxy LLM a turn — the call sits silent and
+// the caller hangs up. Same outcome with firstMessage:'One moment.' +
+// 'assistant-speaks-first': VAPI plays the line but then waits for user input
+// instead of letting the LLM act, so the tool is never invoked.
+//
+// What WORKS: firstMessage:'' + firstMessageMode:'assistant-speaks-first-with-
+// model-generated-message'. This forces the LLM to generate the opening turn
+// itself, and gpt-4o will emit text + tool_call together when the system prompt
+// asks for both in the same response.
+const SYSTEM_PROMPT_TEMPLATE = (toolName) => `You are a silent SIP transfer proxy. CRITICAL BEHAVIOR: On the very first turn of the conversation, you MUST do TWO things at the same time: (1) say only the words "One moment." — nothing else, no questions, no greeting, no narration; (2) invoke the \`${toolName}\` tool with no arguments. Both actions happen in the SAME turn. Do NOT wait for user input — there is no user to wait for. The previous receptionist has already greeted the caller and announced the transfer; your only job is to execute the SIP forwarding immediately while playing the brief acknowledgement. If the tool returns an error, say "I am sorry, please call back" and end the call. Otherwise stay silent after the tool call.`;
 
-Your ONLY job: call the \`${toolName}\` tool immediately upon receiving control of the call. Do not greet, do not ask questions, do not say "one moment" — just invoke the tool.
-
-If the tool fails or returns an error, say exactly: "I'm sorry, I'm having trouble connecting that line — please call back in a moment." and end the call.`;
-
-const FIRST_MESSAGE = ''; // Silent — prior receptionist already spoke the transfer line.
+const FIRST_MESSAGE = ''; // Empty — the LLM generates the opening line itself (model-generated mode).
+const FIRST_MESSAGE_MODE = 'assistant-speaks-first-with-model-generated-message';
 
 const proxies = [
   {
@@ -41,7 +49,7 @@ async function createProxy(proxy) {
   const body = {
     name: proxy.name,
     firstMessage: FIRST_MESSAGE,
-    firstMessageMode: 'assistant-speaks-first',
+    firstMessageMode: FIRST_MESSAGE_MODE,
     model: {
       provider: 'openai',
       model: 'gpt-4o',
