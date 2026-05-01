@@ -92,7 +92,7 @@ All four squads below are live in the Farmer Brown org (`198209e2-169f-46ac-af2e
 - **Members (7):**
   - Grace (L2 receptionist) → Jennifer, Sarah, Nora, Rachel, Wendy, BR Live Agent Proxy
   - Jennifer, Sarah, Nora, Rachel, Wendy (L3, terminal)
-  - BR Live Agent Proxy (L3ᴴ proxy — silent SIP transfer to +18779600221)
+  - BR Live Agent Proxy (L3ᴴ proxy — silent SIP transfer to +18775131573)
 - **Special:** Grace has a **two-step menu** — on "new quote" she asks "Builder's Risk or something else?" because BR is the default on this line. Only if "something else" does she read the alternate product menu (GL, Commercial Auto, Home & Auto, Workers' Comp). The `assistantDestinations` descriptions reflect this.
 
 ### 3.4 Test Squad — Sales EN (all sites)
@@ -196,7 +196,7 @@ All six L2 receptionists share the single L2-tier voice, distinct from the L3-ti
 |-------|------|--------------|-----------|-----------------|
 | FB | farmerbrown.com | `fb1e7022-e4ee-42d1-b1db-0977a4e05aad` | `FB Live Agent Handoff v1.0` | +18889730016 |
 | CL | contractorsliability.com | `f06c2ad0-1a21-491d-916d-cbbf09e1118e` | `CL Live Agent Handoff v1.0` | +18889730016 |
-| BR | buildersrisk.net | `180a9367-df40-4e46-91c8-a28b13901e53` | `BR Live Agent Handoff v1.0` | +18779600221 |
+| BR | buildersrisk.net | `180a9367-df40-4e46-91c8-a28b13901e53` | `BR Live Agent Handoff v1.0` | +18775131573 |
 
 These proxies exist to work around a VAPI LLM bias: when a receptionist has both `assistantDestinations` (squad handoffs) AND an explicit `transferCall` tool at the same time, the LLM almost always picks the named tool, even when routing should go to a specialist. By moving live-agent escalation into the squad as another `type: "assistant"` destination, every route uses the same implicit `transferCall` and the LLM chooses purely by name/description. See [memory: feedback_vapi_squad_tool_disambiguation](../../.claude/projects/-Users-jose-Developer-farmerbrown/memory/feedback_vapi_squad_tool_disambiguation.md) for the full incident notes.
 
@@ -217,7 +217,7 @@ Each site has its own transfer tool pointing to its dedicated human-agent SIP nu
 |-----------|---------|------|-----------------|
 | `transfer_to_live_agent_farmer_brown` | `75d7c8f3-646e-4b44-9629-2baa2a2d81dd` | farmerbrown.com | +1 (888) 973-0016 |
 | `transfer_to_live_agent_contractors_liability` | `05bc12e6-ee8a-44cf-8abd-816244480509` | contractorsliability.com | +1 (888) 973-0016 |
-| `transfer_to_live_agent_builders_risk` | `7eb304a7-ee98-4076-be2f-2d1c5fd6645e` | buildersrisk.net | +1 (877) 960-0221 |
+| `transfer_to_live_agent_builders_risk` | `7eb304a7-ee98-4076-be2f-2d1c5fd6645e` | buildersrisk.net | +1 (877) 513-1573 |
 
 ### When a receptionist calls the transfer tool
 

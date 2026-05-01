@@ -9,7 +9,7 @@ SIP transfer to the BuildersRisk.Net licensed-agent line.
 
 - **Tool ID:** `7eb304a7-ee98-4076-be2f-2d1c5fd6645e`
 - **Type:** `transferCall`
-- **Destination:** SIP to `+18779600221` (BuildersRisk.Net live-agent line)
+- **Destination:** SIP to `+18775131573` (BuildersRisk.Net live-agent line)
 - **Used by:** Grace (BR receptionist)
 
 **When Grace calls it:**
@@ -40,6 +40,6 @@ Grace's destinations (configured in `scripts/create-squad-br-sales.js`):
 
 | Tool Name | Type | Action |
 |-----------|------|--------|
-| `transfer_to_live_agent_builders_risk` | transferCall | SIP transfer to +18779600221 (BuildersRisk.Net) |
+| `transfer_to_live_agent_builders_risk` | transferCall | SIP transfer to +18775131573 (BuildersRisk.Net) |
 | handoff → Jennifer | squad | Assistant-to-assistant transfer within Squad |
 | handoff → Sarah | squad | Assistant-to-assistant transfer within Squad |

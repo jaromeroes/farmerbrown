@@ -165,7 +165,7 @@ Books a confirmed appointment via Calendly. Called after the caller selects a ti
 
 ## 4. transfer_to_live_agent
 
-Transfers the call to a live licensed insurance agent at +18779600221. VAPI handles the SIP transfer automatically.
+Transfers the call to a live licensed insurance agent at +18775131573. VAPI handles the SIP transfer automatically.
 
 ### VAPI Tool Config
 ```json
@@ -183,7 +183,7 @@ Transfers the call to a live licensed insurance agent at +18779600221. VAPI hand
   "destinations": [
     {
       "type": "number",
-      "number": "+18779600221",
+      "number": "+18775131573",
       "message": "Of course, let me connect you with one of our licensed agents right now."
     }
   ]
@@ -199,4 +199,4 @@ Transfers the call to a live licensed insurance agent at +18779600221. VAPI hand
 | `submit_quote` | `https://farmerbrown.calforce.pro/api/builders_risk` | POST |
 | `check_availability` | `https://farmerbrown-bi.calforce.pro/api/calendly/available_times?agent_api_key=...` | GET |
 | `book_appointment` | `https://farmerbrown-bi.calforce.pro/api/calendly/book_event?agent_api_key=...` | POST |
-| `transfer_to_live_agent` | SIP transfer to +18779600221 | transferCall |
+| `transfer_to_live_agent` | SIP transfer to +18775131573 | transferCall |

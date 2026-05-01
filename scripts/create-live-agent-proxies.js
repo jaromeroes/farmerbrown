@@ -5,7 +5,7 @@ if (!VAPI_KEY) { console.error('VAPI_KEY env var is not set. Copy .env.example t
 const TRANSFER_TOOLS = {
   farmer_brown:         '75d7c8f3-646e-4b44-9629-2baa2a2d81dd', // +18889730016
   contractors_liability: '05bc12e6-ee8a-44cf-8abd-816244480509', // +18889730016
-  builders_risk:         '7eb304a7-ee98-4076-be2f-2d1c5fd6645e'  // +18779600221
+  builders_risk:         '7eb304a7-ee98-4076-be2f-2d1c5fd6645e'  // +18775131573
 };
 
 // Shared voice (TODO: distinctive voices — not critical for a proxy that speaks once)

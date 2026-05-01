@@ -23,7 +23,7 @@ Three things closed today, all live in production:
 - QA test line: `+17027108075` → same squad (parallel; OK to keep both pointed at the same squad).
 - Squad members (7): Grace + Jennifer + Sarah + Wendy + Nora + Rachel + BR Live Agent Proxy.
 - **Grace has NO tools (`toolIds: []`).** All transfers — including live agent — go through `transferCall` with squad destination strings. Reason: gpt-4o structurally biases toward function-call tools and would skip the specialist routing. See `memory/feedback_vapi_function_call_bias.md`.
-- BR Live Agent Proxy (`180a9367-df40-4e46-91c8-a28b13901e53`) reconfigured with `firstMessage: "One moment."` to actually fire its forwarding tool when reached as a squad destination. SIP forwards to `+18779600221`.
+- BR Live Agent Proxy (`180a9367-df40-4e46-91c8-a28b13901e53`) reconfigured with `firstMessage: "One moment."` to actually fire its forwarding tool when reached as a squad destination. SIP forwards to `+18775131573`.
 - Voice: Grace on a Grace-specific voiceId `I5gP2xcJJRbiVkFuanfS` (different from Emma/Olivia, who still share `WlKo88ukhZlZ4fjsOQFI`). Settings tuned for prosodic distinctness from Jennifer: `stability: 0.20`, `style: 0.70`, `similarityBoost: 0.75`, `useSpeakerBoost: true`.
 - Silence-timeout configured engine-side on Grace AND all 5 specialists (Jennifer/Sarah/Wendy/Nora/Rachel): `idleTimeoutSeconds: 7`, idle message "Are you still there? Would you like me to connect you with a live agent?", `silenceTimeoutSeconds: 30`.
 

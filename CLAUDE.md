@@ -77,7 +77,7 @@ One proxy per site. Each proxy is a minimal assistant whose only job is to invok
 |-------|--------------|-----------|-----------------|
 | FB Live Agent Proxy | `fb1e7022-e4ee-42d1-b1db-0977a4e05aad` | `FB Live Agent Handoff v1.0` | +18889730016 |
 | CL Live Agent Proxy | `f06c2ad0-1a21-491d-916d-cbbf09e1118e` | `CL Live Agent Handoff v1.0` | +18889730016 |
-| BR Live Agent Proxy | `180a9367-df40-4e46-91c8-a28b13901e53` | `BR Live Agent Handoff v1.0` | +18779600221 |
+| BR Live Agent Proxy | `180a9367-df40-4e46-91c8-a28b13901e53` | `BR Live Agent Handoff v1.0` | +18775131573 |
 
 Deploy script: [scripts/create-live-agent-proxies.js](scripts/create-live-agent-proxies.js)
 
@@ -231,7 +231,7 @@ Deploy script: [scripts/create-live-agent-proxies.js](scripts/create-live-agent-
 | `book_appointment_angie` | `35ff8b09-0a1f-4694-adb7-208f2a893434` | apiRequest | POST same URL + `&event_type_uuid=901112a8-…` (Angie only) |
 | `transfer_to_live_agent_farmer_brown` | `75d7c8f3-646e-4b44-9629-2baa2a2d81dd` | transferCall | SIP transfer to +18889730016 (Farmer Brown live-agent line) |
 | `transfer_to_live_agent_contractors_liability` | `05bc12e6-ee8a-44cf-8abd-816244480509` | transferCall | SIP transfer to +18889730016 (Contractors Liability live-agent line) |
-| `transfer_to_live_agent_builders_risk` | `7eb304a7-ee98-4076-be2f-2d1c5fd6645e` | transferCall | SIP transfer to +18779600221 (BuildersRisk.Net live-agent line) |
+| `transfer_to_live_agent_builders_risk` | `7eb304a7-ee98-4076-be2f-2d1c5fd6645e` | transferCall | SIP transfer to +18775131573 (BuildersRisk.Net live-agent line) |
 
 **Deleted tools:** `log_lead_to_sheet` and `log_lead_to_sheet_v2` (Google Sheets — replaced by submit_quote API)
 

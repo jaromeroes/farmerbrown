@@ -95,7 +95,7 @@ Each decision below was discussed and approved during brainstorming on 2026-04-2
 
 ### D4. Reuse existing live-agent SIP proxies
 
-**Decision:** Payment and Claim transfer targets are the existing live-agent proxies used by Sales: `FB Live Agent Handoff v1.0` (+18889730016), `CL Live Agent Handoff v1.0` (+18889730016), `BR Live Agent Handoff v1.0` (+18779600221). No new proxies or SIP tools created.
+**Decision:** Payment and Claim transfer targets are the existing live-agent proxies used by Sales: `FB Live Agent Handoff v1.0` (+18889730016), `CL Live Agent Handoff v1.0` (+18889730016), `BR Live Agent Handoff v1.0` (+18775131573). No new proxies or SIP tools created.
 
 **Rationale:** User confirmed "son los mismos de momento" — Farmer Brown hasn't split their human-agent line between sales and service yet. If that changes, we create site+line-specific proxies later.
 
