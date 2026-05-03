@@ -21,7 +21,7 @@ async function updateAssistant() {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      name: 'Grace — BR Receptionist EN Unified v1.9',
+      name: 'Grace — BR Receptionist EN Unified v1.10',
       firstMessage: firstMessage.trim(),
       model: {
         provider: 'openai',
@@ -91,6 +91,9 @@ async function updateAssistant() {
       },
       backgroundSound: 'off',
       recordingEnabled: true,
+      // v1.10 — VAPI plays this line before terminating, even if the LLM
+      // forgets to say goodbye. Safety net so callers never hear a hard cut.
+      endCallMessage: 'Thanks for calling — have a great day!',
       // v1.2 — proactive silence-timeout. VAPI fires idleMessages after
       // idleTimeoutSeconds of silence. Rule 13 in the prompt described this
       // behavior but a pure prompt rule cannot fire without input — this is
