@@ -1,10 +1,11 @@
 # Jennifer — Builders Risk Agent
-**Current version:** v2.5
+**Current version:** v2.6
 **Last updated:** 2026-05-03
 
 ## Changelog
 | Version | Date | Changes |
 |---------|------|---------|
+| v2.6 | 2026-05-03 | Per José's request, dropped the *"— but it's rarely necessary to get you an instant quote"* tail from the firstMessage. Now reads: *"If you get stuck or need assistance any time, please say 'live agent'."* Cleaner, no implicit selling against the option. |
 | v2.5 | 2026-05-03 | Client second-round feedback: the live-agent shortcut belongs at the START OF THE QUOTE, not in Grace's triage line (which the client likes clean and fast). Moved the line into Jennifer's firstMessage with the client's exact wording: *"If you get stuck or need assistance any time, please say 'live agent' — but it's rarely necessary to get you an instant quote."* Reframes the option as a safety net while subtly reinforcing that Jennifer can usually handle it end-to-end. Grace v1.11 reverts the firstMessage change accordingly. |
 | v2.4 | 2026-05-03 | Client feedback after first real-call test: (a) "great choice" still slipping through despite Q12 prohibition — Rule 9 added bans all praise affirmations globally ("great choice", "perfect", "awesome", "wonderful", etc.) and tells Jennifer to use neutral acknowledgements only ("OK", "got it"); Rule 2 transitions reworded to remove "Perfect / Great" examples so the model has neutral templates to reach for. (b) Calls were hanging up without saying goodbye — Rule 6 expanded to require a verbal goodbye BEFORE invoking end_call_tool, plus VAPI `endCallMessage` configured at the assistant level as a safety net. (c) Numbers / times / dollar amounts were being read literally ("8:30" → "eight three zero"; "$1,300" → "one comma three zero zero dollars") — Rule 8 added with explicit guidance to write times, dates, ZIP codes, and dollar amounts in their spoken form (e.g. "eight thirty AM", "thirteen hundred dollars") not their numeric form. (`voice.applyTextNormalization` is NOT a valid VAPI field — that param belongs to the ElevenLabs API directly, not to VAPI's voice schema.) |
 | v2.3 | 2026-03-30 | Slower pacing, project type before coverage, renovation flow before Q4, summary before submit, softer close, cross-sell update |
