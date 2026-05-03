@@ -21,7 +21,7 @@ async function updateAssistant() {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      name: 'Grace — BR Receptionist EN Unified v1.10',
+      name: 'Grace — BR Receptionist EN Unified v1.11',
       firstMessage: firstMessage.trim(),
       model: {
         provider: 'openai',
