@@ -1,10 +1,11 @@
 # Jennifer — Builders Risk Agent
-**Current version:** v2.6
+**Current version:** v2.7
 **Last updated:** 2026-05-03
 
 ## Changelog
 | Version | Date | Changes |
 |---------|------|---------|
+| v2.7 | 2026-05-03 | Closing script replaced with the client-approved verbatim sign-off (per John): *"We are all set on our end and please be on the lookout for additional quotes from different carriers within the hour. Thank you again for the opportunity to compete for your business and best of luck with your project. Goodbye for now."* Replaces the previous *"Great! Best of luck with your project..."* line — also nicer because it killed the leading "Great!" that violated Rule 9 (no praise). Prompt explicitly tells Jennifer not to paraphrase the closing. The shorter assistant-level `endCallMessage` ("Thanks for calling — have a great day!") stays as the safety net for non-quote-completion call ends (live-agent transfers, fallbacks, etc.). |
 | v2.6 | 2026-05-03 | Per José's request, dropped the *"— but it's rarely necessary to get you an instant quote"* tail from the firstMessage. Now reads: *"If you get stuck or need assistance any time, please say 'live agent'."* Cleaner, no implicit selling against the option. |
 | v2.5 | 2026-05-03 | Client second-round feedback: the live-agent shortcut belongs at the START OF THE QUOTE, not in Grace's triage line (which the client likes clean and fast). Moved the line into Jennifer's firstMessage with the client's exact wording: *"If you get stuck or need assistance any time, please say 'live agent' — but it's rarely necessary to get you an instant quote."* Reframes the option as a safety net while subtly reinforcing that Jennifer can usually handle it end-to-end. Grace v1.11 reverts the firstMessage change accordingly. |
 | v2.4 | 2026-05-03 | Client feedback after first real-call test: (a) "great choice" still slipping through despite Q12 prohibition — Rule 9 added bans all praise affirmations globally ("great choice", "perfect", "awesome", "wonderful", etc.) and tells Jennifer to use neutral acknowledgements only ("OK", "got it"); Rule 2 transitions reworded to remove "Perfect / Great" examples so the model has neutral templates to reach for. (b) Calls were hanging up without saying goodbye — Rule 6 expanded to require a verbal goodbye BEFORE invoking end_call_tool, plus VAPI `endCallMessage` configured at the assistant level as a safety net. (c) Numbers / times / dollar amounts were being read literally ("8:30" → "eight three zero"; "$1,300" → "one comma three zero zero dollars") — Rule 8 added with explicit guidance to write times, dates, ZIP codes, and dollar amounts in their spoken form (e.g. "eight thirty AM", "thirteen hundred dollars") not their numeric form. (`voice.applyTextNormalization` is NOT a valid VAPI field — that param belongs to the ElevenLabs API directly, not to VAPI's voice schema.) |
@@ -204,5 +205,9 @@ REVIEW REQUEST:
 END OF CALL:
 After the review request, ask: "Do you need anything else, or would you like to speak to a live agent now?"
 - If they want a live agent → transfer using transfer_to_live_agent.
-- If they say no or nothing else → "Great! Best of luck with your project, and have a wonderful day! Goodbye."
-Then call end_call_tool to terminate the call.
+- If they say no or nothing else → speak this CLOSING SCRIPT verbatim, then call end_call_tool:
+
+CLOSING SCRIPT (speak verbatim):
+"We are all set on our end and please be on the lookout for additional quotes from different carriers within the hour. Thank you again for the opportunity to compete for your business and best of luck with your project. Goodbye for now."
+
+Do NOT paraphrase, shorten, or reword this closing — it is the client-approved sign-off. Then call end_call_tool to terminate the call.
