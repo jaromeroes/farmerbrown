@@ -210,9 +210,11 @@ Deploy script: [scripts/create-live-agent-proxies.js](scripts/create-live-agent-
 
 ### Jennifer — Builders Risk (active builders risk agent)
 - **Assistant ID:** `273d2d5a-27e0-40aa-b817-76a51d1c302d`
-- **Version:** v2.2
+- **Version:** v2.8
 - **Config:** `agents/jennifer-builders-risk/`
-- **Deploy script:** `scripts/create-jennifer.js`
+- **Deploy scripts:** `scripts/create-jennifer.js`, `scripts/update-jennifer.js`
+- **Required toolIds (4):** `submit_quote`, `check_availability` (round-robin), `book_appointment` (round-robin), `transfer_to_live_agent_builders_risk`. The deploy script enforces these — stripping any breaks the line silently (line answers, no data persists, scheduling branch dies). See changelog entry v2.8.
+- **Squad reference:** lives in BR Unified Squad `a3269fa7-6229-4bed-817a-c4684878a600` as `members[0].assistantDestinations[0]` (referenced by `assistantName` string). The `update-jennifer.js` script co-PATCHes this string when the version bumps — never rename Jennifer without it.
 - **Improvements over Sarah:**
   - Progressive data capture (8 checkpoints vs 4) — sends data after Q2, Q3, Q4, Q7, Q11, Q15, end of call, and before transfer
   - Silent tool execution — no "give me a moment" or "just a sec" when calling submit_quote

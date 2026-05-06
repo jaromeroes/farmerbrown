@@ -1,25 +1,51 @@
 # Where we left off — Farmer Brown
-**Last touched:** 2026-05-05 (mid-session checkpoint — Grace v1.12 shipped, BR call-start regression fixed, Jennifer toolIds restoration pending client OK)
+**Last touched:** 2026-05-06 (Jennifer v2.11 + Grace v1.13 deployed — full iteration cycle from broken toolIds → 5 prompt-fix rounds. BR line operational, awaiting next test-call round.)
 
 This is a session-resumption checkpoint: enough context to pick the project back up cold without re-reading the full conversation history.
 
 ---
 
-## ⚠️ Production blocker still open
+## Current state (BR line)
 
-**Jennifer v2.7 has `toolIds: undefined`.** Since 2026-05-03 19:34 UTC (when Jennifer was renamed v2.3 → v2.7) all four tools were stripped: `submit_quote`, `check_availability`, `book_appointment`, `transfer_to_live_agent_builders_risk`. Consequences live in production now:
+| Component | Version | Notes |
+|---|---|---|
+| **Jennifer** (BR specialist) | **v2.11** | All 4 toolIds restored, 4 submit_quote checkpoints (CP3 = risk + CP4 = appointment), spoken-form premium examples, Rule 1 at ABSOLUTE TOP w/ pre-response meta-check, Rule 4 no-stack for Q2 phone, idleTimeoutSeconds 20. |
+| **Grace** (BR receptionist) | **v1.13** | Hand-off scripts shortened (no more *"she'll get you an instant quote"* duplication), Rule 15 anti-repeat, idleTimeoutSeconds 20. |
+| **Squad** `a3269fa7-…` | synced | Jennifer destination string = "Jennifer — Builders Risk v2.11". |
+| **BR public line** `+18882934492` | operational | Test calls 14:19, 14:45, 15:04, 15:11, 15:55 UTC all answered correctly. |
 
-- **No BR quote data has been saved to the backend since 2026-05-03 19:34.** Jennifer collects all 13–15 fields, even reads back a premium estimate, but never PATCHes `/api/builders_risk_submissions/update_by_email`. Every call's data is in the transcript only.
-- When Jennifer reaches the "Would you like to schedule a call?" branch, she says *"1 moment while I check the availability"* and goes silent — there is no `check_availability` tool to invoke. The idle/silence-timeout fires after ~10 sec and the call dies.
-- `transfer_to_live_agent_builders_risk` is also missing — Jennifer's "live agent" escape hatch from inside the BR flow doesn't work.
+## Deploy scripts (idempotent, future-proof)
 
-**Pending user OK** to deploy Jennifer with:
-1. Restore four `toolIds`: `submit_quote` (`da21631c-…`), `check_availability` (`dd2504ab-…`, round-robin), `book_appointment` (`642280ea-…`, round-robin), `transfer_to_live_agent_builders_risk` (`7eb304a7-…`).
-2. Rename 2× *"licensed agent(s)"* → *"professional(s)"* in Jennifer's system prompt (the "Our licensed agents will confirm…" line + the "schedule a call with one of our licensed agents" line).
+- `scripts/update-jennifer.js` — parses version from prompt header, PATCHes assistant (model + toolIds + messagePlan) + co-PATCHes squad `assistantDestinations[].assistantName`, verifies. Re-runnable.
+- `scripts/update-receptionist-br-unified.js` — parses version from prompt header, PATCHes Grace (model + voice + transcriber + messagePlan + endCallMessage). Grace is dispatcher (not destination) so no squad co-PATCH needed.
 
-There is no deploy script for Jennifer in `scripts/` (CLAUDE.md notes the 5 specialists were patched via direct curl). When resuming, either write `scripts/update-jennifer.js` or do a one-shot PATCH against `https://api.vapi.ai/assistant/273d2d5a-27e0-40aa-b817-76a51d1c302d` with the new `model.toolIds` array and the rename. Bump name to `Jennifer — Builders Risk v2.8`.
+**Pattern to reuse for Sarah / Wendy / Nora / Rachel** — they're still patched via direct curl. Mirror the Jennifer script shape next time one of them needs changes (assistant + same-squad destination co-PATCH).
 
-**Be careful when renaming Jennifer.** This same rename — done on 2026-05-03 with no corresponding squad update — is what broke Grace's `assistantDestinations` and bricked the entire BR line for ~36 hours. The squad references Jennifer by `assistantName` string. If you bump v2.7 → v2.8, you MUST PATCH the squad `members[0].assistantDestinations[0].assistantName` in the same session. (The squad is `a3269fa7-6229-4bed-817a-c4684878a600`.)
+---
+
+## What got fixed across the iteration cycle (2026-05-05)
+
+After restoring Jennifer's toolIds (v2.8), 5 test-call rounds surfaced these issues, each fixed in a tight iteration loop. Useful to know which problems are actually solved vs. open.
+
+### Solved (verified in calls)
+- ✅ Risk questions Q15-Q18 always asked before SUMMARY (was: skipped). Fix: dedicated RISK CHECK section + SUMMARY guard (v2.9).
+- ✅ Hand-off Grace→Jennifer says line ONCE (was: 2-3× repetition during handoff latency). Fix: shortened hand-off scripts to match squad message + Rule 15 anti-repeat + idleTimeout raised 7→20 (v1.13).
+- ✅ Email *"john dot brown at gmail dot com"* spoken as words (was: spelled "J O H N..."). Fix: Rule 3 emails differentiates pronounceable words from random strings (v2.10).
+- ✅ Timezone question is now open (was: enumerated whole IANA list). Fix: marked table as `[INTERNAL — DO NOT SAY ALOUD]` (v2.10).
+- ✅ Spoken-form fixes for times/dates/ZIPs (Rule 8) — all working.
+- ✅ submit_quote checkpoints firing — verified in tool calls of call 14:19.
+
+### Open (last test, awaiting v2.11 verification)
+- ⏳ Filler phrases ("Just a sec", "1 moment") — Rule 1 strengthened twice; v2.11 moves it to ABSOLUTE TOP w/ pre-response meta-check. **If still failing in next test, we've exhausted prompt-side levers** and need to consider VAPI-level mechanisms (e.g., a `messages` array with start-tool / end-tool empty strings, or model swap).
+- ⏳ Premium readback in spoken form — v2.11 added explicit examples in INSTANT QUOTE (was: said *"1 1 4 8 dollars"* in last test). Should work but needs verification.
+- ⏳ Q2 phone two-turn (no stacking) — v2.11 Rule 4 hardened. Should work but needs verification.
+- ⏳ idleTimeoutSeconds=20 on Jennifer — set in v2.11 deploy, verified at PATCH-time, but only test-call traffic will confirm it stops mid-conversation idle prompts.
+
+### Cost data (real calls today)
+- Average: **$0.41/min** on calls that reach the full quote flow. Range $0.08-0.18/min for early-hangup triage, $0.41-0.63/min for completed leads w/ appointment.
+- 85% of cost is the LLM (gpt-4o, ~$0.35/min). Voice + STT + infra is ~$0.06/min.
+- Per-lead cost: $2.10-$2.65 for a complete 5-min lead with appointment.
+- User decision: **don't optimize cost yet** — first nail quality, then revisit. Levers in priority: (1) Grace → gpt-4o-mini, (2) full migration to mini, (3) Cartesia voice instead of ElevenLabs, (4) prompt compaction. None pursued.
 
 ---
 
@@ -65,13 +91,13 @@ These were applied via direct PATCH on the squad (no script in `scripts/` for th
 
 ### Builders Risk — buildersrisk.net
 
-- Public toll-free: `+18882934492` → BR Unified Squad (`a3269fa7-6229-4bed-817a-c4684878a600`) → **Grace v1.12** as entry point.
+- Public toll-free: `+18882934492` → BR Unified Squad (`a3269fa7-6229-4bed-817a-c4684878a600`) → **Grace v1.13** as entry point.
 - QA test line: `+17027108075` → same squad.
-- Squad members (7): Grace v1.12 + Jennifer v2.7 + Sarah v1.1 + Wendy v1.0 + Nora v1.0 + Rachel v2.3 + BR Live Agent Proxy v1.0.
-- ⚠️ **Jennifer v2.7 is functionally degraded — see "Production blocker" at top.** Calls connect and run the conversation, but no data persists and Calendly is unreachable.
+- Squad members (7): Grace v1.13 + Jennifer v2.11 + Sarah v1.1 + Wendy v1.0 + Nora v1.0 + Rachel v2.3 + BR Live Agent Proxy v1.0.
 - Grace has `toolIds: []` (intentional — see `memory/feedback_vapi_function_call_bias.md`).
+- Jennifer has 4 `toolIds` (intentional — `submit_quote`, `check_availability`, `book_appointment`, `transfer_to_live_agent_builders_risk`). Enforced by `scripts/update-jennifer.js`.
 - Voice: Grace on `I5gP2xcJJRbiVkFuanfS` with extreme settings (stability 0.20, style 0.70). Specialists on `Ne7VRnu9eE7lobTDr8Pw` defaults.
-- Silence-timeout: `idleTimeoutSeconds: 7` on Grace (engine-side via `messagePlan`); `silenceTimeoutSeconds: 30`. Specialists were also configured for this on 2026-04-29/30 by direct curl, but Jennifer v2.7 currently shows `idleTimeoutSeconds: undefined` — possibly another regression from the same 2026-05-03 deploy. Verify when restoring her tools.
+- Silence-timeout: `messagePlan.idleTimeoutSeconds: 20` on both Grace (since v1.13) and Jennifer (since v2.11); `silenceTimeoutSeconds: 30`. Both raised from 7 because the 7s window was firing during handoff latency and slow-caller turns.
 
 ### Contractors Liability — contractorsliability.com (UNCHANGED)
 
@@ -105,7 +131,7 @@ These were applied via direct PATCH on the squad (no script in `scripts/` for th
 
 ## Open / pending after today
 
-1. ❗ **Jennifer toolIds restoration** — see "Production blocker" at top. Restore 4 toolIds + 2× *"professional"* prompt edit + bump name v2.7 → v2.8 + co-PATCH squad destination assistantName. **This is the priority for the next session.** Until done, the BR line is taking calls but losing all quote data.
+1. ✅ **Jennifer toolIds restoration — DONE 2026-05-05 PM.** Shipped via `scripts/update-jennifer.js`. v2.8 live with all 4 toolIds, prompt edits in, squad destination string in sync. Idempotent re-run verified.
 
 2. **CL + FB still on v3.6 architecture.** When you migrate to v4.0 (CL Unified, FB Unified), reuse the Grace pattern. Crucial: start with `toolIds: []` from day one. Do NOT add a function-call live-agent tool to a receptionist that also has squad destinations.
 
@@ -119,7 +145,7 @@ These were applied via direct PATCH on the squad (no script in `scripts/` for th
 
 7. **Documentation pass needed.** `docs/call-center-architecture.md` still describes v3.6 production state for CL + FB. `docs/squads-and-handoffs.md` and `CLAUDE.md` still describe the 2026-04-18 architecture. Worth a doc update once Jennifer is unblocked.
 
-8. **No deploy script for the 5 specialists.** Patches for Jennifer / Sarah / Wendy / Nora / Rachel (silence-timeout config, the 2026-04-29/30 messagePlan, and now the pending toolIds restoration) all happen via direct API calls. Worth writing `scripts/update-jennifer.js` etc. so the next regression doesn't take 2 days to detect.
+8. **Deploy scripts: 1 of 5 specialists covered.** Jennifer now has `scripts/update-jennifer.js` (idempotent, co-PATCHes squad destination). Sarah / Wendy / Nora / Rachel still go via direct API calls. Mirror the Jennifer script shape next time one of them needs a change — assistant + squad destination co-PATCH in one transaction, version parsed from system-prompt.md header.
 
 9. **Stale `CALFORCE_AGENT_KEY` in `.env`** — overwrite with the working key from VAPI tool config when convenient. Not blocking.
 
@@ -127,8 +153,17 @@ These were applied via direct PATCH on the squad (no script in `scripts/` for th
 
 ## How to resume
 
-1. **Read this file** (you are here).
-2. **Verify the BR line is still operational** with a test call to `+18882934492`. Grace should pick up, the new flat menu should fire on "new quote", and the call should hand off to Jennifer cleanly. If it falls through to the support phone again, check the squad destinations against the actual member names — that's the failure mode.
-3. **Decide on Jennifer**: write a proper `scripts/update-jennifer.js` (preferred) or do a direct PATCH. Either way: (a) restore 4 `toolIds`, (b) prompt: 2× rename, (c) bump name to v2.8, (d) co-PATCH squad destination assistantName in the SAME session. Test with a real call before declaring done.
-4. **Before adding any tool to a receptionist** (Grace / future Emma-Unified / future Olivia-Unified), read `memory/feedback_vapi_function_call_bias.md`. Different problem than Jennifer's — receptionists with squad destinations should keep `toolIds: []` so gpt-4o doesn't bias toward function-calls and skip the specialist routing. The Jennifer fix is the opposite case (a specialist that needs its tools back).
+1. **Read this file** (you are here). Then read the "Current state" table at the top — that's the source of truth.
+2. **Run a test call to `+18882934492`** and verify the four open items in the table above:
+   - Premium spoken in word form? (e.g. *"eleven hundred forty-eight dollars"*, not *"1 1 4 8 dollars"*).
+   - Filler phrases gone? (no *"Just a sec"*, *"1 moment"*, *"Hold on"* before tool calls).
+   - Q2 phone is two turns? (yes/no question first, then readback in next turn).
+   - Idle prompt no longer fires mid-conversation on slow user turns?
+3. **If filler phrases still appear in v2.11**, prompt-side levers are exhausted. Next moves: (a) look at VAPI's `model.messages[]` shape with a system message that includes pre-tool-call empty assistant turns, (b) consider gpt-4o-mini for Grace (free side benefit: cost optimization deferred from this session), (c) test if VAPI has a `responseDelaySeconds` or similar config to suppress filler.
+4. **Cola pendiente del cliente** (deferred — surfaced earlier in session, not yet specced):
+   - **WC flow change** for Wendy — specs to come.
+   - **submit_quote checkpoint when project value is known** — already covered by Jennifer v2.10 CP2 (project_type + building_coverage). Confirm with John whether this is what he meant or if he wants a separate Sarah GL change.
+   - **Spanish in conversation** — approach to be defined by client.
+5. **Pattern when you write `scripts/update-{specialist}.js`** for Sarah/Wendy/Nora/Rachel: copy `update-jennifer.js` shape exactly. Parse version from prompt header → PATCH assistant (model + toolIds + messagePlan) → find squad dispatcher and target's destination defensively → co-PATCH assistantName → verify both. The cost is a small amount of boilerplate per specialist; the savings is never having a 36-hour silent outage again.
+6. **Don't optimize cost yet** — user explicit: nail quality first. Levers documented in "Cost data" section above for when the time comes.
 5. **If the bug detective itch persists**: figure out what exactly got stripped on 2026-05-03 19:34. Was it a manual deploy without `toolIds` in the payload? Was it a VAPI dashboard edit? Whatever it was, it shouldn't be possible to leave a specialist with empty tools silently.
