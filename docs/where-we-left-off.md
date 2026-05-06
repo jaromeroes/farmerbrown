@@ -1,25 +1,29 @@
 # Where we left off — Farmer Brown
-**Last touched:** 2026-05-06 (Jennifer v2.11 + Grace v1.13 deployed — full iteration cycle from broken toolIds → 5 prompt-fix rounds. BR line operational, awaiting next test-call round.)
+**Last touched:** 2026-05-06 PM — three deploys this afternoon: Jennifer v2.12 (mailing address), Grace v1.14 (existing-quote disconnect waiting for Pedro's number), Wendy v2.0 (full redesign per John). All shipped; **none verified yet by test call**.
 
 This is a session-resumption checkpoint: enough context to pick the project back up cold without re-reading the full conversation history.
 
 ---
 
-## Current state (BR line)
+## Current state (after 2026-05-06 PM session)
 
 | Component | Version | Notes |
 |---|---|---|
-| **Jennifer** (BR specialist) | **v2.11** | All 4 toolIds restored, 4 submit_quote checkpoints (CP3 = risk + CP4 = appointment), spoken-form premium examples, Rule 1 at ABSOLUTE TOP w/ pre-response meta-check, Rule 4 no-stack for Q2 phone, idleTimeoutSeconds 20. |
-| **Grace** (BR receptionist) | **v1.13** | Hand-off scripts shortened (no more *"she'll get you an instant quote"* duplication), Rule 15 anti-repeat, idleTimeoutSeconds 20. |
-| **Squad** `a3269fa7-…` | synced | Jennifer destination string = "Jennifer — Builders Risk v2.11". |
-| **BR public line** `+18882934492` | operational | Test calls 14:19, 14:45, 15:04, 15:11, 15:55 UTC all answered correctly. |
+| **Jennifer** (BR specialist) | **v2.12** | All v2.11 fixes + new MAILING ADDRESS sub-flow after Q6 ("same as project, or different?"). CP3 payload extended with mailing_street/city/state/zip. submit_quote tool schema co-updated via `scripts/update-submit-quote-mailing-fields.js`. Backend already accepted the fields natively (verified PATCH 2026-05-06, record id 1430). |
+| **Grace** (BR receptionist) | **v1.16** | All v1.13 fixes + EXISTING-QUOTE branch DISCONNECTED (v1.14: caller hears *"Thanks for following up. Waiting for this number from Pedro."* and the call ends). + SPECIFIC-PERSON 4th option in firstMessage (v1.15) + INTERNAL DIRECTORY of 18 confirmed names with full-name acknowledgement on transfer (v1.16: caller saying "Gustavo" hears *"Of course — connecting you to Gustavo Alvarez. One moment."* before transfer). Rule 9 Mech B at 7 cases. **Two re-wires pending:** (a) Pedro's number for existing-quote rama; (b) PBX DTMF or DIDs for true direct-dial of the 18 directory names — see [memory project_ask_tomorrow_2026_05_07](../../../.claude/projects/-Users-jose-Developer-theb2btinkerers-clients-farmerbrown/memory/project_ask_tomorrow_2026_05_07.md). |
+| **Wendy** (WC specialist, cross-site) | **v2.0** | Full redesign per John's 2026-05-06 spec. 12-question underwriting flow (entity → FEIN/SSN → withholding-employees Y/N (KEY) → 1099 subs → COI requirement → payroll → work type → owner inclusion → need-by → contract → cross-sell {GL, CA, Umbrella, Pollution, Professional}). Flash quote dropped from $1465 → **$1280**, trigger simplified to "Q3 = NO" (zero withholding employees, regardless of owner). Wording fix: never "941 employees", always "employees you withhold taxes on". Spanish PPC routing pending number from new team. Deployed via new `update-wendy.js` (Jennifer-pattern + auto-discovers 5 squads + co-PATCHes assistantName in all of them). |
+| **Squad** `a3269fa7-…` (BR Unified) | synced | Jennifer dest = v2.12, Wendy dest = v2.0. |
+| **Squads** (5 referencing Wendy) | synced | BR Unified, Test, BR Sales EN, CL Sales EN, FB Sales EN — all `assistantDestinations[].assistantName` updated to "Wendy — Workers' Comp v2.0" via the new auto-discovering deploy script. |
+| **BR public line** `+18882934492` | operational | No test calls yet on v2.12/v1.14. Awaiting next round. |
 
 ## Deploy scripts (idempotent, future-proof)
 
-- `scripts/update-jennifer.js` — parses version from prompt header, PATCHes assistant (model + toolIds + messagePlan) + co-PATCHes squad `assistantDestinations[].assistantName`, verifies. Re-runnable.
+- `scripts/update-jennifer.js` — parses version from prompt header, PATCHes assistant (model + toolIds + messagePlan) + co-PATCHes ONE squad's `assistantDestinations[].assistantName` (BR Unified). Re-runnable.
 - `scripts/update-receptionist-br-unified.js` — parses version from prompt header, PATCHes Grace (model + voice + transcriber + messagePlan + endCallMessage). Grace is dispatcher (not destination) so no squad co-PATCH needed.
+- `scripts/update-wendy.js` (NEW 2026-05-06) — same Jennifer pattern but **auto-discovers ALL squads referencing Wendy by name** (currently 5) and co-PATCHes every one of them. Idempotent. **Use this shape next time we generalize update-jennifer to handle multi-squad cases** — or for any future specialist that lives in more than one squad (Sarah, Nora, Rachel are in similar shape).
+- `scripts/update-submit-quote-mailing-fields.js` (NEW 2026-05-06) — one-shot/idempotent: PATCHes the submit_quote VAPI tool schema to add the four `mailing_*` properties. Re-running is a no-op.
 
-**Pattern to reuse for Sarah / Wendy / Nora / Rachel** — they're still patched via direct curl. Mirror the Jennifer script shape next time one of them needs changes (assistant + same-squad destination co-PATCH).
+**Pattern to reuse for Sarah / Nora / Rachel** — they're still patched via direct curl. Mirror `update-wendy.js` (not `update-jennifer.js`) next time one of them needs changes — Sarah/Nora/Rachel are also each in 4-5 squads, so single-squad logic isn't enough.
 
 ---
 

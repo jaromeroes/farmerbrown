@@ -192,14 +192,16 @@ Deploy script: [scripts/create-live-agent-proxies.js](scripts/create-live-agent-
 
 ### Wendy — Workers' Compensation (cross-site)
 - **Assistant ID:** `bc789a3e-9e2b-4c60-9778-9e33d0cd826d`
-- **Version:** v1.0
+- **Version:** v2.0 (full redesign 2026-05-06 per John's new spec)
 - **Config:** `agents/wendy-workers-comp/`
-- **Deploy scripts:** `scripts/create-wendy.js`, `scripts/update-wendy.js`
-- **Role:** Collect WC quote data + flash $1465 quote for the ~90% no-payroll path + book an appointment via Calendly round-robin. With-payroll callers skip the flash quote and go straight to appointment (manual underwriting).
-- **Flow:** 6 demographics → payroll branch (no payroll → subs-with-COI question; yes payroll → 7-question sub-flow including embedded GL/CA/umbrella cross-sell if contract) → quote decision → Calendly round-robin booking → standard appointment close.
-- **Heuristic:** Per client: ~90% of WC policies sold are no-payroll / no-owner-included → $1465 flat. Any other case (payroll, owner included) → appointment-only, no flash quote.
+- **Deploy scripts:** `scripts/create-wendy.js`, `scripts/update-wendy.js` (auto-discovers all squads referencing Wendy by name and co-PATCHes them — currently 5: BR Unified, Test, BR Sales EN, CL Sales EN, FB Sales EN)
+- **Role:** Collect WC quote data via a 12-question underwriting interview + flash **$1280** quote for the "zero employees you withhold taxes on" path + book an appointment via Calendly round-robin. All other callers (any withholding employees) skip the flash quote and go straight to appointment (manual underwriting).
+- **Flow (v2.0):** 5 demographics (name, business, phone, email, address — no annual revenue) → 12 underwriting Qs (entity type → FEIN/SSN → withholding-employees Y/N (KEY) → 1099 sub payments → 1099 sub COI requirement → withholding-employees payroll → work type → owner inclusion → need-by date → contract Y/N → cross-sell list {GL, CA, Umbrella, Pollution, Professional} — always asked) → quote decision → Calendly round-robin booking → standard appointment close.
+- **Flash-quote trigger (v2.0):** Q3 = NO (zero employees you withhold taxes on) → **$1280** flat. Any YES → appointment-only. Per John's literal text the rate is purely indexed on withholding-employee count; **owner inclusion is captured but does NOT gate the flash in v2.0** (was a v1.0 condition). If wrong, easy to flip back.
+- **Wording rule:** never say "941 employees" — speak as "employees you withhold taxes on" everywhere (per John's clarification).
 - **Tools:** `check_availability`, `book_appointment` (both round-robin), `transfer_to_live_agent_farmer_brown` (fallback only). Cross-site transfer limitation applies — see `docs/squads-and-handoffs.md` §6.
-- **Not yet built:** `submit_wc_form` (pending backend endpoint). WC intake data lives in the call transcript only.
+- **Not yet built:** `submit_wc_form` (pending backend endpoint). WC intake data lives in the call transcript only. When the tool ships, wire 4 progressive checkpoints: CP1 after demographics, CP2 after Q3 (withholding Y/N), CP3 after Q11 (full payload), CP4 after `book_appointment`.
+- **Pending: Spanish PPC routing.** Per John (2026-05-06), Spanish PPC calls should route to a new Spanish team with a new phone number — pending. v2.0 falls back to the EN live-agent line for Spanish callers via Rule 14. When the number arrives, decide between (a) building a Wendy ES Spanish-language assistant, or (b) adding a `transfer_to_spanish_ppc_team` SIP transfer tool.
 - **Squad integration:** ✅ wired into all 3 sales squads (Emma/Olivia/Grace) and Test Squad. When a caller picks Workers' Comp, the receptionist hands off to Wendy.
 
 ### Sarah — Builders Risk (original, ARCHIVED — replaced by GL above)

@@ -60,6 +60,20 @@ Terminates the call cleanly at the end of the scheduling flow. Configure `endCal
 
 | Tool Name | Purpose | Proposed endpoint |
 |-----------|---------|-------------------|
-| `submit_wc_form` | Persist Wendy's intake data (demographics + payroll sub-flow + cross-sell list) to the DB | `PATCH …/api/wc_submissions/update_by_email` (endpoint TBD) |
+| `submit_wc_form` | Persist Wendy's intake data (demographics + 12-question underwriting flow + cross-sell list) to the DB | `PATCH …/api/wc_submissions/update_by_email` (endpoint TBD) |
 
-When `submit_wc_form` ships, add silent checkpoint calls after Step 1 (demographics), Step 3 (payroll sub-flow), and before Step 5 (before the booking), mirroring Jennifer's progressive-capture pattern.
+When `submit_wc_form` ships, add silent checkpoint calls (mirroring Jennifer's progressive-capture pattern):
+- CP1 after Step 1 (demographics — name, business, phone, email, address)
+- CP2 after Q3 (withholding-employees Y/N — drives the flash-quote decision)
+- CP3 after Q11 (full underwriting payload + cross-sell list)
+- CP4 after `book_appointment` returns success (adds appointment_id, scheduled_time)
+
+Keep question order stable in the prompt so the field-name mapping in this future tool stays straightforward.
+
+## Pending: Spanish PPC routing (v2.1+)
+
+Per client (John, 2026-05-06): Spanish PPC calls should route to a new Spanish team with a new phone number — pending provisioning. v2.0 falls back to the EN live-agent line for Spanish callers. When the Spanish team's number arrives, options:
+- **(a)** Build a `Wendy ES` Spanish-language assistant (mirrors Valeria GL pattern), attach to a new Spanish-PPC squad, route Wendy's Rule 14 to that squad's destination instead of the EN live-agent transfer.
+- **(b)** Add a `transfer_to_spanish_ppc_team` SIP transfer tool and call it from Rule 14.
+
+Option (a) is more polished (Spanish-language intake matching the team) but a bigger build. Option (b) is faster to ship.
