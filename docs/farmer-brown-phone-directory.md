@@ -30,10 +30,10 @@ Sections:
 | Maria Portillo | (726) 224-2489 | `+17262242489` | 254 | United States, San Antonio, TX | Softphone | ✅ yes |
 | Monica Bar | (312) 868-0693 | `+13128680693` | 127 | United States, Chicago, IL | Desk Phone | ✅ yes |
 | Nichole West | (726) 238-7739 | `+17262387739` | 237 | United States, San Antonio, TX | Desk Phone | ✅ yes |
-| Pedro Neumann | (726) 233-4655 | `+17262334655` | 275 | United States, San Antonio, TX | Softphone | ✅ yes |
-| Pedro Neumann | (726) 203-8815 | `+17262038815` | 275 | United States, San Antonio, TX | Desk Phone | — (other line wired) |
+| Pedro Neumann | (726) 233-4655 | `+17262334655` | 275 | United States, San Antonio, TX | Softphone | removed (was test only — Grace v1.21) |
+| Pedro Neumann | (726) 203-8815 | `+17262038815` | 275 | United States, San Antonio, TX | Desk Phone | removed (was test only — Grace v1.21) |
 
-Note: some people have multiple lines (Softphone + Desk Phone). Pedro Neumann's wired number is the Softphone (`(726) 233-4655`).
+Note: some people have multiple lines (Softphone + Desk Phone). Where both exist, the Softphone is the one wired into Grace's `transfer_to_specific_person` tool. Pedro Neumann was used only for the 2026-05-08 verification test and was removed in Grace v1.21.
 
 ## 2. Other employees (not in Grace's shortlist)
 

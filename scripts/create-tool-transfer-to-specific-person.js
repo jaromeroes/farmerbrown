@@ -23,13 +23,14 @@ const TOOL_NAME = 'transfer_to_specific_person';
 // destinations[] entry on the transferCall tool. The proxy LLM picks the
 // correct destination by matching the spoken name in the transcript against
 // the `message` field — keep messages distinctive (full name + first phrase).
-// 18 entries — the 20-name shortlist from John MINUS John Brown (owner, no
-// RingCentral line) and Jorge (alias of George, doesn't appear in the
-// RingCentral export). Source DIDs: docs/farmer-brown-phone-directory.md.
-// Convention: where a person has both Softphone and Desk Phone, use the
-// Softphone (mirrors the Pedro wire-up that José verified 2026-05-08).
+// 17 entries — the 20-name shortlist from John MINUS:
+//   - John Brown (owner, no RingCentral line)
+//   - Jorge (alias of George, doesn't appear in the RingCentral export)
+//   - Pedro Neumann (used solely for the 2026-05-08 verification test;
+//     removed at José's request once direct-dial was confirmed working)
+// Source DIDs: docs/farmer-brown-phone-directory.md. Convention: where a
+// person has both Softphone and Desk Phone, use the Softphone.
 const DESTINATIONS = [
-  { fullName: 'Pedro Neumann',    number: '+17262334655', message: 'Of course — connecting you to Pedro Neumann. One moment.' },
   { fullName: 'Gustavo Alvarez',  number: '+13127618580', message: 'Of course — connecting you to Gustavo Alvarez. One moment.' },
   { fullName: 'Erich Frank',      number: '+17732450633', message: 'Of course — connecting you to Erich Frank. One moment.' },
   { fullName: 'Katerine Zapata',  number: '+17733127722', message: 'Of course — connecting you to Katerine Zapata. One moment.' },
