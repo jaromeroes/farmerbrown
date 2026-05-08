@@ -81,6 +81,19 @@ One proxy per site. Each proxy is a minimal assistant whose only job is to invok
 
 Deploy script: [scripts/create-live-agent-proxies.js](scripts/create-live-agent-proxies.js)
 
+#### BR Direct-Dial Proxy (specific-person extension dialing) ✅ active
+Silent SIP proxy used by Grace Unified to dial a specific person's PBX extension when the directory entry has `Direct-dial? = yes`. Pattern is identical to the Live Agent Proxies (silent first turn that says "One moment." and invokes its tool), but the underlying tool is `transfer_to_specific_person` (multi-destination, per-extension) rather than `transfer_to_live_agent_*`.
+
+| Proxy | Assistant ID | VAPI Name | Tool |
+|-------|--------------|-----------|------|
+| BR Direct-Dial Proxy | `32dde873-910d-489f-93fa-3527e52befc1` | `BR Direct-Dial Proxy v1.0` | `transfer_to_specific_person` |
+
+Squad membership: BR Unified Squad (`a3269fa7-…`) only — added 2026-05-08 as 8th member.
+
+Deploy scripts: [scripts/create-tool-transfer-to-specific-person.js](scripts/create-tool-transfer-to-specific-person.js), [scripts/create-br-direct-dial-proxy.js](scripts/create-br-direct-dial-proxy.js), [scripts/update-squad-add-direct-dial-proxy.js](scripts/update-squad-add-direct-dial-proxy.js)
+
+**To wire more directory entries:** add destinations to `transfer_to_specific_person` (re-run its create script — idempotent), then flip the `Direct-dial?` column in Grace's INTERNAL DIRECTORY to `yes`, bump Grace's version, and run `update-receptionist-br-unified.js`. The proxy itself does not need to be touched.
+
 #### Test Dispatcher — Single-number multiplexer for testing ✅ active
 - **Assistant ID:** `753657c6-3ed4-487c-8c39-1f65fa4f8287`
 - **Squad ID:** `2ae25a8b-6ff0-49db-abfc-197b751f533a` (Test Squad — Sales EN (all sites))
@@ -181,14 +194,14 @@ Deploy script: [scripts/create-live-agent-proxies.js](scripts/create-live-agent-
 
 ### Rachel — Home & Auto (cross-site intake)
 - **Assistant ID:** `b4957315-f53f-4296-9ca6-58748f4a4041`
-- **Version:** v2.3
+- **Version:** v2.4
 - **Config:** `agents/rachel-home-auto/`
-- **Deploy scripts:** `scripts/create-rachel.js`, `scripts/update-rachel.js`
+- **Deploy scripts:** `scripts/create-rachel.js`, `scripts/update-rachel.js` (rewritten 2026-05-08 with the Wendy-pattern auto-discover-squads logic — co-PATCHes all 5 squads referencing Rachel by name in one transaction)
 - **Website:** https://farmerbrown.com/ (primary) — also reachable from contractorsliability.com and buildersrisk.net via their receptionists
-- **Role:** Short-flow intake. Qualifies Home / Auto / Both, collects name + phone + email (+ property address if Home/Both), then books directly on Angie's Calendly during the call. Transfers to live agent only as fallback.
-- **Tools:** `check_availability_angie`, `book_appointment_angie`, `transfer_to_live_agent_farmer_brown` (fallback only). Cross-site transfer limitation applies — see `docs/squads-and-handoffs.md` §6.
-- **Not yet built:** `send_home_auto_application` (SMS/email sender, pending backend). Rachel still says "I'll send you an application" verbally — will wire the real tool when the endpoint ships.
-- **Squad integration:** ✅ wired into all 3 sales squads (Emma/Olivia/Grace) and Test Squad. When a caller picks Home & Auto, the receptionist hands off to Rachel.
+- **Role:** Short-flow intake. Qualifies Home / Auto / Both, collects name + phone + email (+ property address if Home/Both), then books directly on the Home & Auto team's Calendly during the call. v2.4 (2026-05-08) replaces all caller-facing mentions of "Angie" with neutral wording ("one of our agents", "our team") because both Angie and Andrés handle these calls.
+- **Tools (4):** `check_availability_angie`, `book_appointment_angie`, `transfer_to_home_auto_team` (scheduling fallback — NEW v2.4), `transfer_to_live_agent_farmer_brown` (confusion fallback only). Cross-site transfer limitation applies — see `docs/squads-and-handoffs.md` §6.
+- **Pending:** `send_home_auto_application` (SMS/email sender, pending backend); round-robin Calendly event_type for Angie + Andrés (`check_availability_angie` / `book_appointment_angie` still pin to Angie's slots until that ships).
+- **Squad integration:** ✅ wired into all 3 sales squads (Emma/Olivia/Grace) + BR Unified Squad + Test Squad — 5 squads total. The new `update-rachel.js` co-PATCHes all of them on every version bump.
 
 ### Wendy — Workers' Compensation (cross-site)
 - **Assistant ID:** `bc789a3e-9e2b-4c60-9778-9e33d0cd826d`
@@ -236,6 +249,8 @@ Deploy script: [scripts/create-live-agent-proxies.js](scripts/create-live-agent-
 | `transfer_to_live_agent_farmer_brown` | `75d7c8f3-646e-4b44-9629-2baa2a2d81dd` | transferCall | SIP transfer to +18889730016 (Farmer Brown live-agent line) |
 | `transfer_to_live_agent_contractors_liability` | `05bc12e6-ee8a-44cf-8abd-816244480509` | transferCall | SIP transfer to +18889730016 (Contractors Liability live-agent line) |
 | `transfer_to_live_agent_builders_risk` | `7eb304a7-ee98-4076-be2f-2d1c5fd6645e` | transferCall | SIP transfer to +18775131573 (BuildersRisk.Net live-agent line) |
+| `transfer_to_home_auto_team` | `152b99c4-9461-4c3f-831f-fd02af9d3c7f` | transferCall | SIP transfer to +18339024483 (Home & Auto team direct line — Angie + Andrés). Used by Rachel as scheduling fallback. |
+| `transfer_to_specific_person` | `b7c4167b-91da-4a96-ae1f-8a3cfb572a57` | transferCall | Multi-destination tool. Each destination = one person at the FB PBX (`+18889730016`) with their `extension` set. As of 2026-05-08 only Gustavo Alvarez (ext 148) is wired — add more destinations to scale. Held by `BR Direct-Dial Proxy v1.0`, not directly by any receptionist. |
 
 **Deleted tools:** `log_lead_to_sheet` and `log_lead_to_sheet_v2` (Google Sheets — replaced by submit_quote API)
 
