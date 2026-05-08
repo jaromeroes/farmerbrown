@@ -25,11 +25,11 @@ const TOOL_NAME = 'transfer_to_specific_person';
 // the `message` field — keep messages distinctive (full name + first phrase).
 const DESTINATIONS = [
   {
-    fullName: 'Pedro',
+    fullName: 'Pedro Neumann',
     number: '+17262334655',
-    message: 'Of course — connecting you to Pedro. One moment.'
+    message: 'Of course — connecting you to Pedro Neumann. One moment.'
   }
-  // To add more: { fullName: 'Gustavo Alvarez', number: '+1XXXXXXXXXX', message: 'Of course — connecting you to Gustavo Alvarez. One moment.' }
+  // To add more: { fullName: 'Gustavo Alvarez', number: '+13127618580', message: 'Of course — connecting you to Gustavo Alvarez. One moment.' }
 ];
 
 async function vapi(method, path, body) {
