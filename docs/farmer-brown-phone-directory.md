@@ -11,27 +11,27 @@ Sections:
 
 | Person | Direct DID | E.164 | Ext | Location | Type | Wired in Grace |
 |--------|-----------|-------|-----|----------|------|----------------|
-| Angie Latorre | (888) 674-5530 | `+18886745530` | 181 | United States, Toll-Free | Direct Number | pending |
-| Angie Latorre | (312) 477-0149 | `+13124770149` | 181 | United States, Chicago, IL | Softphone | pending |
-| Beth Medina | (726) 233-8347 | `+17262338347` | 240 | United States, San Antonio, TX | Softphone | pending |
-| Daniela Arevalo | (312) 985-0881 | `+13129850881` | 186 | United States, Chicago, IL | Desk Phone | pending |
-| Denver B | (726) 224-2405 | `+17262242405` | 266 | United States, San Antonio, TX | Softphone | pending |
-| Eduarda Viloria | (773) 312-3591 | `+17733123591` | 185 | United States, Chicago, IL | Desk Phone | pending |
-| Erich Frank | (773) 245-0633 | `+17732450633` | 124 | United States, Chicago, IL | Desk Phone | pending |
-| Fernando Galvan | (210) 418-1235 | `+12104181235` | 132 | United States, San Antonio, TX | Desk Phone | pending |
-| Gerard Bogadi | (726) 230-8417 | `+17262308417` | 255 | United States, San Antonio, TX | Softphone | pending |
-| Gustavo Alvarez | (312) 761-8580 | `+13127618580` | 148 | United States, Chicago, IL | Desk Phone | pending |
-| Jackie Restrepo | (773) 423-2075 | `+17734232075` | 166 | United States, Chicago, IL | Desk Phone | pending |
-| James Noreen | (773) 219-2943 | `+17732192943` | 198 | United States, Chicago, IL | Desk Phone | pending |
-| Jim Kocchiu | (773) 453-8381 | `+17734538381` | 142 | United States, Chicago, IL | Desk Phone | pending |
-| John Sanchez | (726) 222-9401 | `+17262229401` | 269 | United States, San Antonio, TX | Softphone | pending |
-| Katerine Zapata | (773) 312-7722 | `+17733127722` | 121 | United States, Chicago, IL | Desk Phone | pending |
-| Luis Montilla | (726) 213-3514 | `+17262133514` | 265 | United States, San Antonio, TX | Softphone | pending |
-| Maria Portillo | (726) 224-2489 | `+17262242489` | 254 | United States, San Antonio, TX | Softphone | pending |
-| Monica Bar | (312) 868-0693 | `+13128680693` | 127 | United States, Chicago, IL | Desk Phone | pending |
-| Nichole West | (726) 238-7739 | `+17262387739` | 237 | United States, San Antonio, TX | Desk Phone | pending |
+| Angie Latorre | (888) 674-5530 | `+18886745530` | 181 | United States, Toll-Free | Direct Number | — (other line wired) |
+| Angie Latorre | (312) 477-0149 | `+13124770149` | 181 | United States, Chicago, IL | Softphone | ✅ yes |
+| Beth Medina | (726) 233-8347 | `+17262338347` | 240 | United States, San Antonio, TX | Softphone | ✅ yes |
+| Daniela Arevalo | (312) 985-0881 | `+13129850881` | 186 | United States, Chicago, IL | Desk Phone | ✅ yes |
+| Denver B | (726) 224-2405 | `+17262242405` | 266 | United States, San Antonio, TX | Softphone | ✅ yes |
+| Eduarda Viloria | (773) 312-3591 | `+17733123591` | 185 | United States, Chicago, IL | Desk Phone | ✅ yes |
+| Erich Frank | (773) 245-0633 | `+17732450633` | 124 | United States, Chicago, IL | Desk Phone | ✅ yes |
+| Fernando Galvan | (210) 418-1235 | `+12104181235` | 132 | United States, San Antonio, TX | Desk Phone | ✅ yes |
+| Gerard Bogadi | (726) 230-8417 | `+17262308417` | 255 | United States, San Antonio, TX | Softphone | ✅ yes |
+| Gustavo Alvarez | (312) 761-8580 | `+13127618580` | 148 | United States, Chicago, IL | Desk Phone | ✅ yes |
+| Jackie Restrepo | (773) 423-2075 | `+17734232075` | 166 | United States, Chicago, IL | Desk Phone | ✅ yes |
+| James Noreen | (773) 219-2943 | `+17732192943` | 198 | United States, Chicago, IL | Desk Phone | ✅ yes |
+| Jim Kocchiu | (773) 453-8381 | `+17734538381` | 142 | United States, Chicago, IL | Desk Phone | ✅ yes |
+| John Sanchez | (726) 222-9401 | `+17262229401` | 269 | United States, San Antonio, TX | Softphone | ✅ yes |
+| Katerine Zapata | (773) 312-7722 | `+17733127722` | 121 | United States, Chicago, IL | Desk Phone | ✅ yes |
+| Luis Montilla | (726) 213-3514 | `+17262133514` | 265 | United States, San Antonio, TX | Softphone | ✅ yes |
+| Maria Portillo | (726) 224-2489 | `+17262242489` | 254 | United States, San Antonio, TX | Softphone | ✅ yes |
+| Monica Bar | (312) 868-0693 | `+13128680693` | 127 | United States, Chicago, IL | Desk Phone | ✅ yes |
+| Nichole West | (726) 238-7739 | `+17262387739` | 237 | United States, San Antonio, TX | Desk Phone | ✅ yes |
 | Pedro Neumann | (726) 233-4655 | `+17262334655` | 275 | United States, San Antonio, TX | Softphone | ✅ yes |
-| Pedro Neumann | (726) 203-8815 | `+17262038815` | 275 | United States, San Antonio, TX | Desk Phone | ✅ yes |
+| Pedro Neumann | (726) 203-8815 | `+17262038815` | 275 | United States, San Antonio, TX | Desk Phone | — (other line wired) |
 
 Note: some people have multiple lines (Softphone + Desk Phone). Pedro Neumann's wired number is the Softphone (`(726) 233-4655`).
 

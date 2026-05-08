@@ -23,13 +23,31 @@ const TOOL_NAME = 'transfer_to_specific_person';
 // destinations[] entry on the transferCall tool. The proxy LLM picks the
 // correct destination by matching the spoken name in the transcript against
 // the `message` field — keep messages distinctive (full name + first phrase).
+// 18 entries — the 20-name shortlist from John MINUS John Brown (owner, no
+// RingCentral line) and Jorge (alias of George, doesn't appear in the
+// RingCentral export). Source DIDs: docs/farmer-brown-phone-directory.md.
+// Convention: where a person has both Softphone and Desk Phone, use the
+// Softphone (mirrors the Pedro wire-up that José verified 2026-05-08).
 const DESTINATIONS = [
-  {
-    fullName: 'Pedro Neumann',
-    number: '+17262334655',
-    message: 'Of course — connecting you to Pedro Neumann. One moment.'
-  }
-  // To add more: { fullName: 'Gustavo Alvarez', number: '+13127618580', message: 'Of course — connecting you to Gustavo Alvarez. One moment.' }
+  { fullName: 'Pedro Neumann',    number: '+17262334655', message: 'Of course — connecting you to Pedro Neumann. One moment.' },
+  { fullName: 'Gustavo Alvarez',  number: '+13127618580', message: 'Of course — connecting you to Gustavo Alvarez. One moment.' },
+  { fullName: 'Erich Frank',      number: '+17732450633', message: 'Of course — connecting you to Erich Frank. One moment.' },
+  { fullName: 'Katerine Zapata',  number: '+17733127722', message: 'Of course — connecting you to Katerine Zapata. One moment.' },
+  { fullName: 'Monica Bar',       number: '+13128680693', message: 'Of course — connecting you to Monica Bar. One moment.' },
+  { fullName: 'Jim Kocchiu',      number: '+17734538381', message: 'Of course — connecting you to Jim Kocchiu. One moment.' },
+  { fullName: 'Fernando Galvan',  number: '+12104181235', message: 'Of course — connecting you to Fernando Galvan. One moment.' },
+  { fullName: 'Nichole West',     number: '+17262387739', message: 'Of course — connecting you to Nichole West. One moment.' },
+  { fullName: 'Eduarda Viloria',  number: '+17733123591', message: 'Of course — connecting you to Eduarda Viloria. One moment.' },
+  { fullName: 'Beth Medina',      number: '+17262338347', message: 'Of course — connecting you to Beth Medina. One moment.' },
+  { fullName: 'Angie Latorre',    number: '+13124770149', message: 'Of course — connecting you to Angie Latorre. One moment.' },
+  { fullName: 'Gerard Bogadi',    number: '+17262308417', message: 'Of course — connecting you to Gerard Bogadi. One moment.' },
+  { fullName: 'Luis Montilla',    number: '+17262133514', message: 'Of course — connecting you to Luis Montilla. One moment.' },
+  { fullName: 'Denver B',         number: '+17262242405', message: 'Of course — connecting you to Denver. One moment.' },
+  { fullName: 'Daniela Arevalo',  number: '+13129850881', message: 'Of course — connecting you to Daniela Arevalo. One moment.' },
+  { fullName: 'James Noreen',     number: '+17732192943', message: 'Of course — connecting you to James Noreen. One moment.' },
+  { fullName: 'Jackie Restrepo',  number: '+17734232075', message: 'Of course — connecting you to Jackie Restrepo. One moment.' },
+  { fullName: 'John Sanchez',     number: '+17262229401', message: 'Of course — connecting you to John Sanchez. One moment.' },
+  { fullName: 'Maria Portillo',   number: '+17262242489', message: 'Of course — connecting you to María Portillo. One moment.' },
 ];
 
 async function vapi(method, path, body) {
