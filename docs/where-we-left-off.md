@@ -1,5 +1,5 @@
 # Where we left off — Farmer Brown
-**Last touched:** 2026-05-08 PM (late) — Grace v1.21 + 17 of 19 directory entries wired for direct-dial. Pedro Neumann was removed (he was the test subject for the 2026-05-08 verification and shouldn't be in production). The 17 wired names use direct DIDs from the RingCentral export. Two names remain `pending` and fall through to the live-agent line: **John Brown** (owner, no DID in export) and **Jorge** (alias of "George" — doesn't appear in export).
+**Last touched:** 2026-05-08 PM (late) — Grace v1.21 + 17 of 19 directory entries wired for direct-dial. Pedro Neumann was removed (he was the test subject for the 2026-05-08 verification and shouldn't be in production). The 17 wired names use direct DIDs from the RingCentral export. Two names remain `pending` and fall through to the live-agent line: **John Brown** (owner, no DID in export) and **Jorge** (alias of "George" — doesn't appear in export). Also: **custom HTTP headers applied to all 6 apiRequest tools** to mask VAPI as the underlying platform from the Calforce backend (User-Agent: `FarmerBrown-VoiceApp/1.0`, X-Source: `farmerbrown-app`) — needs verification by asking Tyler for a header dump from a live call.
 
 This is a session-resumption checkpoint: enough context to pick the project back up cold without re-reading the full conversation history.
 
@@ -81,6 +81,7 @@ A side-effect of the test is that VAPI actually queues the outbound call. If tha
 - `scripts/create-tool-transfer-to-home-auto-team.js` (NEW 2026-05-08) — creates / updates the SIP-transfer tool for Rachel's H&A team fallback line. Idempotent.
 - `scripts/fix-submit-quote-function-spec.js` (NEW 2026-05-08) — recovery script for Bug 2 above; reconstructs `submit_quote.function.*` from the top-level fields if it ever ends up empty again. Idempotent.
 - `scripts/rollback-direct-dial-proxy-from-squad.js` (NEW 2026-05-08) — emergency rollback used during the debugging cycle. Removes the Direct-Dial Proxy from BR Unified Squad. Useful if direct-dial misbehaves and you want Grace back to v1.16-style behaviour quickly.
+- `scripts/apply-custom-headers-to-apirequest-tools.js` (NEW 2026-05-08) — applies a neutral `User-Agent` and `X-Source` to every apiRequest tool in the org so the requests don't visibly identify VAPI as the platform. Idempotent. Run after creating any new apiRequest tool.
 
 **Pattern to reuse for Sarah / Nora** — they're still patched via direct curl. Mirror `update-rachel.js` (or `update-wendy.js` — same shape) next time one of them needs changes. Both are in 4-5 squads, so single-squad logic isn't enough.
 
