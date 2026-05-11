@@ -1,5 +1,5 @@
 # Where we left off — Farmer Brown
-**Last touched:** 2026-05-11 (late) — Grace v1.22 deployed + **two VAPI gotchas discovered and fixed during direct-dial smoke test** (multi-destination `transferCall` requires a `destination` parameter; squad-destination `message` field doubles up with Grace's spoken line when both say similar things). Direct-dial verified working for Pedro on test call `019e1711` (forwarded to `+17262334655`). The 3 new team lines (Spanish / Existing-Quote / Service) still need real test calls — same destination-message fix applied to all 4 proxies preemptively.
+**Last touched:** 2026-05-11 (late) — Grace v1.22 deployed + **two VAPI gotchas discovered and fixed during direct-dial smoke test** (multi-destination `transferCall` requires a `destination` parameter; squad-destination `message` field doubles up with Grace's spoken line when both say similar things). **All 4 new routing flows verified by real test calls** — Pedro direct-dial (call `019e1711` → `+17262334655`), Spanish, Existing-Quote, and Service.
 
 This is a session-resumption checkpoint: enough context to pick the project back up cold without re-reading the full conversation history.
 
@@ -18,7 +18,7 @@ This is a session-resumption checkpoint: enough context to pick the project back
 | **BR Existing-Quote Proxy** (NEW) | **v1.0** | Silent SIP-transfer proxy assistant `db9b7095-36a4-48a2-8b22-3cc8f80edeec` ("BR Existing-Quote Proxy v1.0"). Holds `transfer_to_existing_quote_team` (ID `a1644cf7-9fae-4ccb-9ae0-bff4b84554ea`) — single SIP destination to `+17262038542`. Squad member of BR Unified Squad. Replaces the v1.14-v1.21 "disconnect line + end call" pattern for existing-quote hot leads. |
 | **BR Service Proxy** (NEW) | **v1.0** | Silent SIP-transfer proxy assistant `a080eec0-ad05-403c-bcb1-8a61185a268c` ("BR Service Proxy v1.0"). Holds `transfer_to_service_team` (ID `a589dc49-f053-459a-9162-9d18b7d37e9e`) — single SIP destination to `+17262046968`. Squad member of BR Unified Squad. Receives Payment, Claim, Other-service, explicit "live agent" inside Service, and Service-side confusion fallback (was all going to `BR Live Agent Proxy` before v1.22). |
 | **Squad** `a3269fa7-…` (BR Unified) | synced | **11 members** now (was 8; added 3 new routing proxies 2026-05-11). Grace's `assistantDestinations` now **10 entries** (was 7; added the 3 new proxies). All other destinations unchanged. |
-| **BR public line** `+18882934492` | operational | **Not verified by real test calls after the v1.22 deploy.** Static config is sound: 11 squad members load, all proxies have toolIds=1 + firstMessageMode=assistant-speaks-first-with-model-generated-message, all 3 new tools have `function.parameters` set (no risk of the 2026-05-08 Bug 1 recurring). |
+| **BR public line** `+18882934492` | operational + verified | **All 4 new routing flows verified by real test calls 2026-05-11 (late):** Pedro direct-dial (call `019e1711` → `+17262334655` after Bug 4 + Bug 5 fixes), Spanish (→ `+18332160350`), Existing-Quote (→ `+17262038542`), Service (→ `+17262046968`). |
 
 ## Today's session (2026-05-11) — what shipped
 
@@ -87,15 +87,28 @@ File: [scripts/clear-grace-proxy-destination-messages.js](../scripts/clear-grace
 
 **Side issue:** TTS pronounced "Neumann" as "Newman" (English-style) instead of "Noyman" (German). Cosmetic. Fix would be to either change the spelled name to "Noyman" in the directory or attach an ElevenLabs `pronunciationDictionary`. Not blocking.
 
-## What to verify on resumption (FIRST priority)
+## Verification status (end of 2026-05-11)
 
-Static config is verified clean (squad has 11 members, 10 Grace destinations, all proxies + tools well-formed). **What's NOT verified is the actual behaviour on a real test call.** Recommend smoke-testing each new flow in this order:
+All 4 new routing flows verified by real test calls on `+18882934492`:
 
-1. **Pedro direct-dial (REGRESSION) — verified 2026-05-11 12:44 UTC** (call `019e1711`). Forwarded to `+17262334655` cleanly after Bug 4 + Bug 5 fixes. Same code path serves the other 17 wired entries — spot-check 2 more names (e.g. Gustavo + Beth) to confirm the name→number enum lookup is reliable for non-trivially-matched names.
-2. **Spanish flow.** Call `+18882934492`. Listen for the new closing line in the intro ("if you'd prefer to be helped in Spanish, just let me know"). Reply in Spanish or say "Spanish please". Confirm: (a) Grace says "Of course — let me connect you with our Spanish-speaking team. One moment." in English, (b) the call routes to `+18332160350` audibly, (c) no double-spoken "Connecting you..." (Bug 5 should be fixed for this proxy too).
-3. **Existing-quote flow.** Call `+18882934492`. Say "I'm following up on a quote you sent me". Confirm: Grace says "Perfect — let me connect you with the team that has your quote. One moment." and routes to `+17262038542`.
-4. **Service flow.** Call `+18882934492`. Say "I'm an existing customer, I need to pay my bill" (or "file a claim" / "cancel my policy"). Confirm: Grace runs the service-side hand-off (Payment / Claim / Other-service line) and routes to `+17262046968`.
-5. **Sales flow (regression check).** Call and ask for a Builder's Risk quote. Make sure Jennifer still gets handed off as before — no v1.22 changes broke the existing Sales flow.
+| Flow | Verified | Destination | Notes |
+|---|---|---|---|
+| Pedro direct-dial | ✅ call `019e1711` 12:44 UTC | `+17262334655` | After Bug 4 + Bug 5 fixes |
+| Spanish | ✅ 2026-05-11 (late) | `+18332160350` | — |
+| Existing-Quote | ✅ 2026-05-11 (late) | `+17262038542` | — |
+| Service | ✅ 2026-05-11 (late) | `+17262046968` | — |
+
+Sales flow (Grace → Jennifer for new Builder's Risk) was NOT re-verified after the v1.22 deploy. Last verified working was 2026-05-06. Should still work — no changes to specialist routing — but spot-check on next session if convenient. The 17 other wired direct-dial entries (Gustavo, Beth, Daniela, etc.) also weren't individually tested; same code path as Pedro so the bar should be lower, but worth one spot-check.
+
+## Open / pending for the next session
+
+1. **Warm transfer with context** (pending since 2026-05-08 PM) — when Grace transfers to a specific person, the receiver should hear a brief context summary ("you have a caller interested in a Builder's Risk quote, name…") before being bridged. Currently a blind SIP transfer. Implementation: VAPI's `transferPlan: { mode: 'warm-transfer-say-summary' }` on each destination of `transfer_to_specific_person`. See `memory/project_pending_warm_transfer.md`.
+
+2. **Grace prompt sub-issue: generic line instead of personalized.** Grace's LLM emits "Connecting you now." instead of the prompt-mandated "Of course — connecting you to Pedro Neumann. One moment." for direct-dial unique-matches. The proxy LLM compensates by speaking the personalized line, so the caller still hears the name. If we want Grace herself to speak the personalized line (instead of letting the proxy do it), the HAND-OFF SCRIPTS section for direct-dial needs a stronger formulation — replace the `<full name from directory>` placeholder pattern with worked examples per directory entry, OR make the prompt's Rule 11 explicitly forbid generic "Connecting you now." for direct-dial. Not blocking.
+
+3. **TTS pronunciation of "Neumann" as "Newman"** — ElevenLabs reads German-style surnames in English phonetics. Cosmetic. Options: (a) change spelled name to "Noyman" in the directory's "Speak this full name" column (English phonetic spelling); (b) attach an ElevenLabs `pronunciationDictionary` to Grace + the direct-dial proxy. Not blocking.
+
+4. **Multi-destination `transferCall` lesson now in memory.** New `feedback_vapi_multi_destination_param.md` documents: a transferCall tool with 2+ destinations MUST declare a `destination` (string enum) parameter, otherwise VAPI silently routes to destinations[0]. Apply to any future multi-destination tool from day one. Test with a destination that ISN'T at index 0 — a test that lands on destinations[0] is indistinguishable from the bug.
 
 If any of these fail with `endedReason: call.start.error-get-assistant`, use the 2026-05-08 diagnostic technique: `POST /call` with the squad ID and a phoneNumberId, inspect the 4xx response body for the actual `Invalid Configuration` validation error.
 
