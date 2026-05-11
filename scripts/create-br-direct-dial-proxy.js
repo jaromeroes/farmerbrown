@@ -9,9 +9,18 @@
 // "One moment." and invokes the tool — VAPI then connects the caller to the
 // PBX number with the matching extension dialed via DTMF.
 //
-// As of v1.17 the tool has 1 destination (Gustavo). When more are added to
-// the tool, this proxy needs no change — its system prompt already tells it
-// to pick the destination matching the name the caller asked for.
+// As of v1.22 the tool has 19 destinations (the directory shortlist).
+//
+// IMPORTANT — multi-destination routing fix (2026-05-11):
+// Earlier versions of the system prompt told the LLM to "pick the destination
+// whose message contains the full name". That was insufficient: with no
+// `destination` parameter on the tool's function schema, the LLM had no way
+// to actually communicate the pick — every call landed on destinations[0]
+// (Gustavo). Verified in call 019e1701 where the caller asked for Pedro and
+// Gustavo's phone rang. Fix: (1) the tool now declares a required `destination`
+// parameter (enum of all DIDs) with the name→number mapping embedded in the
+// function description; (2) this proxy's system prompt instructs the LLM to
+// pass the matching number explicitly.
 
 const VAPI_KEY = process.env.VAPI_KEY;
 if (!VAPI_KEY) {
@@ -30,11 +39,11 @@ const SYSTEM_PROMPT = `You are a silent SIP transfer proxy for Builders Risk Dot
 
 (1) Say only the words "One moment." — nothing else, no greeting, no narration, no questions.
 
-(2) Invoke the \`transfer_to_specific_person\` tool. If the tool has multiple destinations, pick the one whose message contains the full name that the previous receptionist (Grace) just announced she was connecting the caller to. The full name appears verbatim in the transcript immediately above your turn — read that line, match it to the destination, and invoke.
+(2) Invoke the \`transfer_to_specific_person\` tool with the \`destination\` argument set to the E.164 phone number of the person the caller asked for. Read the conversation transcript above your turn — the caller's message will name the person (e.g. "I want to talk to Pedro"), and the receptionist (Grace) typically also announces the full name ("connecting you to Pedro Neumann"). Cross-reference that name against the directory embedded in the tool's description and pass the matching phone number. The \`destination\` parameter is REQUIRED — calling the tool without it (or with an empty object) routes to the wrong person.
 
-Both actions happen in the SAME turn. Do NOT wait for user input — there is no user to wait for. The receptionist has already greeted the caller and announced the transfer; your only job is to execute the SIP forwarding immediately while playing the brief acknowledgement.
+Both actions happen in the SAME turn. Do NOT wait for user input — there is no user to wait for.
 
-If the tool returns an error, say "I am sorry, please call back" and end the call. Otherwise stay silent after the tool call.`;
+If the caller's name doesn't match any directory entry exactly, pick the closest match by first name and proceed — better to attempt the transfer than to bounce the call. If the tool returns an error, say "I am sorry, please call back" and end the call. Otherwise stay silent after the tool call.`;
 
 const FIRST_MESSAGE = '';
 const FIRST_MESSAGE_MODE = 'assistant-speaks-first-with-model-generated-message';

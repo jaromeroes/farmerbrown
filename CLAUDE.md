@@ -94,6 +94,20 @@ Deploy scripts: [scripts/create-tool-transfer-to-specific-person.js](scripts/cre
 
 **To wire more directory entries:** add destinations to `transfer_to_specific_person` (re-run its create script — idempotent), then flip the `Direct-dial?` column in Grace's INTERNAL DIRECTORY to `yes`, bump Grace's version, and run `update-receptionist-br-unified.js`. The proxy itself does not need to be touched.
 
+#### BR Routing Proxies — Spanish / Existing-Quote / Service (3 silent SIP proxies) ✅ active
+
+Shipped 2026-05-11 with Grace v1.22. Three new silent SIP proxies, one per category of "live agent" routing that Grace differentiates. Same architectural pattern as the original `BR Live Agent Proxy`: `firstMessage: ''` + `firstMessageMode: 'assistant-speaks-first-with-model-generated-message'` + a system prompt that forces the LLM to say "One moment." and invoke its forwarding tool in the same first turn.
+
+| Proxy | Assistant ID | VAPI Name | Tool | SIP destination |
+|-------|--------------|-----------|------|-----------------|
+| BR Spanish Proxy | `af9a33a1-0f3d-4723-b021-1a676ba859c3` | `BR Spanish Proxy v1.0` | `transfer_to_spanish_team` | +18332160350 |
+| BR Existing-Quote Proxy | `db9b7095-36a4-48a2-8b22-3cc8f80edeec` | `BR Existing-Quote Proxy v1.0` | `transfer_to_existing_quote_team` | +17262038542 |
+| BR Service Proxy | `a080eec0-ad05-403c-bcb1-8a61185a268c` | `BR Service Proxy v1.0` | `transfer_to_service_team` | +17262046968 |
+
+Squad membership: BR Unified Squad (`a3269fa7-…`) only — added 2026-05-11. After this addition the squad has 11 members and Grace has 10 `assistantDestinations`. Routing rules live in Grace's Rule 9: **Mechanism E** = Spanish, **Mechanism F** = Existing-Quote, **Mechanism G** = Service. The generic EN live-agent (`BR Live Agent Proxy` → `+18775131573`) survives as **Mechanism B**, narrowed to Sales-branch confusion fallback / explicit live-agent inside Sales / direct-dial `pending` entries.
+
+Deploy scripts: [scripts/create-tool-transfer-to-spanish-team.js](scripts/create-tool-transfer-to-spanish-team.js), [scripts/create-tool-transfer-to-existing-quote-team.js](scripts/create-tool-transfer-to-existing-quote-team.js), [scripts/create-tool-transfer-to-service-team.js](scripts/create-tool-transfer-to-service-team.js), [scripts/create-br-routing-proxies.js](scripts/create-br-routing-proxies.js), [scripts/update-squad-add-routing-proxies.js](scripts/update-squad-add-routing-proxies.js).
+
 #### Test Dispatcher — Single-number multiplexer for testing ✅ active
 - **Assistant ID:** `753657c6-3ed4-487c-8c39-1f65fa4f8287`
 - **Squad ID:** `2ae25a8b-6ff0-49db-abfc-197b751f533a` (Test Squad — Sales EN (all sites))
@@ -250,7 +264,10 @@ Deploy scripts: [scripts/create-tool-transfer-to-specific-person.js](scripts/cre
 | `transfer_to_live_agent_contractors_liability` | `05bc12e6-ee8a-44cf-8abd-816244480509` | transferCall | SIP transfer to +18889730016 (Contractors Liability live-agent line) |
 | `transfer_to_live_agent_builders_risk` | `7eb304a7-ee98-4076-be2f-2d1c5fd6645e` | transferCall | SIP transfer to +18775131573 (BuildersRisk.Net live-agent line) |
 | `transfer_to_home_auto_team` | `152b99c4-9461-4c3f-831f-fd02af9d3c7f` | transferCall | SIP transfer to +18339024483 (Home & Auto team direct line — Angie + Andrés). Used by Rachel as scheduling fallback. |
-| `transfer_to_specific_person` | `b7c4167b-91da-4a96-ae1f-8a3cfb572a57` | transferCall | Multi-destination tool. Each destination = one person at the FB PBX (`+18889730016`) with their `extension` set. As of 2026-05-08 only Gustavo Alvarez (ext 148) is wired — add more destinations to scale. Held by `BR Direct-Dial Proxy v1.0`, not directly by any receptionist. |
+| `transfer_to_specific_person` | `b7c4167b-91da-4a96-ae1f-8a3cfb572a57` | transferCall | Multi-destination tool — one destination per directory entry with `Direct-dial? = yes`. 19 destinations as of 2026-05-11 (Pedro Neumann re-added in v1.22). Each is a raw E.164 DID, no PBX/extension. Held by `BR Direct-Dial Proxy v1.0`, not directly by any receptionist. **Requires `function.parameters.destination` (string enum) so the LLM can specify the destination** — without it VAPI silently defaults to destinations[0] (Gustavo). Bug found 2026-05-11. Name→number mapping is embedded in `function.description` so the LLM can pick correctly. Edit the `DESTINATIONS` array in `scripts/create-tool-transfer-to-specific-person.js` and re-run (idempotent) to add/remove. |
+| `transfer_to_spanish_team` | `b432ef17-e76f-409f-a755-db140c31aa28` | transferCall | SIP transfer to +18332160350 (dedicated Spanish-speaking team line). Held by `BR Spanish Proxy v1.0`. Used by Grace v1.22+ for Spanish callers. |
+| `transfer_to_existing_quote_team` | `a1644cf7-9fae-4ccb-9ae0-bff4b84554ea` | transferCall | SIP transfer to +17262038542 (dedicated existing-quote team — hot leads, 5x more valuable than service). Held by `BR Existing-Quote Proxy v1.0`. Used by Grace v1.22+ for callers following up on a quote we already sent. |
+| `transfer_to_service_team` | `a589dc49-f053-459a-9162-9d18b7d37e9e` | transferCall | SIP transfer to +17262046968 (dedicated service team line). Held by `BR Service Proxy v1.0`. Used by Grace v1.22+ for Payment/Claim/Other-service intents and explicit "live agent" inside the Service branch. |
 
 **Deleted tools:** `log_lead_to_sheet` and `log_lead_to_sheet_v2` (Google Sheets — replaced by submit_quote API)
 

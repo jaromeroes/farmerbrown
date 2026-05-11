@@ -1,24 +1,103 @@
 # Where we left off — Farmer Brown
-**Last touched:** 2026-05-08 PM (late) — Grace v1.21 + 17 of 19 directory entries wired for direct-dial. Pedro Neumann was removed (he was the test subject for the 2026-05-08 verification and shouldn't be in production). The 17 wired names use direct DIDs from the RingCentral export. Two names remain `pending` and fall through to the live-agent line: **John Brown** (owner, no DID in export) and **Jorge** (alias of "George" — doesn't appear in export). Also: **custom HTTP headers applied to all 6 apiRequest tools** to mask VAPI as the underlying platform from the Calforce backend (User-Agent: `FarmerBrown-VoiceApp/1.0`, X-Source: `farmerbrown-app`) — needs verification by asking Tyler for a header dump from a live call.
+**Last touched:** 2026-05-11 (late) — Grace v1.22 deployed + **two VAPI gotchas discovered and fixed during direct-dial smoke test** (multi-destination `transferCall` requires a `destination` parameter; squad-destination `message` field doubles up with Grace's spoken line when both say similar things). Direct-dial verified working for Pedro on test call `019e1711` (forwarded to `+17262334655`). The 3 new team lines (Spanish / Existing-Quote / Service) still need real test calls — same destination-message fix applied to all 4 proxies preemptively.
 
 This is a session-resumption checkpoint: enough context to pick the project back up cold without re-reading the full conversation history.
 
 ---
 
-## Current state (after 2026-05-08 session)
+## Current state (after 2026-05-11 session)
 
 | Component | Version | Notes |
 |---|---|---|
 | **Jennifer** (BR specialist) | **v2.12** | All v2.11 fixes + new MAILING ADDRESS sub-flow after Q6. submit_quote tool schema co-updated. Backend verified 2026-05-06. **Not re-verified after 2026-05-06 deploy.** |
-| **Grace** (BR receptionist Unified) | **v1.21** (NEW) | v1.16 fixes + **directory ambiguities resolved** + **direct-dial via per-person DIDs** + **17 of 19 directory entries wired** (Pedro Neumann removed — he was the test subject only). Step P1 branches on a `Direct-dial?` column: `yes` → squad destination `BR Direct-Dial Proxy` → tool `transfer_to_specific_person` (18 destinations) with the matching DID; `pending` → live-agent line. John Brown and Jorge still `pending` (no DID in the RingCentral export). Each entry's "Speak this full name" column reflects the proper full name from the export (e.g. Maria → María Portillo). **Existing-quote rama still disconnected** (waiting on a separate dedicated number from Pedro — the same person, but in his role as the contact who manages the existing-quote line, not as a directory destination). |
-| **Rachel** (H&A specialist) | **v2.4** (NEW) | All v2.3 fixes + caller-facing wording de-personalised: every spoken "Angie" replaced with "one of our agents" / "our team" / "our professionals" because both Angie and Andrés handle these calls. NEW scheduling fallback: `transfer_to_home_auto_team` (SIP to `+18339024483`, the H&A team direct line) replaces `transfer_to_live_agent_farmer_brown` for calendar failures. The generic live-agent transfer remains for confusion / general fallbacks (Rules 5, 7). Tool internal names (`check_availability_angie`, `book_appointment_angie`) unchanged — never spoken. |
-| **Wendy** (WC specialist, cross-site) | **v2.0** | Full redesign 2026-05-06 — unchanged today. Spanish PPC routing pending number from new team. **Not verified by test call.** |
-| **BR Direct-Dial Proxy** (NEW) | **v1.0** | Silent SIP-transfer proxy assistant `32dde873-910d-489f-93fa-3527e52befc1` ("BR Direct-Dial Proxy v1.0"). Same pattern as the Live Agent Proxies — `firstMessage: ''` + `firstMessageMode: 'assistant-speaks-first-with-model-generated-message'`, system prompt forces "One moment." + tool invocation in the same turn. Holds `transfer_to_specific_person`. Squad member of BR Unified Squad only. **NOTE:** original ID was `f4d38675-…` but that assistant was deleted during debugging (cache-clearing attempt) and re-created with a new ID. If a third party still references the old ID anywhere, update it. |
-| **Tool `transfer_to_specific_person`** (NEW) | — | ID `b7c4167b-91da-4a96-ae1f-8a3cfb572a57`. 18 destinations (one per wired shortlist person, raw E.164 DID, no extension/PBX). Includes `function.parameters: { type: object, properties: {}, required: [] }` (REQUIRED, see "Bugs fixed today"). Edit the `DESTINATIONS` array in `scripts/create-tool-transfer-to-specific-person.js` and re-run (idempotent) to add/remove people. |
-| **Tool `transfer_to_home_auto_team`** (NEW) | — | ID `152b99c4-9461-4c3f-831f-fd02af9d3c7f`. Single SIP destination to `+18339024483` (Angie + Andrés). Used by Rachel only. |
-| **Squad** `a3269fa7-…` (BR Unified) | synced | 8 members now (added BR Direct-Dial Proxy 2026-05-08). Grace's `assistantDestinations` now 7 entries (added BR Direct-Dial Proxy v1.0). Rachel destination = v2.4. |
-| **Squads** (5 referencing Rachel) | synced | BR Unified, Test, BR Sales EN, CL Sales EN, FB Sales EN — all `assistantDestinations[].assistantName` updated to "Rachel — FB Home & Auto Intake v2.4" via the new auto-discovering deploy script (`scripts/update-rachel.js` rewritten today with the Wendy pattern). |
-| **BR public line** `+18882934492` | operational | No test calls verified yet. **First test priority:** call this line, ask for "Gustavo" — does the line connect to extension 148 audibly? |
+| **Grace** (BR receptionist Unified) | **v1.22** (NEW) | All v1.21 features + **Pedro Neumann re-added to direct-dial** (18 of 20 directory entries wired now; was 17 of 19) + **3 new dedicated team lines wired** (Spanish, Existing-Quote, Service) + **Spanish offer in intro** ("if you'd prefer to be helped in Spanish, just let me know"). Existing-quote disconnect line REMOVED — now routes via `BR Existing-Quote Proxy`. All service-branch transfers (Payment / Claim / Other-service / explicit live-agent inside Service / confusion-in-service) now route via `BR Service Proxy` instead of `BR Live Agent Proxy`. Spanish callers route via `BR Spanish Proxy`. The generic EN live-agent (`BR Live Agent Proxy` → +18775131573) remains for Sales-branch only (explicit "live agent" inside Sales, Sales confusion fallback, `Direct-dial? = pending` directory entries). New Mechanisms E (Spanish), F (Existing-Quote), G (Service) added to Rule 9. Mechanism B narrowed. Mechanism C reframed (was disconnect, now historical placeholder). |
+| **Rachel** (H&A specialist) | **v2.4** | Unchanged today. |
+| **Wendy** (WC specialist, cross-site) | **v2.0** | Unchanged today. Spanish PPC routing pending number from new team. |
+| **BR Direct-Dial Proxy** | **v1.0** | Unchanged today. Tool `transfer_to_specific_person` now has 19 destinations (Pedro re-added in v1.22). |
+| **BR Spanish Proxy** (NEW) | **v1.0** | Silent SIP-transfer proxy assistant `af9a33a1-0f3d-4723-b021-1a676ba859c3` ("BR Spanish Proxy v1.0"). Same pattern as the Live Agent + Direct-Dial proxies. Holds `transfer_to_spanish_team` (ID `b432ef17-e76f-409f-a755-db140c31aa28`) — single SIP destination to `+18332160350`. Squad member of BR Unified Squad. |
+| **BR Existing-Quote Proxy** (NEW) | **v1.0** | Silent SIP-transfer proxy assistant `db9b7095-36a4-48a2-8b22-3cc8f80edeec` ("BR Existing-Quote Proxy v1.0"). Holds `transfer_to_existing_quote_team` (ID `a1644cf7-9fae-4ccb-9ae0-bff4b84554ea`) — single SIP destination to `+17262038542`. Squad member of BR Unified Squad. Replaces the v1.14-v1.21 "disconnect line + end call" pattern for existing-quote hot leads. |
+| **BR Service Proxy** (NEW) | **v1.0** | Silent SIP-transfer proxy assistant `a080eec0-ad05-403c-bcb1-8a61185a268c` ("BR Service Proxy v1.0"). Holds `transfer_to_service_team` (ID `a589dc49-f053-459a-9162-9d18b7d37e9e`) — single SIP destination to `+17262046968`. Squad member of BR Unified Squad. Receives Payment, Claim, Other-service, explicit "live agent" inside Service, and Service-side confusion fallback (was all going to `BR Live Agent Proxy` before v1.22). |
+| **Squad** `a3269fa7-…` (BR Unified) | synced | **11 members** now (was 8; added 3 new routing proxies 2026-05-11). Grace's `assistantDestinations` now **10 entries** (was 7; added the 3 new proxies). All other destinations unchanged. |
+| **BR public line** `+18882934492` | operational | **Not verified by real test calls after the v1.22 deploy.** Static config is sound: 11 squad members load, all proxies have toolIds=1 + firstMessageMode=assistant-speaks-first-with-model-generated-message, all 3 new tools have `function.parameters` set (no risk of the 2026-05-08 Bug 1 recurring). |
+
+## Today's session (2026-05-11) — what shipped
+
+Four related changes in one Grace version bump (v1.21 → v1.22):
+
+### 1. Pedro Neumann back in the direct-dial directory
+v1.21 removed him (he was the 2026-05-08 verification test subject only). Client (José) confirmed callers do ask for Pedro by name → re-added to Grace's INTERNAL DIRECTORY (Step P1) and to the `transfer_to_specific_person` tool destinations. The tool now has 19 destinations; the directory shows 18-of-20 wired (Pedro + the other 17 verified-wired entries; John Brown and Jorge still `pending`). His DID `+17262334655` and extension `275` come from the RingCentral export.
+
+### 2. Three new dedicated team lines wired
+Per José (2026-05-11): "when callers say 'live agent', we now have 4 different lines depending on context — Inglés, Español, Existing Quotes, Service".
+
+| Category | New phone | Mechanism | Replaces |
+|---|---|---|---|
+| Spanish-speaking | `+18332160350` | Mechanism E (`BR Spanish Proxy`) | Old Rule 14 Spanish fallback to EN live-agent |
+| Existing-quote follow-ups (hot leads) | `+17262038542` | Mechanism F (`BR Existing-Quote Proxy`) | v1.14-v1.21 disconnect line + end-call |
+| Service-branch escalations | `+17262046968` | Mechanism G (`BR Service Proxy`) | Was all routed to `BR Live Agent Proxy` |
+| Sales-branch live-agent (UNCHANGED) | `+18775131573` | Mechanism B (`BR Live Agent Proxy`) | — |
+
+Mechanism B is now narrowed to: explicit live-agent inside Sales + Sales-branch confusion fallback + direct-dial `pending` entries (John Brown, Jorge) + no-match-in-directory specific-person requests.
+
+Mechanism C is now a historical placeholder (was used for the disconnect line). The Rule 9 entry was kept for traceability — easier to read the v1.14→v1.22 evolution.
+
+### 3. Spanish offer in the intro
+Grace's first-message now ends with "And if you'd prefer to be helped in Spanish, just let me know." Many Spanish callers will trigger Rule 14 on their first response. The acknowledgement stays in English ("Of course — let me connect you with our Spanish-speaking team. One moment.") because Grace herself is English-only — switching mid-conversation would be unreliable.
+
+### 4. New scripts (all idempotent except `create-br-routing-proxies.js`)
+
+- [scripts/create-tool-transfer-to-spanish-team.js](../scripts/create-tool-transfer-to-spanish-team.js) — creates/updates `transfer_to_spanish_team` (idempotent by `function.name`).
+- [scripts/create-tool-transfer-to-existing-quote-team.js](../scripts/create-tool-transfer-to-existing-quote-team.js) — creates/updates `transfer_to_existing_quote_team`.
+- [scripts/create-tool-transfer-to-service-team.js](../scripts/create-tool-transfer-to-service-team.js) — creates/updates `transfer_to_service_team`.
+- [scripts/create-br-routing-proxies.js](../scripts/create-br-routing-proxies.js) — creates the 3 silent SIP proxies. **NOT idempotent — re-running creates duplicates.** If you need to re-create a proxy, delete the existing one first.
+- [scripts/update-squad-add-routing-proxies.js](../scripts/update-squad-add-routing-proxies.js) — adds the 3 proxies to BR Unified Squad as members + Grace destinations. Idempotent.
+
+## Bugs found and fixed in the post-deploy smoke test (2026-05-11 late)
+
+### Bug 4 — Multi-destination `transferCall` silently routes to destinations[0] when no `destination` param
+
+First Pedro test (call `019e1701`, 12:27 UTC) routed to **Gustavo Alvarez** (`+13127618580`) instead of Pedro (`+17262334655`). Root cause: `transfer_to_specific_person` had `parameters: { type: 'object', properties: {}, required: [] }` — no way for the LLM to specify which destination. The proxy LLM dutifully invoked the tool with `{}` and VAPI defaulted to destinations[0] (Gustavo).
+
+This worked for the 2026-05-08 verification because at that moment the tool had only ONE destination (Pedro). When the tool was scaled to 18+ destinations in v1.20, this bug went live but wasn't caught because nobody re-tested direct-dial — the where-we-left-off doc's "spot-check sufficient because identical mechanism" assumption was wrong.
+
+**Fix:** declared `destination` (required, string, enum of all 19 DIDs) on the function schema and embedded the name→number directory in `function.description`. Updated the BR Direct-Dial Proxy's system prompt to instruct the LLM to identify the caller's requested name from the transcript and pass the matching phone number as the `destination` argument.
+
+Verified working on call `019e1711` (12:44 UTC) — caller asked for Pedro, tool was invoked with `destination: "+17262334655"`, call forwarded to Pedro's number.
+
+Files: [scripts/create-tool-transfer-to-specific-person.js](../scripts/create-tool-transfer-to-specific-person.js) + [scripts/create-br-direct-dial-proxy.js](../scripts/create-br-direct-dial-proxy.js). Both are idempotent.
+
+Memory: `feedback_vapi_multi_destination_param.md`.
+
+### Bug 5 — Squad destination `message` field doubles up with the receptionist's spoken line
+
+Same successful Pedro call (`019e1711`) still had a UX glitch: the caller heard "Connecting you now." TWICE before the proxy spoke. Trace:
+- `[bot Grace]` "Connecting you now."  ← Grace's LLM emission (generic — she did NOT speak the personalized "Of course — connecting you to Pedro Neumann. One moment." that her prompt mandates)
+- `[squad auto-msg]` plays the destination's `message` field ("Connecting you now." for `BR Direct-Dial Proxy v1.0`)
+- `[bot proxy]` "Of course, connecting you to Pedro Newman. One moment."
+
+The squad's destination `message` field auto-plays during the handoff window. If the receptionist's spoken line is similar, they overlap and the caller hears the same words twice. This is the same class of problem as v1.13's specialist-handoff fix.
+
+**Fix:** cleared `message` to `''` on Grace's destinations for all 4 routing proxies (Direct-Dial + Spanish + Existing-Quote + Service). Now only Grace + the proxy LLM speak; no automatic squad message. Applied to all 4 preemptively because the same pattern would have hit Spanish/Existing-Quote/Service on first test.
+
+Specialist destinations (Jennifer/Sarah/Wendy/Nora/Rachel) kept their `message` fields — they're 1:1 matched with Grace's hand-off lines per the v1.13 design, and the specialist re-introduces itself in its `firstMessage`.
+
+File: [scripts/clear-grace-proxy-destination-messages.js](../scripts/clear-grace-proxy-destination-messages.js). Idempotent.
+
+**Open sub-issue:** Grace's LLM is still emitting the GENERIC "Connecting you now." instead of the personalized "Of course — connecting you to Pedro Neumann. One moment." that Step P1 + HAND-OFF SCRIPTS demand. The personalization currently comes from the proxy LLM, not Grace. Fine for now (caller hears the name from the proxy), but if it becomes an issue, prompt Grace's HAND-OFF SCRIPTS more aggressively or accept that the proxy is the canonical personalized speaker.
+
+**Side issue:** TTS pronounced "Neumann" as "Newman" (English-style) instead of "Noyman" (German). Cosmetic. Fix would be to either change the spelled name to "Noyman" in the directory or attach an ElevenLabs `pronunciationDictionary`. Not blocking.
+
+## What to verify on resumption (FIRST priority)
+
+Static config is verified clean (squad has 11 members, 10 Grace destinations, all proxies + tools well-formed). **What's NOT verified is the actual behaviour on a real test call.** Recommend smoke-testing each new flow in this order:
+
+1. **Pedro direct-dial (REGRESSION) — verified 2026-05-11 12:44 UTC** (call `019e1711`). Forwarded to `+17262334655` cleanly after Bug 4 + Bug 5 fixes. Same code path serves the other 17 wired entries — spot-check 2 more names (e.g. Gustavo + Beth) to confirm the name→number enum lookup is reliable for non-trivially-matched names.
+2. **Spanish flow.** Call `+18882934492`. Listen for the new closing line in the intro ("if you'd prefer to be helped in Spanish, just let me know"). Reply in Spanish or say "Spanish please". Confirm: (a) Grace says "Of course — let me connect you with our Spanish-speaking team. One moment." in English, (b) the call routes to `+18332160350` audibly, (c) no double-spoken "Connecting you..." (Bug 5 should be fixed for this proxy too).
+3. **Existing-quote flow.** Call `+18882934492`. Say "I'm following up on a quote you sent me". Confirm: Grace says "Perfect — let me connect you with the team that has your quote. One moment." and routes to `+17262038542`.
+4. **Service flow.** Call `+18882934492`. Say "I'm an existing customer, I need to pay my bill" (or "file a claim" / "cancel my policy"). Confirm: Grace runs the service-side hand-off (Payment / Claim / Other-service line) and routes to `+17262046968`.
+5. **Sales flow (regression check).** Call and ask for a Builder's Risk quote. Make sure Jennifer still gets handed off as before — no v1.22 changes broke the existing Sales flow.
+
+If any of these fail with `endedReason: call.start.error-get-assistant`, use the 2026-05-08 diagnostic technique: `POST /call` with the squad ID and a phoneNumberId, inspect the 4xx response body for the actual `Invalid Configuration` validation error.
 
 ## Bugs fixed today (2026-05-08)
 

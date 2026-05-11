@@ -1,1 +1,1 @@
-Hi there! Thanks for calling Builders Risk Dot Net, this is Grace. Are you looking for a new quote, following up on a quote we already sent you, do you need help with an existing policy, or would you like to speak with someone in particular?
+Hi there! Thanks for calling Builders Risk Dot Net, this is Grace. Are you looking for a new quote, following up on a quote we already sent you, do you need help with an existing policy, or would you like to speak with someone in particular? And if you'd prefer to be helped in Spanish, just let me know.

@@ -23,11 +23,11 @@ const TOOL_NAME = 'transfer_to_specific_person';
 // destinations[] entry on the transferCall tool. The proxy LLM picks the
 // correct destination by matching the spoken name in the transcript against
 // the `message` field — keep messages distinctive (full name + first phrase).
-// 17 entries — the 20-name shortlist from John MINUS:
+// 18 entries — the 20-name shortlist from John MINUS:
 //   - John Brown (owner, no RingCentral line)
 //   - Jorge (alias of George, doesn't appear in the RingCentral export)
-//   - Pedro Neumann (used solely for the 2026-05-08 verification test;
-//     removed at José's request once direct-dial was confirmed working)
+// Pedro Neumann was removed in v1.21 (test-subject only) and re-added in
+// v1.22 at José's request because callers do ask for him by name.
 // Source DIDs: docs/farmer-brown-phone-directory.md. Convention: where a
 // person has both Softphone and Desk Phone, use the Softphone.
 const DESTINATIONS = [
@@ -49,6 +49,7 @@ const DESTINATIONS = [
   { fullName: 'Jackie Restrepo',  number: '+17734232075', message: 'Of course — connecting you to Jackie Restrepo. One moment.' },
   { fullName: 'John Sanchez',     number: '+17262229401', message: 'Of course — connecting you to John Sanchez. One moment.' },
   { fullName: 'Maria Portillo',   number: '+17262242489', message: 'Of course — connecting you to María Portillo. One moment.' },
+  { fullName: 'Pedro Neumann',    number: '+17262334655', message: 'Of course — connecting you to Pedro Neumann. One moment.' },
 ];
 
 async function vapi(method, path, body) {
@@ -70,14 +71,32 @@ async function vapi(method, path, body) {
 function buildToolBody({ includeType }) {
   // VAPI: POST /tool requires `type`; PATCH /tool/:id rejects it. Caller passes
   // includeType=true on create, false on update.
-  // function.parameters is REQUIRED even when the tool takes no arguments —
-  // without it any assistant using this tool fails to load and a containing
-  // squad fails with call.start.error-get-assistant. Bug found 2026-05-08.
+  //
+  // SCHEMA NOTES (lessons learned the hard way):
+  //   - function.parameters is REQUIRED. Missing it bricks any assistant that
+  //     uses this tool (call.start.error-get-assistant). Bug found 2026-05-08.
+  //   - For multi-destination transferCall, the LLM MUST be able to specify
+  //     which destination. With `parameters: {}` empty, VAPI silently falls
+  //     back to destinations[0] regardless of the caller's request. Bug found
+  //     2026-05-11 (Pedro test → Gustavo answered). Fix: declare a `destination`
+  //     parameter with enum of all valid numbers, AND embed the name→number
+  //     mapping in the function.description so the LLM can pick correctly.
+  const directoryLines = DESTINATIONS.map(d => `  - ${d.fullName} → ${d.number}`).join('\n');
   const body = {
     function: {
       name: TOOL_NAME,
-      description: 'Transfer the caller directly to a specific person via their direct DID. Each destination corresponds to a person in the directory; pick the one whose message contains the full name the caller asked for.',
-      parameters: { type: 'object', properties: {}, required: [] }
+      description: `Transfer the caller to a specific person via their direct DID. You MUST set the \`destination\` argument to the phone number of the person the caller asked for. Read the conversation context to identify the requested name, then match it to this directory:\n${directoryLines}\n\nIf the caller's name doesn't match any entry exactly, pick the closest match by first name. Never invent a number that isn't in this list.`,
+      parameters: {
+        type: 'object',
+        properties: {
+          destination: {
+            type: 'string',
+            enum: DESTINATIONS.map(d => d.number),
+            description: 'The E.164 phone number of the person to connect to. Must be one of the numbers in the directory above.'
+          }
+        },
+        required: ['destination']
+      }
     },
     destinations: DESTINATIONS.map(d => ({
       type: 'number',
