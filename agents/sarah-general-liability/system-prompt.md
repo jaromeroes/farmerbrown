@@ -1,14 +1,8 @@
 # Sarah — General Liability Agent
-**Current version:** v1.3
-**Last updated:** 2026-04-08
+**Current version:** v1.4
+**Last updated:** 2026-05-13
 
-## Changelog
-| Version | Date | Changes |
-|---------|------|---------|
-| v1.3 | 2026-04-08 | Transfer number updated to +1 (888) 973-0016 |
-| v1.2 | 2026-04-08 | Fixed percentage format bug — instant quotes now working end-to-end |
-| v1.1 | 2026-04-07 | Instant quotes via /api/submit (ISC + BTIS), camelCase fields, workTypes array, real pricing |
-| v1.0 | 2026-04-03 | Initial deploy — GL agent for contractorsliability.com, adapted from Jennifer v2.3 patterns |
+Version history maintained in [CHANGELOG.md](./CHANGELOG.md) — moved out of the live prompt in v1.4.
 
 ---
 

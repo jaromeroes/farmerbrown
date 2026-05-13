@@ -152,9 +152,9 @@
 
 <section class="hero">
   <div class="hero-inner">
-    <div class="hero-eye">Internal &mdash; Farmer Brown Insurance &middot; v4.0 target architecture</div>
+    <div class="hero-eye">Internal &mdash; Farmer Brown Insurance &middot; v4.0 unified architecture</div>
     <h1 class="hero-h1">Inbound Call Flow<br>&amp; Agent Routing</h1>
-    <p class="hero-sub">A tiered routing system that handles inbound calls across three websites. Each site has one toll-free number and one bilingual receptionist that triages every call into Sales, Service, or Spanish at the entry point &mdash; then routes to the appropriate path. Sales sends new quotes to product specialists; Service runs a closed-menu triage with an in-call certificate-of-insurance flow; Spanish mirrors both branches in a sub-flow.</p>
+    <p class="hero-sub">A tiered routing system across three websites. Each site has one toll-free number and one receptionist who triages every call into one of four explicit intents at the entry point &mdash; new quote, existing quote, existing policy, or speak with someone specific. Spanish callers are detected at any point and transferred to a dedicated Spanish team. New quotes flow to product specialists for instant quotes or appointments; existing quotes (hot leads) route to their own line; service intents reach a dedicated service team after an inline COI flow; named-person requests resolve via an internal directory of direct numbers.</p>
   </div>
 </section>
 
@@ -164,11 +164,11 @@
 <div class="wrap" style="padding-bottom:0;">
   <div class="sec">
     <div class="sec-title">00 / entry_point_triage</div>
-    <div class="table-card principles" style="margin-bottom:24px; border-left:3px solid var(--amber);">
+    <div class="table-card principles" style="margin-bottom:24px; border-left:3px solid var(--green);">
       <div class="p-grid" style="grid-template-columns:1fr;">
         <div>
-          <div class="p-eye" style="color:var(--amber);">&middot; status &middot; v4.0 target &middot; v3.6 still in production</div>
-          <div class="p-body">This page describes the v4.0 target: <strong>3 phone numbers, one unified receptionist per site</strong>. The flow diagrams in sections 01 (Sales) and 02 (Service) below describe what happens <em>after</em> the triage classifies the call &mdash; they remain valid as path descriptions inside the unified receptionist. The current production deployment still uses 9 phone lines and 6 receptionists (v3.6); the migration is being executed separately.</div>
+          <div class="p-eye" style="color:var(--green);">&middot; status &middot; v4.0 unified architecture &middot; one receptionist per site</div>
+          <div class="p-body">All three websites run the same unified receptionist that triages every inbound call into <strong>one of four explicit intents</strong>, then routes via <strong>five dedicated outbound destinations</strong> (Sales specialists, Service team, Existing-Quote team, Spanish team, direct-dial directory). The flow diagrams in section 01 (call flow) and section 03 (COI) describe the path inside the receptionist &mdash; identical on all three sites. The architecture also assumes a "lean by default" stance on the receptionist's instructions: only the live behavioural content is sent to the model on every turn; version history and unused metadata live in companion files.</div>
         </div>
       </div>
     </div>
@@ -178,39 +178,48 @@
         <div>
           <div class="p-eye">site.01 &middot; farmerbrown.com</div>
           <div class="p-body" style="margin-bottom:10px;"><strong>Toll-free:</strong> +1 (888) 496-2029</div>
-          <div class="p-body" style="margin-bottom:10px;"><strong>Receptionist:</strong> Emma (unified, bilingual)</div>
-          <div class="p-body"><em>Triage:</em> "Are you looking for a new quote, do you need help with an existing policy, or would you prefer to continue in Spanish?"</div>
+          <div class="p-body" style="margin-bottom:10px;"><strong>Receptionist:</strong> Emma (unified, English entry-point with Spanish detection)</div>
+          <div class="p-body"><em>Triage:</em> "Are you looking for a new quote, following up on a quote we already sent you, do you need help with an existing policy, or would you like to speak with someone in particular? And if you'd prefer to be helped in Spanish, just let me know."</div>
         </div>
         <div>
           <div class="p-eye">site.02 &middot; contractorsliability.com</div>
           <div class="p-body" style="margin-bottom:10px;"><strong>Toll-free:</strong> +1 (888) 435-6365</div>
-          <div class="p-body" style="margin-bottom:10px;"><strong>Receptionist:</strong> Olivia (unified, bilingual)</div>
+          <div class="p-body" style="margin-bottom:10px;"><strong>Receptionist:</strong> Olivia (unified, English entry-point with Spanish detection)</div>
           <div class="p-body"><em>Triage:</em> Same opening, CL branding.</div>
         </div>
         <div>
           <div class="p-eye">site.03 &middot; buildersrisk.net</div>
           <div class="p-body" style="margin-bottom:10px;"><strong>Toll-free:</strong> +1 (888) 293-4492</div>
-          <div class="p-body" style="margin-bottom:10px;"><strong>Receptionist:</strong> Grace (unified, bilingual)</div>
+          <div class="p-body" style="margin-bottom:10px;"><strong>Receptionist:</strong> Grace (unified, English entry-point with Spanish detection)</div>
           <div class="p-body"><em>Triage:</em> Same opening, BR branding.</div>
         </div>
       </div>
     </div>
 
     <div class="table-card principles" style="margin-top:24px;">
-      <div class="p-grid" style="grid-template-columns:1fr 1fr 1fr;">
+      <div class="p-grid" style="grid-template-columns:1fr 1fr;">
         <div>
           <div class="p-eye" style="color:var(--green);">&middot; path.a &middot; new quote / shopping</div>
-          <div class="p-body">Routes to the <strong>Sales path</strong> &mdash; specialist routing by product (Builder's Risk, GL, WC, Commercial Auto, Home &amp; Auto). See section 01.</div>
+          <div class="p-body">Routes to the <strong>Sales path</strong> &mdash; specialist routing by product (Builder's Risk, GL, WC, Commercial Auto, Home &amp; Auto). Instant quote on call when applicable. See section 01.</div>
         </div>
         <div>
-          <div class="p-eye" style="color:var(--green);">&middot; path.b &middot; existing policy / payment / claim / certificate</div>
-          <div class="p-body">Routes to the <strong>Service path</strong> &mdash; closed-menu triage (payment, claim, COI), in-call COI flow, transfer otherwise. See section 02.</div>
+          <div class="p-eye" style="color:var(--green);">&middot; path.b &middot; existing quote / following up <span class="pill" style="background:var(--green-bg); color:var(--green); margin-left:6px;">hot lead</span></div>
+          <div class="p-body">Caller already received a quote and is following up to close. Receptionist transfers immediately to a <strong>dedicated Existing-Quote team line</strong> &mdash; these are 5&times; more valuable than service calls and bypass the standard menu.</div>
         </div>
         <div>
-          <div class="p-eye" style="color:var(--amber);">&middot; path.c &middot; Spanish</div>
-          <div class="p-body">Receptionist switches to Spanish, repeats triage in Spanish ("¿Llama por ventas o por servicio?"), then routes into the same Sales or Service path with Spanish-capable specialists (Valeria for GL ES; other ES specialists pending).</div>
+          <div class="p-eye" style="color:var(--green);">&middot; path.c &middot; existing policy / service</div>
+          <div class="p-body">Routes to the <strong>Service path</strong> &mdash; closed-menu triage (COI, payment, claim, other). COI is AI-handled in-call (see section 03); every other intent transfers to a <strong>dedicated Service team line</strong>.</div>
+        </div>
+        <div>
+          <div class="p-eye" style="color:var(--green);">&middot; path.d &middot; speak with someone in particular</div>
+          <div class="p-body">Receptionist looks up the named person in an <strong>internal directory of ~20 team members</strong> with their direct numbers. Unique match &rarr; direct-dial. Ambiguous (e.g. "John") &rarr; disambiguate, then direct-dial. No match &rarr; transfer to live agent with the captured name in the call summary.</div>
         </div>
       </div>
+    </div>
+
+    <div class="table-card principles" style="margin-top:18px; border-left:3px solid var(--amber);">
+      <div class="p-eye" style="color:var(--amber);">&middot; cross-cutting &middot; spanish detection</div>
+      <div class="p-body" style="margin-top:8px;">Independent of the four paths above. If the caller speaks Spanish, asks for Spanish, or starts the call in Spanish, the receptionist acknowledges in English (<em>"Of course &mdash; let me connect you with our Spanish-speaking team."</em>) and transfers to a <strong>dedicated Spanish team line</strong>. The first-message also proactively offers the option so Spanish-preferring callers self-identify on their first turn. No mid-conversation language switch on the receptionist itself.</div>
     </div>
   </div>
 </div>
@@ -224,28 +233,28 @@
     <div class="sec-title">01 / unified_call_flow</div>
 
     <p style="font-family:'IBM Plex Sans',sans-serif; font-size:13px; line-height:1.6; color:var(--mid); max-width:880px; margin-bottom:28px;">
-      Every site runs the same internal flow inside a single bilingual receptionist. <strong>Farmer Brown (Emma)</strong>, <strong>Contractors Liability (Olivia)</strong>, and <strong>Builders Risk (Grace)</strong> each handle Sales, Service, and Spanish in one continuous conversation &mdash; no separate phone lines, no separate agents per channel. The diagram below describes the flow from the moment the receptionist picks up the call.
+      Every site runs the same internal flow inside a single unified receptionist. <strong>Farmer Brown (Emma)</strong>, <strong>Contractors Liability (Olivia)</strong>, and <strong>Builders Risk (Grace)</strong> each handle the four intents below in one continuous conversation &mdash; no separate phone lines, no separate agents per intent. Spanish callers are routed out to a dedicated team line at any point in the call. The diagram below describes the flow from the moment the receptionist picks up.
     </p>
 
     <!-- Tier A: receptionist + triage question -->
     <div class="table-card principles" style="margin-bottom:18px; border-left:3px solid var(--ink);">
       <div class="p-eye" style="color:var(--ink);">tier.a &middot; receptionist picks up &middot; triage question</div>
       <div class="p-body" style="margin-top:10px;">
-        <em>"Thank you for calling [site name]. Are you looking for a new quote, do you need help with an existing policy, or would you prefer to continue in Spanish?"</em>
+        <em>"Hi there! Thanks for calling [site name]. Are you looking for a new quote, following up on a quote we already sent you, do you need help with an existing policy, or would you like to speak with someone in particular? And if you'd prefer to be helped in Spanish, just let me know."</em>
       </div>
       <div class="p-body" style="margin-top:10px; color:var(--muted); font-size:12px;">
-        The same receptionist hears the answer and stays on the call &mdash; no handoff to another agent. The answer determines which of the three branches below runs next.
+        The same receptionist hears the answer and stays on the call &mdash; no handoff to another agent. The answer determines which of the four branches below runs next. Spanish detection is cross-cutting and short-circuits to the Spanish team line at any point.
       </div>
     </div>
 
-    <!-- Tier B: 3 branches in 3 columns -->
+    <!-- Tier B: 4 branches -->
     <div class="table-card principles">
-      <div class="p-grid" style="grid-template-columns:1fr 1fr 1fr;">
+      <div class="p-grid" style="grid-template-columns:1fr 1fr;">
 
         <!-- SALES branch -->
-        <div style="border-right:1px dashed var(--rule); padding-right:18px;">
-          <div class="p-eye" style="color:var(--green);">branch.01 &middot; sales</div>
-          <div class="p-body" style="margin-top:8px; margin-bottom:14px;"><strong>Trigger:</strong> "new quote", "shopping", product mentioned.</div>
+        <div style="border-right:1px dashed var(--rule); padding-right:18px; border-bottom:1px dashed var(--rule); padding-bottom:22px; margin-bottom:22px;">
+          <div class="p-eye" style="color:var(--green);">branch.01 &middot; new quote (sales)</div>
+          <div class="p-body" style="margin-top:8px; margin-bottom:14px;"><strong>Trigger:</strong> "new quote", "shopping", product mentioned, "I need pricing".</div>
 
           <div class="p-eye" style="font-size:9px; margin-top:14px;">routes to specialist</div>
           <div class="p-body" style="margin-top:6px; font-size:12px;">
@@ -258,7 +267,7 @@
 
           <div class="p-eye" style="font-size:9px; margin-top:18px;">resolution</div>
           <div class="p-body" style="margin-top:6px; font-size:12px;">
-            Instant quote on call (Jennifer / Sarah / Wendy) <strong>or</strong> appointment booked via Calendly (Nora / Rachel / Wendy with-payroll path).
+            Instant quote on call (Jennifer / Sarah / Wendy zero-employee path) <strong>or</strong> appointment booked via Calendly (Nora / Rachel / Wendy with-payroll path).
           </div>
 
           <div class="p-eye" style="font-size:9px; margin-top:18px; color:var(--amber);">GL only &middot; buy-now close</div>
@@ -267,9 +276,25 @@
           </div>
         </div>
 
+        <!-- EXISTING QUOTE branch -->
+        <div style="padding-left:0; border-bottom:1px dashed var(--rule); padding-bottom:22px; margin-bottom:22px;">
+          <div class="p-eye" style="color:var(--green);">branch.02 &middot; existing quote (hot lead)</div>
+          <div class="p-body" style="margin-top:8px; margin-bottom:14px;"><strong>Trigger:</strong> "following up on my quote", "I already got a quote from you", "I have a quote already".</div>
+
+          <div class="p-eye" style="font-size:9px; margin-top:14px;">winner script</div>
+          <div class="p-body" style="margin-top:6px; font-size:12px;">
+            <em>"Perfect &mdash; thanks for following up. Let me get you straight to the team that handles existing quotes. One moment."</em>
+          </div>
+
+          <div class="p-eye" style="font-size:9px; margin-top:18px;">resolution</div>
+          <div class="p-body" style="margin-top:6px; font-size:12px;">
+            Transfer directly to the <strong>dedicated Existing-Quote team line</strong> &mdash; a separate human-staffed number, distinct from the standard live-agent line. Existing-quote callers are 5&times; more valuable than service callers; the dedicated line ensures they reach a closer immediately. No specialist hand-off, no menu, no in-call data capture.
+          </div>
+        </div>
+
         <!-- SERVICE branch -->
         <div style="border-right:1px dashed var(--rule); padding-right:18px;">
-          <div class="p-eye" style="color:var(--green);">branch.02 &middot; service</div>
+          <div class="p-eye" style="color:var(--green);">branch.03 &middot; existing policy (service)</div>
           <div class="p-body" style="margin-top:8px; margin-bottom:14px;"><strong>Trigger:</strong> "existing policy", "payment", "claim", "certificate", "change something".</div>
 
           <div class="p-eye" style="font-size:9px; margin-top:14px;">menu &middot; COI first &middot; live-agent escape</div>
@@ -278,50 +303,93 @@
           <div class="p-eye" style="font-size:9px; margin-top:14px;">closed-menu intent triage</div>
           <div class="p-body" style="margin-top:6px; font-size:12px;">
             &middot; <strong>COI</strong> &mdash; AI-handled in-call<br>
-            &middot; Payment &mdash; transfer to live agent<br>
-            &middot; Claim &mdash; transfer to live agent<br>
-            &middot; "live agent" &mdash; transfer immediately<br>
-            &middot; Other service &mdash; transfer<br>
-            &middot; Sales misroute &mdash; transfer
+            &middot; Payment &mdash; transfer to Service team<br>
+            &middot; Claim &mdash; transfer to Service team<br>
+            &middot; "live agent" &mdash; transfer to Service team<br>
+            &middot; Other service &mdash; transfer to Service team<br>
+            &middot; Sales misroute &mdash; pivot to Sales branch
           </div>
 
           <div class="p-eye" style="font-size:9px; margin-top:18px;">resolution</div>
           <div class="p-body" style="margin-top:6px; font-size:12px;">
-            COI completed inside the call (see section 03 for the 6-step flow), with the captured certificate data sent to <strong>certificates@farmerbrown.com</strong> (backend pending). Other intents warm-transfer to a licensed agent with the appropriate opener.
+            COI completed inside the call (see section 03 for the 6-step flow), with the captured certificate data sent to <strong>certificates@farmerbrown.com</strong> (backend pending). Every other service intent warm-transfers to the <strong>dedicated Service team line</strong> &mdash; distinct from both the Sales live-agent line and the Existing-Quote team.
           </div>
         </div>
 
-        <!-- SPANISH branch -->
+        <!-- SPECIFIC PERSON branch -->
         <div style="padding-left:0;">
-          <div class="p-eye" style="color:var(--amber);">branch.03 &middot; spanish</div>
-          <div class="p-body" style="margin-top:8px; margin-bottom:14px;"><strong>Trigger:</strong> caller asks for Spanish, replies in Spanish, or says "español".</div>
+          <div class="p-eye" style="color:var(--green);">branch.04 &middot; speak with someone in particular</div>
+          <div class="p-body" style="margin-top:8px; margin-bottom:14px;"><strong>Trigger:</strong> "can I speak with [name]", "is [name] available", "I'm looking for [name]".</div>
 
-          <div class="p-eye" style="font-size:9px; margin-top:14px;">switch language &middot; re-triage</div>
+          <div class="p-eye" style="font-size:9px; margin-top:14px;">internal directory lookup</div>
           <div class="p-body" style="margin-top:6px; font-size:12px;">
-            Receptionist switches to Spanish and asks: <em>"¿Llama por ventas o por servicio?"</em> &mdash; then enters the same Sales or Service branch above, in Spanish.
+            Receptionist consults an internal directory of ~20 team members (full names, first-name aliases, extensions, direct numbers, direct-dial status flag). Three sub-branches:
+            <br>&middot; <strong>Unique match</strong> &mdash; "Of course &mdash; connecting you to [full name]. One moment." Direct-dial.
+            <br>&middot; <strong>Ambiguous</strong> (e.g. "John") &mdash; disambiguate first, then direct-dial.
+            <br>&middot; <strong>No match</strong> &mdash; capture name verbatim, transfer to live agent with the name in the call summary so the human can redirect.
           </div>
 
-          <div class="p-eye" style="font-size:9px; margin-top:18px;">spanish-capable specialists</div>
+          <div class="p-eye" style="font-size:9px; margin-top:18px;">coverage</div>
           <div class="p-body" style="margin-top:6px; font-size:12px;">
-            &middot; <strong>Valeria</strong> &mdash; General Liability ES &nbsp;<span class="pill quote">live</span><br>
-            &middot; Builder's Risk ES &nbsp;<span class="pill transfer">pending</span><br>
-            &middot; Workers' Comp ES &nbsp;<span class="pill transfer">pending</span><br>
-            &middot; Commercial Auto ES &nbsp;<span class="pill transfer">pending</span><br>
-            &middot; Home &amp; Auto ES &nbsp;<span class="pill transfer">pending</span>
+            Directory updated by editing one file + re-running the deployment script. New team members can be added without changing the receptionist's prompt.
           </div>
         </div>
 
       </div>
     </div>
 
-    <!-- Tier C: fallback / live agent applies to all branches -->
+    <!-- Tier C: the 5 dedicated outbound destinations -->
+    <div class="table-card principles" style="margin-top:18px; border-left:3px solid var(--ink);">
+      <div class="p-eye" style="color:var(--ink);">tier.c &middot; dedicated outbound destinations &middot; one per intent class</div>
+      <div class="p-body" style="margin-top:10px; margin-bottom:14px;">
+        Instead of routing everything that escapes the AI into a single "live agent" pool, the receptionist routes to <strong>five distinct human-staffed lines</strong>, each tuned to the intent that reaches it. The receiving team knows the call context before picking up.
+      </div>
+      <table style="margin-top:6px;">
+        <thead>
+          <tr>
+            <th style="width:180px">destination</th>
+            <th>reaches it</th>
+            <th>signal to the receiving team</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="t-name">Sales specialists</td>
+            <td class="t-note">New-quote callers, product determined.</td>
+            <td class="t-note">Caller already qualified for the right product specialist.</td>
+          </tr>
+          <tr>
+            <td class="t-name">Existing-Quote team</td>
+            <td class="t-note">Caller is following up on a quote already sent.</td>
+            <td class="t-note">Hot lead &mdash; closer should pick up fast and aim to close.</td>
+          </tr>
+          <tr>
+            <td class="t-name">Service team</td>
+            <td class="t-note">Payment, claim, other-service intents; explicit "live agent" inside the Service branch.</td>
+            <td class="t-note">Existing customer needing operational help, not a sales opportunity.</td>
+          </tr>
+          <tr>
+            <td class="t-name">Spanish team</td>
+            <td class="t-note">Any Spanish-detected caller at any point in the conversation.</td>
+            <td class="t-note">Spanish-speaking team takes over the call from a clean slate.</td>
+          </tr>
+          <tr>
+            <td class="t-name">Direct-dial / live agent</td>
+            <td class="t-note">Specific-person request resolves to a directory entry &rarr; direct number; no match &rarr; generic live-agent line with the captured name.</td>
+            <td class="t-note">Either reaches the named person directly, or reaches a human who can find them.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Tier D: graceful escalation across branches -->
     <div class="table-card principles" style="margin-top:18px; border-left:3px solid var(--amber);">
-      <div class="p-eye" style="color:var(--amber);">tier.c &middot; graceful escalation &middot; applies to all 3 branches &middot; all agents</div>
+      <div class="p-eye" style="color:var(--amber);">tier.d &middot; graceful escalation &middot; applies to every agent</div>
       <div class="p-body" style="margin-top:10px;">
-        <strong>Confusion / stuck / person request:</strong> at any point in any branch, if the receptionist (or a downstream specialist) is confused, gets stuck, or the caller asks for a person, the call is warm-transferred to a licensed agent with the appropriate site-specific number.
+        <strong>Confusion / stuck:</strong> at any point, if the receptionist (or a downstream specialist) is confused or stuck, the call is warm-transferred to the appropriate team line above &mdash; Service team if the confusion happened inside the Service branch, Sales live-agent otherwise.
       </div>
       <div class="p-body" style="margin-top:10px;">
-        <strong>Silence timeout (~7 sec):</strong> if the caller goes silent for ~7 seconds at any point, the agent proactively asks <em>"Are you still there? Would you like me to connect you with a live agent?"</em> &mdash; and transfers immediately if the caller asks for one or stays silent. Applies to every agent in every situation.
+        <strong>Silence timeout:</strong> if the caller goes silent for ~20 seconds at any point, the agent proactively asks <em>"Are you still there? Would you like me to connect you with a live agent?"</em> &mdash; and transfers immediately if the caller asks or stays silent. Applies to every agent in every situation.
       </div>
       <div class="p-body" style="margin-top:10px; color:var(--muted); font-size:12px;">
         The system never insists on automation when a human is the right answer.
@@ -511,6 +579,12 @@
           </tr>
           <tr>
             <td><span class="pill" style="background:var(--green-bg); color:var(--green);">high</span></td>
+            <td class="t-name">Calendly endpoints &middot; slim response format</td>
+            <td class="t-note">Add a <code>?format=slim</code> query param to <code>/api/calendly/available_times</code> (returns ~29 KB today) and <code>/api/calendly/book_event</code> (~3.3 KB today) so the response carries only what the voice agent reads aloud (day + local time for availability; status + summary for bookings). Today's verbose JSON sits in the AI's working memory for the rest of the call, which compounds the per-call cost on appointment-heavy flows.</td>
+            <td class="t-role">backend pending &middot; Tyler</td>
+          </tr>
+          <tr>
+            <td><span class="pill" style="background:var(--green-bg); color:var(--green);">high</span></td>
             <td class="t-name">Calendly &middot; BUY NOW flag</td>
             <td class="t-note">When the GL caller (Sarah / Valeria) accepts the buy-now close after a premium quote, the Calendly booking must carry a <strong>BUY NOW</strong> priority tag so the assignee knows to call back immediately. Mechanism: custom field, default note, or post-booking webhook &mdash; TBD with Calendly setup.</td>
             <td class="t-role">configuration pending</td>
@@ -574,8 +648,8 @@
 </div>
 
 <footer>
-  <span>farmer_brown &middot; call_center_architecture &middot; v4.0 target &middot; internal</span>
-  <span>2026-04-27</span>
+  <span>farmer_brown &middot; call_center_architecture &middot; v4.0 unified &middot; internal</span>
+  <span>2026-05-12</span>
 </footer>
 
 </body>

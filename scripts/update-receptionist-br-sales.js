@@ -20,7 +20,7 @@ async function updateAssistant() {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      name: 'Grace — BR Receptionist EN Sales v1.7',
+      name: 'Grace — BR Receptionist EN Sales v1.8',
       firstMessage: firstMessage.trim(),
       model: {
         provider: 'openai',

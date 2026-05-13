@@ -18,17 +18,18 @@
 //      (parses "**Current version:** vX.Y") and derives the target assistant name.
 //   2. PATCHes Jennifer's assistant: model.systemPrompt + model.toolIds + name.
 //   3. PATCHes the BR Unified squad's dispatcher destination so its assistantName
-//      matches the new name. Identifies the dispatcher and Jennifer's destination
-//      defensively (not by hardcoded index).
+//      matches the new name.
 //   4. Re-fetches both and verifies tools are present and names match.
-//   5. Idempotent: re-running with everything in sync is a no-op.
-//
-// Race window: between step 2 and step 3 the squad still points at the OLD name.
-// New calls during that window (~1 sec) will hit the fallbackDestination. If the
-// script fails between steps 2 and 3, RE-RUN it to fix the mismatch — the script
-// is idempotent and will reconcile to the target state.
+//   5. Runs scripts/sync-all-squad-names.js as a final step — Jennifer is also
+//      referenced by name in FB Sales, CL Sales, BR Sales (legacy), and Test Squad
+//      Sales. Step 3 alone leaves those 4 squads stale (the cause of a 10-day silent
+//      outage on FB/CL Sales discovered 2026-05-13). The universal sync handles all
+//      remaining squads.
+//   6. Idempotent: re-running with everything in sync is a no-op.
 
 const fs = require('fs');
+const { execFileSync } = require('child_process');
+const path = require('path');
 
 const VAPI_KEY = process.env.VAPI_KEY;
 if (!VAPI_KEY) {
@@ -197,10 +198,18 @@ async function main() {
     console.log(`[step 2/2] ✓ Squad patched: dest[${jenniferDestIdx}].assistantName "${currentDestName}" → "${afterDestName}"`);
   }
 
-  console.log(`\n✓ Done.`);
+  console.log(`\n✓ Assistant + primary squad patched.`);
   console.log(`   Assistant ${JENNIFER_ID} = ${targetName}`);
   console.log(`   Squad     ${SQUAD_ID} dispatcher.dest[${jenniferDestIdx}] points at "${targetName}"`);
   console.log(`   Tools restored: ${requiredTools.length}`);
+
+  // ─── 4. Reconcile every OTHER squad that references Jennifer by name ──────
+  // Jennifer also lives in FB Sales, CL Sales, BR Sales (legacy), Test Squad
+  // Sales. Without this step, those 4 squads keep the OLD name and fail to
+  // load whenever a caller asks for Builder's Risk on those lines.
+  console.log(`\nReconciling all other squads (sync-all-squad-names.js)…\n`);
+  const syncScript = path.join(__dirname, 'sync-all-squad-names.js');
+  execFileSync('node', [syncScript], { stdio: 'inherit', env: process.env });
 }
 
 main().catch(err => {

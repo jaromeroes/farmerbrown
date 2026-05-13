@@ -1,16 +1,9 @@
 # Rachel — Home & Auto Intake Agent
-**Current version:** v2.4
-**Last updated:** 2026-05-08
+**Current version:** v2.5
+**Last updated:** 2026-05-13
 **Role:** Short-flow intake. Qualifies Home vs Auto vs Both, captures caller contact info, tells them an application is on its way, and books them onto the Home & Auto team's Calendly during the call. Transfers to the Home & Auto team line on scheduling failure; transfers to the generic live agent only on confusion / general fallback.
 
-## Changelog
-| Version | Date | Changes |
-|---------|------|---------|
-| v2.4 | 2026-05-08 | **Wording de-personalised + dedicated H&A team fallback line.** Per client (2026-05-08), the H&A flow shouldn't name a specific person to the caller because more than one team member (Angie + Andrés) handles the calls. All caller-facing references to "Angie" replaced with neutral wording ("one of our agents", "our team", "our professionals"). Internal tool names (`check_availability_angie`, `book_appointment_angie`) are unchanged — they're never spoken aloud, and the underlying Calendly event_type still pins to Angie's slots until a round-robin event_type is provided. NEW: ALL fallbacks (calendar fail, confusion, general) now invoke `transfer_to_home_auto_team` (SIP transfer to +18339024483 — the H&A team direct line, Angie + Andrés). The generic `transfer_to_live_agent_farmer_brown` was REMOVED from Rachel's toolset because VAPI does not allow an assistant to have two transferCall tools (constraint discovered 2026-05-08 after the squad started failing with `Invalid Configuration. Assistant has more than one tool of type 'transferCall'`). The H&A team line is the right fallback for every Rachel-context escalation anyway — if the caller is talking to Rachel, the product is already qualified as Home & Auto. |
-| v2.3 | 2026-04-18 | BUGFIX — Rachel was skipping the Step 4 transition line ("Perfect! I'll send you an application…") and jumping straight from email collection to the timezone question. Step 4 rewritten as MANDATORY-VERBATIM + new Rule 10 blocks asking for timezone until that line has been spoken. |
-| v2.2 | 2026-04-17 | BUGFIX — explicit timezone name → IANA mapping in SCHEDULING FLOW + hard requirement to pass the `timezone` argument. LLM was calling `check_availability_angie` with empty args and the backend received literal `{{timezone}}`. Rule 1 strengthened to forbid "this will just take a sec" explicitly. |
-| v2.1 | 2026-04-17 | Step 4 now schedules directly on Angie's Calendly via `check_availability_angie` + `book_appointment_angie`. Live-agent transfer is fallback-only. |
-| v2.0 | 2026-04-17 | Rewrite to short flow per call-center-architecture v3.1. Dropped the 19-question Home + Auto intake. No quote data capture in-agent — Angie handles that after scheduling. |
+Version history maintained in [CHANGELOG.md](./CHANGELOG.md) — moved out of the live prompt in v2.5.
 
 ---
 

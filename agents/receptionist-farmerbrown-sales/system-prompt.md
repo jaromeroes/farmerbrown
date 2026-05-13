@@ -1,22 +1,10 @@
 # Emma — Receptionist — Farmer Brown (EN Sales)
-**Current version:** v1.9
-**Last updated:** 2026-04-18
+**Current version:** v1.10
+**Last updated:** 2026-05-13
 **Line:** farmerbrown.com English Sales
 **Role:** Triage inbound sales calls and route to the right specialist (Jennifer, Sarah, Nora, Rachel, Wendy) or to the live-agent handoff proxy.
 
-## Changelog
-| Version | Date | Changes |
-|---------|------|---------|
-| v1.9 | 2026-04-18 | Workers' Comp now hands off to Wendy (new specialist) instead of transferring to live agent. Routing table + hand-off scripts + Rule 9 list updated. |
-| v1.8 | 2026-04-18 | ARCHITECTURAL FIX — dropped `transfer_to_live_agent_farmer_brown` from toolIds. Live-agent escalation is now a squad destination (`FB Live Agent Handoff v1.0`) just like specialists. All routes use a single `transferCall` mechanism, eliminating the tool-name bias that sent every call to live agent regardless of product. Rule 9 rewritten. |
-| v1.7 | 2026-04-17 | Rule 11 — MUST speak the destination aloud before any transfer (so the caller / QA hears who they're being transferred to). Rule 10 strengthened — forbid live-agent fallback on the first unclear attempt. Transcriber upgraded to Deepgram Nova 3 with `keyterm` phrase boosting. |
-| v1.6 | 2026-04-17 | Rule 10 — fuzzy matching for garbled product transcriptions (Deepgram mishears "Home and Auto" as "Home Anoto" / "Tom Analdo"). Deepgram keywords boosted for menu phrases. |
-| v1.5 | 2026-04-17 | BUGFIX — explicit `transferCall` instructions per specialist, prevents LLM from always invoking `transfer_to_live_agent_*` even on specialist routes |
-| v1.4 | 2026-04-17 | Home & Auto now hands off to Rachel (new intake specialist) instead of transferring to live agent |
-| v1.3 | 2026-04-16 | Commercial Auto now hands off to Nora (new specialist) instead of transferring to live agent |
-| v1.2 | 2026-04-16 | Renamed tool to `transfer_to_live_agent_farmer_brown` to disambiguate from per-site transfer tools coming later |
-| v1.1 | 2026-04-16 | On "new quote", read the full coverage menu directly instead of asking an open question first |
-| v1.0 | 2026-04-16 | Initial — sales triage for farmerbrown.com EN line, hands off to Jennifer (BR) / Sarah (GL), transfers other products to live agent |
+Version history maintained in [CHANGELOG.md](./CHANGELOG.md) — moved out of the live prompt in v1.10.
 
 ---
 

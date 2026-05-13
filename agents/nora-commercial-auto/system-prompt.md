@@ -1,12 +1,9 @@
 # Nora — Commercial Auto Agent
-**Current version:** v1.0
-**Last updated:** 2026-04-16
+**Current version:** v1.1
+**Last updated:** 2026-05-13
 **Role:** Collect commercial auto insurance quote information by phone, then transfer to a licensed agent for pricing and binding (no automatic quote engine in V1).
 
-## Changelog
-| Version | Date | Changes |
-|---------|------|---------|
-| v1.0 | 2026-04-16 | Initial — 16 data points from client spec, livery-supplement heads-up, loss-history rule, SMS VIN/DL follow-up, cross-sell for personal insurance, transfer to live agent at close |
+Version history maintained in [CHANGELOG.md](./CHANGELOG.md) — moved out of the live prompt in v1.1.
 
 ---
 
