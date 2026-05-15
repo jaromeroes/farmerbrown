@@ -1,5 +1,17 @@
 # Where we left off — Farmer Brown
-**Last touched:** 2026-05-11 (late) — Grace v1.22 deployed + **two VAPI gotchas discovered and fixed during direct-dial smoke test** (multi-destination `transferCall` requires a `destination` parameter; squad-destination `message` field doubles up with Grace's spoken line when both say similar things). **All 4 new routing flows verified by real test calls** — Pedro direct-dial (call `019e1711` → `+17262334655`), Spanish, Existing-Quote, and Service.
+**Last touched:** 2026-05-15 (full session) — **Multi-front session, none of it test-called yet.** Three big things shipped:
+
+1. **Jennifer v2.14** — NEW Q5a "total square footage of the finished project" inserted BEFORE the building-value question on NEW CONSTRUCTION flow only. Renovations unchanged. CP2 payload extended with `total_square_footage`. Five squads auto-synced by `update-jennifer.js`.
+
+2. **Emma FB Sales v1.11 + Olivia CL Sales v1.9** — full **Grace BR Unified replication (Level 2)**. firstMessage expanded from 2-intent to 4-intent triage + Spanish offer at the end (textual match with Grace BR). system-prompt restructured to mirror Grace: Step 0 (4-way intent triage) → Sales Branch (S1+S2, unchanged) + new EXISTING-QUOTE / EXISTING-POLICY / SPECIFIC-PERSON / SPANISH branches. Routing simplifications vs Grace (FB/CL don't yet have direct-dial directory, dedicated existing-quote line, or dedicated service line): all three non-Sales branches collapse into Mechanism B (`FB Live Agent Handoff` / `CL Live Agent Handoff`); Spanish → shared `Spanish Team Proxy v1.0` (Mechanism C). Per John's request: *"las recepcionistas de CL y FB tienen que replicar el mensaje que ahora tiene Grace de BR"*.
+
+3. **Routing reshuffle:**
+   - `BR Spanish Proxy v1.0` **renamed → `Spanish Team Proxy v1.0`** (cross-site, shared). BR Unified Squad reference fixed in same operation (would have bricked BR otherwise — first-word match in `sync-all-squad-names.js` doesn't auto-fix this because "BR" → "Spanish" changes the lead token).
+   - Spanish Team Proxy **added as member + Emma/Olivia destination** in FB Sales Squad and CL Sales Squad. Both squads now have 8 members.
+   - **`+18884356365` reapuntado del Test Dispatcher al CL Sales Squad** (now CL production line directly to Olivia; previously a multi-site testing menu).
+   - **Test Dispatcher Sales DELETED** (assistant `753657c6-…` + squad `2ae25a8b-…`). Multi-site testing is gone — to test Emma FB now you need the FB production number (pending import).
+
+**Previously (2026-05-11 late):** Grace v1.22 deployed + **two VAPI gotchas discovered and fixed during direct-dial smoke test** (multi-destination `transferCall` requires a `destination` parameter; squad-destination `message` field doubles up with Grace's spoken line when both say similar things). **All 4 new routing flows verified by real test calls** — Pedro direct-dial (call `019e1711` → `+17262334655`), Spanish, Existing-Quote, and Service.
 
 This is a session-resumption checkpoint: enough context to pick the project back up cold without re-reading the full conversation history.
 
@@ -9,7 +21,11 @@ This is a session-resumption checkpoint: enough context to pick the project back
 
 | Component | Version | Notes |
 |---|---|---|
-| **Jennifer** (BR specialist) | **v2.12** | All v2.11 fixes + new MAILING ADDRESS sub-flow after Q6. submit_quote tool schema co-updated. Backend verified 2026-05-06. **Not re-verified after 2026-05-06 deploy.** |
+| **Jennifer** (BR specialist) | **v2.14** (NEW 2026-05-15) | v2.13 (changelog moved out, no behaviour change) + **v2.14: new NEW-CONSTRUCTION question Q5a "total square footage of the finished project"** asked BEFORE the building-value question. Renovations flow unchanged. CP2 payload extended with `total_square_footage` (only for new construction). Backend accepts it transparently because `builders_risk_submission` is a generic object. **Not test-called after the v2.14 deploy** — spot-check the new question fires on a new-construction call. |
+| **Emma** (FB Sales receptionist) | **v1.11** (NEW 2026-05-15) | Major — full Grace BR Unified replication (Level 2). 4-way triage + Spanish offer. See top of doc. **Not test-called** — no production number on Emma yet (`+18884962029` pending Twilio import). |
+| **Olivia** (CL Sales receptionist) | **v1.9** (NEW 2026-05-15) | Major — full Grace BR Unified replication (Level 2). 4-way triage + Spanish offer. See top of doc. **+18884356365 reapuntado al CL Sales Squad el 2026-05-15** — now Olivia is the production receptionist for CL. **Not test-called yet** — first thing for next session. |
+| **Spanish Team Proxy** (was BR Spanish Proxy) | **v1.0** (RENAMED 2026-05-15) | Same assistant `af9a33a1-…`, holds `transfer_to_spanish_team` → +18332160350. Now cross-site — squad member of BR Unified + FB Sales + CL Sales (3 squads). When extended to the 3 Service squads in next session, will be in 6 squads total. |
+| **Test Dispatcher Sales** | ❌ DELETED 2026-05-15 | Assistant `753657c6-…` + squad `2ae25a8b-…` gone. Its number `+18884356365` is now the CL production line. |
 | **Grace** (BR receptionist Unified) | **v1.22** (NEW) | All v1.21 features + **Pedro Neumann re-added to direct-dial** (18 of 20 directory entries wired now; was 17 of 19) + **3 new dedicated team lines wired** (Spanish, Existing-Quote, Service) + **Spanish offer in intro** ("if you'd prefer to be helped in Spanish, just let me know"). Existing-quote disconnect line REMOVED — now routes via `BR Existing-Quote Proxy`. All service-branch transfers (Payment / Claim / Other-service / explicit live-agent inside Service / confusion-in-service) now route via `BR Service Proxy` instead of `BR Live Agent Proxy`. Spanish callers route via `BR Spanish Proxy`. The generic EN live-agent (`BR Live Agent Proxy` → +18775131573) remains for Sales-branch only (explicit "live agent" inside Sales, Sales confusion fallback, `Direct-dial? = pending` directory entries). New Mechanisms E (Spanish), F (Existing-Quote), G (Service) added to Rule 9. Mechanism B narrowed. Mechanism C reframed (was disconnect, now historical placeholder). |
 | **Rachel** (H&A specialist) | **v2.4** | Unchanged today. |
 | **Wendy** (WC specialist, cross-site) | **v2.0** | Unchanged today. Spanish PPC routing pending number from new team. |
@@ -100,9 +116,23 @@ All 4 new routing flows verified by real test calls on `+18882934492`:
 
 Sales flow (Grace → Jennifer for new Builder's Risk) was NOT re-verified after the v1.22 deploy. Last verified working was 2026-05-06. Should still work — no changes to specialist routing — but spot-check on next session if convenient. The 17 other wired direct-dial entries (Gustavo, Beth, Daniela, etc.) also weren't individually tested; same code path as Pedro so the bar should be lower, but worth one spot-check.
 
-## Open / pending for the next session
+## Open / pending for the next session (priority order)
 
-1. **Warm transfer with context** (pending since 2026-05-08 PM) — when Grace transfers to a specific person, the receiver should hear a brief context summary ("you have a caller interested in a Builder's Risk quote, name…") before being bridged. Currently a blind SIP transfer. Implementation: VAPI's `transferPlan: { mode: 'warm-transfer-say-summary' }` on each destination of `transfer_to_specific_person`. See `memory/project_pending_warm_transfer.md`.
+**HIGHEST — verify the 2026-05-15 deploys before anything else:**
+
+1. **Test call to `+18884356365`** — verify Olivia v1.9 4-way triage works end-to-end on CL. Try: (a) "new quote" → menu → product → specialist hand-off; (b) "I already have a quote" → live agent; (c) "Spanish please" → Spanish Team Proxy → +18332160350; (d) "I want to speak to John" → live agent with name. **First call should also confirm BR has no regression** — the Spanish Proxy rename + BR Unified Squad re-sync was the riskiest change of the session.
+2. **Test call to `+18882934492`** — sanity check that Grace BR Unified still routes correctly after the Spanish Proxy rename + Jennifer v2.14 deploy + BR Unified Squad re-sync.
+3. **Spot-check Jennifer v2.14** — make a new-construction quote call and confirm she asks "What is the total square footage of the finished project?" BEFORE the building-value question. Then verify the field reaches the backend (check the BI record for `total_square_footage`).
+
+**HIGH — finish the production routing setup:**
+
+4. **Import `+18884962029` (FB) from Twilio to VAPI.** José said he'd pass the Twilio credentials (account `AC450cf8...`). Once we have them, POST to `/phone-number` with `provider: 'twilio'`, the Account SID, Auth Token, and the number; then PATCH the resulting record with `squadId: '5cf7afbf-cee7-45cd-8fa1-9ff2989d8e28'` so it routes to Emma FB Sales. Once done, repeat the test-call routine for FB.
+5. **Fase C — Spanish offer in the 3 Service receptionists** (Emma FB Service `a1720268-…`, Olivia CL Service `e4597689-…`, Grace BR Service `9f4ae2af-…`). Mechanical: add the offer to each `first-message.md`, add a Spanish Rule to each `system-prompt.md`, add `Spanish Team Proxy v1.0` as member + destination on each of the 3 Service squads, deploy. Should take ~15 minutes — none of the 3 has a number assigned today, so this is preventive.
+6. **Decide what to do with Test Dispatcher Service** (squad `d989f711-…`). Like its Sales counterpart, has no number assigned. Probably should be deleted unless we explicitly need multi-site Service testing.
+
+**MEDIUM — pending earlier requests:**
+
+7. **Warm transfer with context** (pending since 2026-05-08 PM) — when Grace transfers to a specific person, the receiver should hear a brief context summary ("you have a caller interested in a Builder's Risk quote, name…") before being bridged. Currently a blind SIP transfer. Implementation: VAPI's `transferPlan: { mode: 'warm-transfer-say-summary' }` on each destination of `transfer_to_specific_person`. See `memory/project_pending_warm_transfer.md`.
 
 2. **Grace prompt sub-issue: generic line instead of personalized.** Grace's LLM emits "Connecting you now." instead of the prompt-mandated "Of course — connecting you to Pedro Neumann. One moment." for direct-dial unique-matches. The proxy LLM compensates by speaking the personalized line, so the caller still hears the name. If we want Grace herself to speak the personalized line (instead of letting the proxy do it), the HAND-OFF SCRIPTS section for direct-dial needs a stronger formulation — replace the `<full name from directory>` placeholder pattern with worked examples per directory entry, OR make the prompt's Rule 11 explicitly forbid generic "Connecting you now." for direct-dial. Not blocking.
 

@@ -21,7 +21,7 @@ async function updateAssistant() {
       'Content-Type': 'application/json'
     },
     body: JSON.stringify({
-      name: 'Emma — FB Receptionist EN Sales v1.10',
+      name: 'Emma — FB Receptionist EN Sales v1.11',
       firstMessage: firstMessage.trim(),
       model: {
         provider: 'openai',

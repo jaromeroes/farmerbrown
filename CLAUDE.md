@@ -35,28 +35,29 @@ Full architecture documented in `docs/call-center-architecture.md`.
 ### Receptionist — Central Router
 One receptionist per phone line (9 total across 3 sites × 3 lines). Each line = its own Squad. See `docs/call-center-architecture.md`.
 
-**Status:** EN Sales (3 sites) + EN Service (3 sites) deployed. Spanish variants pending.
+**Status:** EN Sales (3 sites) + EN Service (3 sites) deployed. **Spanish handled in-line by EN receptionists** (each forwards Spanish callers to the shared Spanish team line via `Spanish Team Proxy v1.0`); no standalone Spanish receptionists planned. Emma FB Sales + Olivia CL Sales upgraded 2026-05-15 to mirror Grace BR Unified (4-way triage + Spanish offer).
 
 #### Emma — Farmer Brown Receptionist (EN Sales) ✅ active
 - **Assistant ID:** `71c72af4-b87a-43cb-8f0a-661c3febe8ea`
 - **Squad ID:** `5cf7afbf-cee7-45cd-8fa1-9ff2989d8e28` (Farmer Brown — Sales EN Squad)
-- **Version:** v1.9
+- **Version:** v1.11 (2026-05-15 — full Grace BR Unified replication, Level 2)
 - **Config:** `agents/receptionist-farmerbrown-sales/`
 - **Deploy scripts:** `scripts/create-receptionist-fb-sales.js`, `scripts/update-receptionist-fb-sales.js`, `scripts/create-squad-fb-sales.js`, `scripts/update-squads-add-wendy.js`
-- **Line:** farmerbrown.com English Sales
-- **Routing:** existing quote → live agent proxy · new quote → {BR→Jennifer · GL→Sarah · CA→Nora · H&A→Rachel · WC→Wendy}
-- **Squad members:** Emma + Jennifer + Sarah + Nora + Rachel + Wendy + FB Live Agent Proxy
+- **Line:** farmerbrown.com English Sales — **no VAPI number assigned yet** (pending import of `+18884962029` from Twilio account AC450cf8...)
+- **firstMessage (v1.11):** 4-way triage (New quote / Existing quote / Existing policy / Specific person) + Spanish offer at the end — identical structure to Grace BR Unified v1.22
+- **Routing:** new quote → {BR→Jennifer · GL→Sarah · CA→Nora · H&A→Rachel · WC→Wendy}; existing quote / existing policy / specific person → `FB Live Agent Handoff v1.0`; Spanish → `Spanish Team Proxy v1.0`. FB doesn't yet have dedicated direct-dial directory, existing-quote line, or service line — all three non-Sales branches collapse into Mechanism B. When FB ships those, extend Emma to mirror Grace's full Mechanisms D/F/G.
+- **Squad members (8):** Emma + Jennifer + Sarah + Nora + Rachel + Wendy + FB Live Agent Proxy + Spanish Team Proxy (added 2026-05-15)
 - **Tools:** none — live-agent escalation is a squad destination, not an explicit tool (v1.8 fix)
 
 #### Olivia — Contractors Liability Receptionist (EN Sales) ✅ active
 - **Assistant ID:** `b5f88994-e045-4996-9f2c-056516e9cf01`
 - **Squad ID:** `3b29fd00-f58a-4282-9cb3-c26c393a7858` (Contractors Liability — Sales EN Squad)
-- **Version:** v1.7
+- **Version:** v1.9 (2026-05-15 — full Grace BR Unified replication, Level 2)
 - **Config:** `agents/receptionist-contractorsliability-sales/`
 - **Deploy scripts:** `scripts/create-receptionist-cl-sales.js`, `scripts/update-receptionist-cl-sales.js`, `scripts/create-squad-cl-sales.js`, `scripts/update-squads-add-wendy.js`
-- **Line:** contractorsliability.com English Sales
-- **Flow:** Mirrors Emma with CL branding. Same routing — BR→Jennifer, GL→Sarah, CA→Nora, H&A→Rachel, WC→Wendy
-- **Squad members:** Olivia + Jennifer + Sarah + Nora + Rachel + Wendy + CL Live Agent Proxy
+- **Line:** contractorsliability.com English Sales — **`+18884356365` reapuntado al CL Sales Squad el 2026-05-15** (antes apuntaba al Test Dispatcher; ahora línea de producción directa de CL)
+- **Flow (v1.9):** Mirrors Grace BR Unified — Step 0 (4-way triage) → Sales Branch (S1 menu + S2 routing, unchanged) + new EXISTING-QUOTE / EXISTING-POLICY / SPECIFIC-PERSON / SPANISH branches. Same simplifications vs Grace as Emma: all 3 non-Sales branches → Mechanism B (`CL Live Agent Handoff`); Spanish → `Spanish Team Proxy v1.0`.
+- **Squad members (8):** Olivia + Jennifer + Sarah + Nora + Rachel + Wendy + CL Live Agent Proxy + Spanish Team Proxy (added 2026-05-15)
 - **Tools:** none (v1.6 fix)
 
 #### Grace — Builders Risk Receptionist (EN Sales) ✅ active
@@ -100,7 +101,7 @@ Shipped 2026-05-11 with Grace v1.22. Three new silent SIP proxies, one per categ
 
 | Proxy | Assistant ID | VAPI Name | Tool | SIP destination |
 |-------|--------------|-----------|------|-----------------|
-| BR Spanish Proxy | `af9a33a1-0f3d-4723-b021-1a676ba859c3` | `BR Spanish Proxy v1.0` | `transfer_to_spanish_team` | +18332160350 |
+| Spanish Team Proxy | `af9a33a1-0f3d-4723-b021-1a676ba859c3` | `Spanish Team Proxy v1.0` | `transfer_to_spanish_team` | +18332160350 |
 | BR Existing-Quote Proxy | `db9b7095-36a4-48a2-8b22-3cc8f80edeec` | `BR Existing-Quote Proxy v1.0` | `transfer_to_existing_quote_team` | +17262038542 |
 | BR Service Proxy | `a080eec0-ad05-403c-bcb1-8a61185a268c` | `BR Service Proxy v1.0` | `transfer_to_service_team` | +17262046968 |
 
@@ -108,19 +109,9 @@ Squad membership: BR Unified Squad (`a3269fa7-…`) only — added 2026-05-11. A
 
 Deploy scripts: [scripts/create-tool-transfer-to-spanish-team.js](scripts/create-tool-transfer-to-spanish-team.js), [scripts/create-tool-transfer-to-existing-quote-team.js](scripts/create-tool-transfer-to-existing-quote-team.js), [scripts/create-tool-transfer-to-service-team.js](scripts/create-tool-transfer-to-service-team.js), [scripts/create-br-routing-proxies.js](scripts/create-br-routing-proxies.js), [scripts/update-squad-add-routing-proxies.js](scripts/update-squad-add-routing-proxies.js).
 
-#### Test Dispatcher — Single-number multiplexer for testing ✅ active
-- **Assistant ID:** `753657c6-3ed4-487c-8c39-1f65fa4f8287`
-- **Squad ID:** `2ae25a8b-6ff0-49db-abfc-197b751f533a` (Test Squad — Sales EN (all sites))
-- **Version:** v1.0
-- **Config:** `agents/test-dispatcher/`
-- **Deploy scripts:** `scripts/create-dispatcher.js`, `scripts/create-squad-test.js`
-- **Role:** Level 1 router that asks the caller which site to test (FB / CL / BR), then hands off to the matching receptionist. Lets John test all three sales flows from a single number.
-- **Hierarchy (3 levels):**
-  - Level 1: Test Dispatcher (routes to receptionists only)
-  - Level 2: Emma / Olivia / Grace (route to specialists OR to their site-specific live-agent proxy)
-  - Level 3: Jennifer / Sarah / Nora / Rachel / Wendy / 3 Live Agent Proxies (terminal)
-- **Squad members (12):** Dispatcher + Emma + Olivia + Grace + Jennifer + Sarah + Nora + Rachel + Wendy + FB/CL/BR Live Agent Proxies
-- **Phone number attached:** `+18884356365` (Toll Free - Farmer's Brown) — attached to `squadId`, not `assistantId`. Required for assistantDestinations handoffs to work.
+#### ~~Test Dispatcher — Single-number multiplexer for testing~~ ❌ DELETED 2026-05-15
+- Test Dispatcher Sales (assistant `753657c6-…` + squad `2ae25a8b-…`) deleted on 2026-05-15 because `+18884356365` became the production line for Contractors Liability (reapuntado al CL Sales Squad directly). The squad/assistant are gone from VAPI. If multi-site testing is needed again, build a new dispatcher under a fresh number — do not try to recover this one.
+- Test Dispatcher **Service** (squad `d989f711-…`) still exists but also has no number assigned. Likely candidate for deletion in the next pass — see Test Dispatcher Service section below.
 
 #### Emma — Farmer Brown Receptionist (EN Service) ✅ active
 - **Assistant ID:** `a1720268-a855-410e-bb7f-687910995dba`
@@ -239,7 +230,7 @@ Deploy scripts: [scripts/create-tool-transfer-to-spanish-team.js](scripts/create
 
 ### Jennifer — Builders Risk (active builders risk agent)
 - **Assistant ID:** `273d2d5a-27e0-40aa-b817-76a51d1c302d`
-- **Version:** v2.8
+- **Version:** v2.14 (2026-05-15 — NEW: Q5a "total square footage of finished project" inserted before Q5b building-value, NEW CONSTRUCTION flow only; CP2 payload extended with `total_square_footage`)
 - **Config:** `agents/jennifer-builders-risk/`
 - **Deploy scripts:** `scripts/create-jennifer.js`, `scripts/update-jennifer.js`
 - **Required toolIds (4):** `submit_quote`, `check_availability` (round-robin), `book_appointment` (round-robin), `transfer_to_live_agent_builders_risk`. The deploy script enforces these — stripping any breaks the line silently (line answers, no data persists, scheduling branch dies). See changelog entry v2.8.
@@ -265,7 +256,7 @@ Deploy scripts: [scripts/create-tool-transfer-to-spanish-team.js](scripts/create
 | `transfer_to_live_agent_builders_risk` | `7eb304a7-ee98-4076-be2f-2d1c5fd6645e` | transferCall | SIP transfer to +18775131573 (BuildersRisk.Net live-agent line) |
 | `transfer_to_home_auto_team` | `152b99c4-9461-4c3f-831f-fd02af9d3c7f` | transferCall | SIP transfer to +18339024483 (Home & Auto team direct line — Angie + Andrés). Used by Rachel as scheduling fallback. |
 | `transfer_to_specific_person` | `b7c4167b-91da-4a96-ae1f-8a3cfb572a57` | transferCall | Multi-destination tool — one destination per directory entry with `Direct-dial? = yes`. 19 destinations as of 2026-05-11 (Pedro Neumann re-added in v1.22). Each is a raw E.164 DID, no PBX/extension. Held by `BR Direct-Dial Proxy v1.0`, not directly by any receptionist. **Requires `function.parameters.destination` (string enum) so the LLM can specify the destination** — without it VAPI silently defaults to destinations[0] (Gustavo). Bug found 2026-05-11. Name→number mapping is embedded in `function.description` so the LLM can pick correctly. Edit the `DESTINATIONS` array in `scripts/create-tool-transfer-to-specific-person.js` and re-run (idempotent) to add/remove. |
-| `transfer_to_spanish_team` | `b432ef17-e76f-409f-a755-db140c31aa28` | transferCall | SIP transfer to +18332160350 (dedicated Spanish-speaking team line). Held by `BR Spanish Proxy v1.0`. Used by Grace v1.22+ for Spanish callers. |
+| `transfer_to_spanish_team` | `b432ef17-e76f-409f-a755-db140c31aa28` | transferCall | SIP transfer to +18332160350 (dedicated Spanish-speaking team line). Held by `Spanish Team Proxy v1.0` (renamed from "BR Spanish Proxy v1.0" on 2026-05-15 when made cross-site). Used by Grace BR Unified v1.22+, Emma FB Sales v1.11+, and Olivia CL Sales v1.9+. |
 | `transfer_to_existing_quote_team` | `a1644cf7-9fae-4ccb-9ae0-bff4b84554ea` | transferCall | SIP transfer to +17262038542 (dedicated existing-quote team — hot leads, 5x more valuable than service). Held by `BR Existing-Quote Proxy v1.0`. Used by Grace v1.22+ for callers following up on a quote we already sent. |
 | `transfer_to_service_team` | `a589dc49-f053-459a-9162-9d18b7d37e9e` | transferCall | SIP transfer to +17262046968 (dedicated service team line). Held by `BR Service Proxy v1.0`. Used by Grace v1.22+ for Payment/Claim/Other-service intents and explicit "live agent" inside the Service branch. |
 

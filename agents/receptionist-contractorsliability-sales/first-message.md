@@ -1,1 +1,1 @@
-Hi, thanks for calling Contractors Liability — this is Olivia. Are you calling about a quote we already sent you, or are you looking for a new quote?
+Hi there! Thanks for calling Contractors Liability, this is Olivia. Are you looking for a new quote, following up on a quote we already sent you, do you need help with an existing policy, or would you like to speak with someone in particular? And if you'd prefer to be helped in Spanish, just let me know.
