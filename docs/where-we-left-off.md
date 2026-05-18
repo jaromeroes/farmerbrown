@@ -1,5 +1,19 @@
 # Where we left off — Farmer Brown
-**Last touched:** 2026-05-15 (full session) — **Multi-front session, none of it test-called yet.** Three big things shipped:
+**Last touched:** 2026-05-18 — **Bonds discovery (planning, no code shipped).**
+
+John forwarded an email from Tom Hester (Bonding Specialist, ext. 105) on 2026-05-16 with the data-collection questionnaire for a new **Bonds** line. José ran a Slack Q&A with Tom on 2026-05-18 to close the gaps. All of it captured in [docs/bonds-discovery.md](bonds-discovery.md). **Nothing built yet** — 4 open items need a 20-min call with John before any code:
+
+1. Domain / phone-line strategy — does UnitedSuretyBonds.com get its own number (like buildersrisk.net) or does "Bonds" become a menu option on the existing 3 receptionists?
+2. What to say when a caller fails the hard qualification (bad credit / <1yr / bankruptcy) — thank-and-end, cross-sell, or transfer to Tom anyway?
+3. End-of-call cross-sell — bonds inherits the standard pattern (every line except H&A cross-sells)?
+4. Tom-unavailable fallback — Tom is a single destination; what happens when he's out / on another call?
+
+Side note from same session: **investigated 32 missed weekend calls reported by Pedro/Angie.** Confirmed via VAPI call log that NONE of them touched the AI agents — last VAPI call was 2026-05-14 16:15 UTC. Those calls came through the traditional Twilio infrastructure, not VAPI. Follow-up suggested to Pedro: audit Twilio call logs for the weekend if they want to know what happened.
+
+---
+
+## Previously — 2026-05-15 (full session)
+**Multi-front session, none of it test-called yet.** Three big things shipped:
 
 1. **Jennifer v2.14** — NEW Q5a "total square footage of the finished project" inserted BEFORE the building-value question on NEW CONSTRUCTION flow only. Renovations unchanged. CP2 payload extended with `total_square_footage`. Five squads auto-synced by `update-jennifer.js`.
 
@@ -117,6 +131,10 @@ All 4 new routing flows verified by real test calls on `+18882934492`:
 Sales flow (Grace → Jennifer for new Builder's Risk) was NOT re-verified after the v1.22 deploy. Last verified working was 2026-05-06. Should still work — no changes to specialist routing — but spot-check on next session if convenient. The 17 other wired direct-dial entries (Gustavo, Beth, Daniela, etc.) also weren't individually tested; same code path as Pedro so the bar should be lower, but worth one spot-check.
 
 ## Open / pending for the next session (priority order)
+
+**HIGHEST — Bonds, John conversation needed before building anything:**
+
+0. **Schedule a 20-min call with John to close the 4 open Bonds items.** All listed in [docs/bonds-discovery.md](bonds-discovery.md) §6: (a) domain / phone-line strategy for UnitedSuretyBonds.com, (b) qualification-fail behaviour, (c) cross-sell inheritance, (d) Tom-unavailable fallback. Domain decision is the blocker — it determines whether we add "Bonds" to the existing 3 receptionists or stand up a new line + new receptionist. Tom's questionnaire and answers are fully captured in the doc.
 
 **HIGHEST — verify the 2026-05-15 deploys before anything else:**
 
