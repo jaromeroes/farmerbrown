@@ -117,6 +117,38 @@ After Sarah (EN) or Valeria (ES) delivers the GL premium quote in-call, ask the 
 
 **`BUY NOW` flag implementation:** the Calendly booking API call should include a tag, custom field, or note that the assignee can see at a glance — for example, "BUY NOW — caller wants to bind GL policy + COI immediately, callback ASAP". Exact mechanism depends on the Calendly event-type configuration (custom question, default note, or post-booking webhook to a CRM). To be confirmed during implementation.
 
+> **Evolution note (2026-05-19):** John has signaled that the GL post-quote flow will evolve from the Buy Now single-question close into a fuller **Binding Info Stage** with ~22 underwriting/operational questions handed off to a separate specialist (Rebecca). See the next section. The Buy Now Close described above is the current production behaviour; the Binding Info Stage will replace it on GL once Rebecca-GL is built. **Open with John:** whether the "BUY NOW" priority flag on Calendly survives in the Rebecca era (every Rebecca-completed lead is by definition high-intent) or becomes redundant.
+
+---
+
+## Binding Info Stage (post-quote, optional) — Rebecca per product
+
+> **Status (2026-05-19):** New L4 layer being introduced. One specialist per product line (Rebecca-GL first, Rebecca-BR next per John). **Not built yet** — discovery captured in [`binding-stage-discovery.md`](binding-stage-discovery.md); 7 open items pending with John before v1.0 deploy.
+
+After a Specialist (L3) delivers a quote, the Specialist asks a **gate question**:
+
+> *"Would you like to answer a few additional questions to qualify for this price along with monthly payment options?"*
+
+| Caller answer | Action |
+|---|---|
+| **Yes** | Hand off to the product's Rebecca (squad destination). The Specialist's role ends here. |
+| **No** | Specialist closes cordially with a callback offer ("be on the lookout for more quotes in your email, or call [existing-quote line] anytime"). |
+
+**Rebecca-GL (and future Rebecca-BR, Rebecca-CA, etc.)** is a data-collection-only L4 agent that:
+1. Collects ~22 binding-info questions (operational exposure, legal/business history, effective date, payment preference).
+2. Submits the payload to a new backend endpoint (`submit_binding_info_form` — pending Tyler).
+3. Books an appointment with a **service rep** (separate Calendly pool from H&A's Angie/Andrés and from the GL Buy Now appointments — new event-type UUID pending).
+4. Speaks John's verbatim closing line: *"Thank you for answering our questions. We will be firming up pricing right away with underwriting and will be emailing you an application to sign within the hour along with your financing options. Please set up an appointment below with one of our service representatives…"*
+
+**Why one Rebecca per product line (not one shared multi-product Rebecca):**
+- Token efficiency. VAPI reloads the system prompt every turn; a 22-question Rebecca-GL is far lighter than a multi-line prompt with all 5 products' branches.
+- Repo consistency with the Specialist pattern (Jennifer/Sarah/Nora/Wendy/Rachel are each separate agents).
+- Independent versioning — John will iterate on binding questions per product without risking regressions in other products.
+
+**Second invocation path — CS forward.** Per John (2026-05-19), CS humans need to be able to forward a caller into Rebecca directly (e.g., a caller who already received a quote in a previous session and is calling back to bind). The implementation requires a public DID assigned to a "Rebecca-GL Sales" squad with only Rebecca + a fallback, so CS can transfer the call there. **Open with John:** whether this is a Twilio forward, a SIP transfer, or a publicly-dialable number.
+
+**Cross-sell on Rebecca: NO** (assumption pending John confirmation). The caller has been on the line long enough by this point and is moving to bind, not to compare.
+
 ---
 
 ## Home & Auto Flow
@@ -296,6 +328,7 @@ When caller opts into expedited service (Step 5 = Yes + review agreed), immediat
 | Nora — Commercial Auto | EN | ✅ active v1.0 | 221 |
 | Rachel — Home & Auto (intake) | EN | ✅ active v2.3 — books Angie on Calendly in-call | 223 |
 | Wendy — Workers' Compensation | EN | ✅ active v1.0 — flash $1465 for no-payroll path + Calendly round-robin booking | 228 |
+| Rebecca — GL Binding Info (L4 post-quote) | EN | 🔵 planning v0.1 — 22-Q underwriting collection + service-rep appointment. See [`binding-stage-discovery.md`](binding-stage-discovery.md). | — |
 
 **Squad deployment status (target v4.0):** 3 production unified squads (one per site) + 1 test squad. The current production has 8 squads (3 sales + 3 service + 2 test) and will be consolidated as part of the migration. See [`squads-and-handoffs.md`](squads-and-handoffs.md) for IDs and member wiring.
 
@@ -311,6 +344,7 @@ Two distinct ElevenLabs voices distinguish role tiers — so a caller being hand
 |------|--------|---------------------|
 | L2 — Receptionists | Emma, Olivia, Grace | `WlKo88ukhZlZ4fjsOQFI` |
 | L3 — Specialists + Live Agent Proxies | Jennifer, Sarah, Nora, Rachel, Wendy + FB/CL/BR Live Agent Handoff | `Ne7VRnu9eE7lobTDr8Pw` |
+| L4 — Binding Info specialists (planned) | Rebecca-GL (+ future Rebecca-BR / Rebecca-CA / etc.) | `Ne7VRnu9eE7lobTDr8Pw` (same as L3 for v1; consider distinct voice once Rebecca series grows) |
 | ES — Spanish specialist | Valeria | `bYkIyYTEAnSXau3SD2ED` |
 
 Distinctive voices per individual agent (separate voice for Emma vs Olivia vs Grace, etc.) remain a known TODO — useful for dashboards and QA review but not critical for caller experience since the L2/L3 split already signals a change of role.
@@ -325,6 +359,8 @@ Voice designer: open `index.html` from the repo root to preview new ElevenLabs v
 |-------------|-------|
 | Hawksoft | Final destination for all leads |
 | Calendly | Appointment booking for Home & Auto + GL Buy Now (with `BUY NOW` priority flag) |
+| Calendly — service rep round-robin (NEW) | For Rebecca-GL binding appointments. Separate event-type UUID from H&A and Buy Now pools. Pending event-type UUID from John. |
+| `submit_binding_info_form` endpoint (NEW) | For Rebecca's 22-field underwriting/operational payload. Tyler. Suggested shape in `agents/rebecca-general-liability-binding/tools.md`. |
 | COI submit endpoint | Send captured COI data to **certificates@farmerbrown.com** (pending — coordinate with Tyler) |
 | COI urgent alert | SMS / email / Slack to ops team (to decide) |
 | Review SMS trigger | Sent when COI is flagged as urgent |

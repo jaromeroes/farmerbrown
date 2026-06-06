@@ -222,6 +222,17 @@ Deploy scripts: [scripts/create-tool-transfer-to-spanish-team.js](scripts/create
 - **Pending: Spanish PPC routing.** Per John (2026-05-06), Spanish PPC calls should route to a new Spanish team with a new phone number — pending. v2.0 falls back to the EN live-agent line for Spanish callers via Rule 14. When the number arrives, decide between (a) building a Wendy ES Spanish-language assistant, or (b) adding a `transfer_to_spanish_ppc_team` SIP transfer tool.
 - **Squad integration:** ✅ wired into all 3 sales squads (Emma/Olivia/Grace) and Test Squad. When a caller picks Workers' Comp, the receptionist hands off to Wendy.
 
+### Rebecca — GL Binding Info (L4 post-quote) 🔵 planning
+- **Assistant ID:** TBD — not deployed
+- **Version:** v0.1 (DRAFT 2026-05-19)
+- **Config:** `agents/rebecca-general-liability-binding/`
+- **Deploy scripts:** TBD — none yet
+- **Role:** Post-quote data-collection agent for the new **Binding Info Stage**. Invoked by Sarah (GL specialist) after she asks the gate question *"Would you like to answer a few additional questions to qualify for this price along with monthly payment options?"* and the caller says Yes. Also reachable via a public DID that CS humans can forward callers to (mechanism TBD). Collects ~22 underwriting/operational/legal fields and books an appointment with a service rep to take payment and bind the policy.
+- **Pattern:** Closest analogue is Nora (data-collection only, no quote engine, ends in handoff/appointment). Distinct from Sarah/Jennifer (which DO quote). One Rebecca per product line — token-efficiency decision validated 2026-05-19 (José).
+- **Pending before v1.0:** 7 open items with John — see [`docs/binding-stage-discovery.md`](docs/binding-stage-discovery.md) §6. None block scoping; all block deploy.
+- **Pending backends:** `submit_binding_info_form` (Tyler — `PATCH /api/binding_info_submissions/update_by_email`), Calendly event-type UUID for service rep round-robin.
+- **Future siblings:** Rebecca-BR (Builders Risk version, "next" per John, shorter list), eventually Rebecca-CA / Rebecca-WC / Rebecca-H&A if the pattern extends across all lines.
+
 ### Sarah — Builders Risk (original, ARCHIVED — replaced by GL above)
 - **Assistant ID:** `1364ed31-51fa-41a4-8831-491b2ee3ef77` (now used by Sarah GL)
 - **Version:** v1.4 (final)

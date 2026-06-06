@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Binding Info Stage — Farmer Brown Insurance</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#f5f4f0; --white:#fff; --ink:#0e0e0e;
+    --mid:#555; --muted:#999; --rule:#ddd;
+    --green:#2a6b3c; --green-bg:#edf5ef; --green-line:#6a9e7a;
+    --amber:#b8711a; --amber-bg:#faf1e5;
+    --blue:#1f5da6; --blue-bg:#eaf2fb;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--ink); font-family:'IBM Plex Sans',sans-serif; line-height:1.5; }
+
+  .hero { background:var(--ink); padding:48px 40px 44px; }
+  .hero-inner { max-width:1184px; margin:0 auto; padding:0 32px; }
+  .hero-eye { font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.25em; text-transform:uppercase; color:rgba(255,255,255,.3); margin-bottom:12px; }
+  .hero-h1 { font-family:'IBM Plex Mono',monospace; font-size:clamp(24px,4vw,40px); font-weight:500; color:white; line-height:1.1; letter-spacing:-.02em; }
+  .hero-sub { font-family:'IBM Plex Sans',sans-serif; font-size:13px; color:rgba(255,255,255,.55); margin-top:18px; max-width:720px; line-height:1.55; }
+  .hero-meta { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.15em; text-transform:uppercase; color:rgba(255,255,255,.4); margin-top:24px; }
+
+  .wrap { max-width:1184px; margin:0 auto; padding:48px 32px 80px; }
+  .sec { margin-bottom:64px; }
+  .sec-title { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); margin-bottom:20px; }
+  .sec-h2 { font-family:'IBM Plex Mono',monospace; font-size:22px; font-weight:500; margin-bottom:18px; letter-spacing:-.01em; }
+  .sec-lead { font-size:15px; color:var(--mid); max-width:780px; margin-bottom:32px; }
+
+  /* ─── FLOW DIAGRAM ─────────────────────────────────── */
+  .flow { background:var(--white); border:1px solid var(--rule); padding:40px 32px; }
+  .lane { display:flex; align-items:center; gap:18px; margin-bottom:10px; }
+  .lane-tag { font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); width:60px; flex-shrink:0; text-align:right; }
+  .lane-card { flex:1; padding:14px 18px; border:1px solid var(--rule); background:var(--white); }
+  .lane-card.l2 { border-left:3px solid var(--ink); }
+  .lane-card.l3 { border-left:3px solid var(--mid); }
+  .lane-card.l4 { border-left:3px solid var(--green); background:var(--green-bg); }
+  .lane-card.gate { border-left:3px solid var(--amber); background:var(--amber-bg); }
+  .lane-card.cs { border-left:3px solid var(--blue); background:var(--blue-bg); }
+  .lane-card .who { font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:500; letter-spacing:.05em; }
+  .lane-card .what { font-size:13px; color:var(--mid); margin-top:4px; }
+  .arrow-down { text-align:center; color:var(--muted); font-size:14px; margin:4px 0 4px 76px; font-family:'IBM Plex Mono',monospace; }
+  .branch { display:flex; gap:14px; margin:6px 0 6px 78px; }
+  .branch-col { flex:1; padding:12px 16px; border:1px solid var(--rule); background:var(--white); }
+  .branch-col .label { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
+  .branch-col .text { font-size:13px; color:var(--ink); }
+  .branch-col.yes { border-left:3px solid var(--green); }
+  .branch-col.no { border-left:3px solid var(--mid); }
+
+  /* ─── QUESTIONS GRID ───────────────────────────────── */
+  .q-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:18px; }
+  .q-card { background:var(--white); border:1px solid var(--rule); padding:24px; }
+  .q-card h3 { font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:500; letter-spacing:.1em; text-transform:uppercase; margin-bottom:6px; }
+  .q-card .meta { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.15em; color:var(--muted); margin-bottom:18px; }
+  .q-card ol { padding-left:18px; margin:0; }
+  .q-card li { font-size:12.5px; color:var(--mid); margin-bottom:6px; line-height:1.45; }
+  .q-card li strong { color:var(--ink); font-weight:500; }
+  @media (max-width:880px) {
+    .q-grid { grid-template-columns:1fr; }
+    .branch { flex-direction:column; }
+    .lane-tag { width:auto; text-align:left; }
+  }
+
+  /* ─── DECISION CALLOUT ─────────────────────────────── */
+  .callout { background:var(--white); border-left:3px solid var(--green); padding:28px 32px; margin:0; }
+  .callout .label { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--green); margin-bottom:8px; }
+  .callout h3 { font-family:'IBM Plex Mono',monospace; font-size:18px; font-weight:500; margin-bottom:10px; letter-spacing:-.005em; }
+  .callout p { font-size:14px; color:var(--mid); max-width:780px; margin-bottom:8px; }
+  .callout ul { margin-top:14px; padding-left:18px; }
+  .callout li { font-size:13.5px; color:var(--mid); margin-bottom:5px; }
+
+  /* ─── OPEN ITEMS TABLE ─────────────────────────────── */
+  .open-list { background:var(--white); border:1px solid var(--rule); }
+  .open-row { display:flex; align-items:flex-start; gap:18px; padding:18px 24px; border-bottom:1px solid var(--rule); }
+  .open-row:last-child { border-bottom:0; }
+  .open-num { font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:500; color:var(--amber); width:28px; flex-shrink:0; padding-top:1px; }
+  .open-body { flex:1; }
+  .open-body .q { font-size:13.5px; font-weight:500; margin-bottom:3px; color:var(--ink); }
+  .open-body .why { font-size:12.5px; color:var(--mid); line-height:1.5; }
+
+  /* ─── COMPARE BEFORE/AFTER ─────────────────────────── */
+  .compare { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  .compare > div { background:var(--white); border:1px solid var(--rule); padding:24px 26px; }
+  .compare h3 { font-family:'IBM Plex Mono',monospace; font-size:11px; font-weight:500; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); margin-bottom:14px; }
+  .compare .seq { font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--ink); line-height:1.85; }
+  .compare .new-tag { display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.15em; color:var(--green); background:var(--green-bg); padding:2px 6px; border:1px solid var(--green-line); margin-left:4px; }
+  @media (max-width:880px) { .compare { grid-template-columns:1fr; } }
+
+  /* ─── FOOTER ─────────────────────────────────────── */
+  .footer { margin-top:80px; padding-top:24px; border-top:1px solid var(--rule); font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); }
+  .footer a { color:var(--mid); text-decoration:none; }
+  .footer a:hover { color:var(--ink); }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="hero-eye">Architecture update — 2026-05-19</div>
+    <h1 class="hero-h1">Binding Info Stage<br>New L4 layer · Rebecca per product</h1>
+    <p class="hero-sub">After a Specialist (L3) delivers a quote, an optional Binding Info stage collects the underwriting and operational data needed to firm up pricing and bind the policy. The stage runs as a separate agent so it can also receive cold transfers from Customer Service humans.</p>
+    <div class="hero-meta">v0.1 · planning · Rebecca-GL first · Rebecca-BR next</div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- WHAT CHANGES -->
+  <section class="sec">
+    <div class="sec-title">What's new</div>
+    <h2 class="sec-h2">A fourth layer for post-quote binding</h2>
+    <p class="sec-lead">Today the call center stops at L3: the Specialist delivers a price and the call closes or cross-sells. The new stage adds a high-leverage step right after pricing — exploiting the caller's commitment after answering ~15 questions — to capture the remaining underwriting data and book a payment appointment.</p>
+
+    <div class="compare">
+      <div>
+        <h3>Before (today)</h3>
+        <div class="seq">
+          L2 Receptionist<br>
+          ↓<br>
+          L3 Specialist (Sarah / Jennifer / …)<br>
+          ↓<br>
+          Quote delivered<br>
+          ↓<br>
+          Cross-sell + close
+        </div>
+      </div>
+      <div>
+        <h3>After (with Binding)</h3>
+        <div class="seq">
+          L2 Receptionist<br>
+          ↓<br>
+          L3 Specialist (Sarah / Jennifer / …)<br>
+          ↓<br>
+          Quote delivered<br>
+          ↓<br>
+          Gate question <span class="new-tag">NEW</span><br>
+          ↓ (yes)<br>
+          L4 Binding Specialist (Rebecca-GL / Rebecca-BR / …) <span class="new-tag">NEW</span><br>
+          ↓<br>
+          Service-rep appointment + email to bind <span class="new-tag">NEW</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FLOW -->
+  <section class="sec">
+    <div class="sec-title">Call flow (GL example)</div>
+    <h2 class="sec-h2">Sarah → Rebecca handoff</h2>
+
+    <div class="flow">
+
+      <div class="lane">
+        <div class="lane-tag">L2</div>
+        <div class="lane-card l2">
+          <div class="who">Receptionist (Emma / Olivia / Grace)</div>
+          <div class="what">Triages Sales / Service / Spanish. Routes new-quote callers to the right Specialist by product.</div>
+        </div>
+      </div>
+      <div class="arrow-down">↓</div>
+
+      <div class="lane">
+        <div class="lane-tag">L3</div>
+        <div class="lane-card l3">
+          <div class="who">Sarah — General Liability Specialist</div>
+          <div class="what">Qualifies the contractor, runs the GL quote flow, delivers the premium in-call.</div>
+        </div>
+      </div>
+      <div class="arrow-down">↓</div>
+
+      <div class="lane">
+        <div class="lane-tag">GATE</div>
+        <div class="lane-card gate">
+          <div class="who">Sarah asks the gate question</div>
+          <div class="what">"Would you like to answer a few additional questions to qualify for this price along with monthly payment options?"</div>
+        </div>
+      </div>
+
+      <div class="branch">
+        <div class="branch-col yes">
+          <div class="label">Yes → continue</div>
+          <div class="text">"Great — let's get started." Sarah hands off to Rebecca-GL and her role ends.</div>
+        </div>
+        <div class="branch-col no">
+          <div class="label">No → cordial close</div>
+          <div class="text">"No problem — be on the lookout for more quotes in your email. If you'd like to talk to one of our pros anytime, please call [existing-quote line] and say 'existing quote'."</div>
+        </div>
+      </div>
+
+      <div class="arrow-down">↓ (Yes branch only)</div>
+
+      <div class="lane">
+        <div class="lane-tag">L4</div>
+        <div class="lane-card l4">
+          <div class="who">Rebecca — GL Binding Info Specialist</div>
+          <div class="what">Collects 22 binding questions (effective date, payment preference, 11 operational exposure Y/N, 9 legal/business history Y/N). No re-quoting, no cross-sell. Submits the payload to <code>submit_binding_info_form</code> (pending Tyler).</div>
+        </div>
+      </div>
+      <div class="arrow-down">↓</div>
+
+      <div class="lane">
+        <div class="lane-tag">CLOSE</div>
+        <div class="lane-card cs">
+          <div class="who">Service rep appointment (Calendly round-robin)</div>
+          <div class="what">Rebecca books an appointment with the service-rep team to take payment and finalize the policy. Closing line per John: "We'll be firming up pricing with underwriting and emailing you an application to sign within the hour."</div>
+        </div>
+      </div>
+
+      <div class="arrow-down" style="margin-top:24px;">— · — · — · — · — · — · — · —</div>
+
+      <div class="lane">
+        <div class="lane-tag">ALT</div>
+        <div class="lane-card cs">
+          <div class="who">CS forward path (alternate entry)</div>
+          <div class="what">A Customer Service human can forward a returning caller (who already has a quote on file) directly into Rebecca via a dedicated public number — bypassing Sarah entirely. Mechanism TBD: dedicated inbound number routing straight to Rebecca-GL, or warm transfer with context.</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- QUESTIONS -->
+  <section class="sec">
+    <div class="sec-title">Rebecca-GL questionnaire — 22 fields</div>
+    <h2 class="sec-h2">What Rebecca collects</h2>
+    <p class="sec-lead">From John's <em>"additonal info for binding"</em> document (2026-05-19). Mostly yes/no — designed to be answered quickly by a caller who has just committed to binding.</p>
+
+    <div class="q-grid">
+
+      <div class="q-card">
+        <h3>Binding intent</h3>
+        <div class="meta">2 questions</div>
+        <ol>
+          <li><strong>Effective date</strong> the caller is looking for.</li>
+          <li><strong>Payment preference</strong> — annual or monthly (options to be sent after the call).</li>
+        </ol>
+      </div>
+
+      <div class="q-card">
+        <h3>Operational exposure</h3>
+        <div class="meta">11 questions · mostly Y/N</div>
+        <ol>
+          <li>Max # of stories worked on</li>
+          <li>Waterproofing?</li>
+          <li>Motorized or heavy equipment?</li>
+          <li>Heating equipment?</li>
+          <li>Tract home developments of 25+ units?</li>
+          <li>New condos / townhouses / multi-unit construction?</li>
+          <li>Repair-only for individual unit owners of condos / multi-unit?</li>
+          <li>OCIP (Wrap-up) work?</li>
+          <li>Playgrounds, hospitals, or churches?</li>
+          <li>Single-family residences over 5,000 sq ft?</li>
+          <li>Commercial buildings over 20,000 sq ft?</li>
+        </ol>
+      </div>
+
+      <div class="q-card">
+        <h3>Business history</h3>
+        <div class="meta">9 questions · all Y/N</div>
+        <ol>
+          <li>Other business names used (past or current)?</li>
+          <li>Licensing-authority action against you or affiliates?</li>
+          <li>License allowed for use by another contractor?</li>
+          <li>Owner judgements, liens, or bankruptcy?</li>
+          <li>Lawsuits against the company?</li>
+          <li>Aware of any faulty-construction incidents?</li>
+          <li>Written contract for all work performed?</li>
+          <li>Use subcontractors?</li>
+          <li>Always collect certificates of insurance from subs?</li>
+        </ol>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- DECISION CALLOUT -->
+  <section class="sec">
+    <div class="sec-title">Architectural decision</div>
+    <h2 class="sec-h2">One Rebecca per product line</h2>
+
+    <div class="callout">
+      <div class="label">Decided · 2026-05-19</div>
+      <h3>Per-product Rebecca, not a shared multi-product agent</h3>
+      <p>Each product line (GL, BR, CA, WC, H&amp;A) will have its own Rebecca with its own product-specific question list. Rebecca-GL ships first; Rebecca-BR is next per John ("not too many for that"). The alternative — one Rebecca with branches for all 5 products — was rejected for three reasons:</p>
+      <ul>
+        <li><strong>Cost efficiency.</strong> The conversational model reloads its full instruction set on every turn of the call. A focused 22-question Rebecca is significantly lighter — and therefore cheaper per call — than a multi-line agent carrying all five products' branches. The saving compounds over the entire L4 leg.</li>
+        <li><strong>Repo convention.</strong> Specialists (Jennifer / Sarah / Nora / Wendy / Rachel) are each a separate agent per product. Rebecca follows the same pattern, so engineers don't have to context-switch between two organizational models.</li>
+        <li><strong>Independent versioning.</strong> John will iterate on binding questions per product. Per-product agents mean no regression risk to other lines on every tweak.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- OPEN ITEMS -->
+  <section class="sec">
+    <div class="sec-title">Pending with John (blocks deploy, not scoping)</div>
+    <h2 class="sec-h2">Seven open items</h2>
+    <p class="sec-lead">None of these stop us from scoping or wiring the architecture. All of them must be answered before Rebecca-GL goes to production.</p>
+
+    <div class="open-list">
+
+      <div class="open-row">
+        <div class="open-num">01</div>
+        <div class="open-body">
+          <div class="q">Real existing-quote phone number for GL's "no" branch</div>
+          <div class="why">John's doc has placeholder <code>9999999999</code>. Likely candidates: the existing-quote line used by BR (<code>+17262038542</code>) or a GL-specific equivalent.</div>
+        </div>
+      </div>
+
+      <div class="open-row">
+        <div class="open-num">02</div>
+        <div class="open-body">
+          <div class="q">Calendly event-type UUID for the service-rep team</div>
+          <div class="why">Separate pool from Angie / Andrés (H&amp;A) and from the GL Buy Now appointments. Round-robin assumed.</div>
+        </div>
+      </div>
+
+      <div class="open-row">
+        <div class="open-num">03</div>
+        <div class="open-body">
+          <div class="q">Confirm the "AI in RED" annotation</div>
+          <div class="why">John's doc has a stray duplicate "Do you use heavy equipment" question marked in red. Reading it as a removal flag — confirm before deploy.</div>
+        </div>
+      </div>
+
+      <div class="open-row">
+        <div class="open-num">04</div>
+        <div class="open-body">
+          <div class="q">Gate vs current Sarah cross-sell</div>
+          <div class="why">Sarah currently cross-sells after the quote. Strong assumption: the gate replaces the cross-sell on GL (the binding path is higher value and the combined flow would lose callers). Confirm.</div>
+        </div>
+      </div>
+
+      <div class="open-row">
+        <div class="open-num">05</div>
+        <div class="open-body">
+          <div class="q">"Qualify for this price" — literal or psychological?</div>
+          <div class="why">Does the price actually require the binding answers to hold (underwriting could modify), or is the framing purely a conversion device? Affects what we say when a caller bails mid-Rebecca.</div>
+        </div>
+      </div>
+
+      <div class="open-row">
+        <div class="open-num">06</div>
+        <div class="open-body">
+          <div class="q">CS-to-Rebecca transfer mechanics</div>
+          <div class="why">Dedicated public inbound number that drops the caller into Rebecca directly? Warm transfer with context handed over from the CS agent? For v1 the dedicated-number option is simplest.</div>
+        </div>
+      </div>
+
+      <div class="open-row">
+        <div class="open-num">07</div>
+        <div class="open-body">
+          <div class="q">Cross-sell at the end of Rebecca</div>
+          <div class="why">John's closing doesn't mention cross-sell. Default assumption: no cross-sell on Rebecca (caller is moving to bind, not compare). Confirm.</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- META -->
+  <footer class="footer">
+    Sources · <a href="binding-stage-discovery.md">binding-stage-discovery.md</a> · <a href="call-center-architecture.md">call-center-architecture.md</a> · <a href="../agents/rebecca-general-liability-binding/">agents/rebecca-general-liability-binding/</a>
+  </footer>
+
+</main>
+
+</body>
+</html>

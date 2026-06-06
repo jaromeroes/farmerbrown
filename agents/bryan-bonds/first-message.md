@@ -1,0 +1,1 @@
+Hi, this is Bryan at Farmer Brown — I help with surety bonds. I'll ask you a few quick questions to get the right bond set up for you, and our Bonding Specialist Tom Hester will call you back with pricing right after. Sound good?

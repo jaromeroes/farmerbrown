@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Call Center Architecture — Farmer Brown Insurance</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#f5f4f0; --white:#fff; --ink:#0e0e0e;
+    --mid:#555; --muted:#999; --rule:#ddd;
+    --green:#2a6b3c; --green-bg:#edf5ef; --green-line:#6a9e7a;
+    --amber:#b8711a; --amber-bg:#faf1e5; --amber-line:#d9a05e;
+    --blue:#1f5da6; --blue-bg:#eaf2fb; --blue-line:#6a93c5;
+    --red:#a32a2a; --red-bg:#f7eaea;
+  }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--ink); font-family:'IBM Plex Sans',sans-serif; line-height:1.5; }
+
+  /* ─── HERO ────────────────────────────────────────── */
+  .hero { background:var(--ink); padding:56px 40px 52px; }
+  .hero-inner { max-width:1184px; margin:0 auto; padding:0 32px; }
+  .hero-eye { font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.25em; text-transform:uppercase; color:rgba(255,255,255,.3); margin-bottom:12px; }
+  .hero-h1 { font-family:'IBM Plex Mono',monospace; font-size:clamp(28px,4.5vw,46px); font-weight:500; color:white; line-height:1.1; letter-spacing:-.02em; }
+  .hero-sub { font-family:'IBM Plex Sans',sans-serif; font-size:14px; color:rgba(255,255,255,.6); margin-top:20px; max-width:760px; line-height:1.55; }
+  .hero-stats { display:flex; gap:48px; margin-top:32px; }
+  .hero-stat .num { font-family:'IBM Plex Mono',monospace; font-size:32px; font-weight:500; color:white; line-height:1; }
+  .hero-stat .lbl { font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.2em; text-transform:uppercase; color:rgba(255,255,255,.4); margin-top:8px; }
+
+  /* ─── WRAP + SECTIONS ────────────────────────────── */
+  .wrap { max-width:1184px; margin:0 auto; padding:56px 32px 80px; }
+  .sec { margin-bottom:72px; }
+  .sec-title { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); margin-bottom:18px; }
+  .sec-h2 { font-family:'IBM Plex Mono',monospace; font-size:24px; font-weight:500; margin-bottom:18px; letter-spacing:-.01em; }
+  .sec-lead { font-size:15px; color:var(--mid); max-width:820px; margin-bottom:32px; line-height:1.6; }
+
+  /* ─── STATUS BADGES ──────────────────────────────── */
+  .badge { display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.15em; text-transform:uppercase; padding:3px 7px; border:1px solid; line-height:1.2; vertical-align:middle; }
+  .badge.live { color:var(--green); border-color:var(--green-line); background:var(--green-bg); }
+  .badge.imminent { color:var(--amber); border-color:var(--amber-line); background:var(--amber-bg); }
+  .badge.planning { color:var(--blue); border-color:var(--blue-line); background:var(--blue-bg); }
+
+  /* ─── LINES TABLE ────────────────────────────────── */
+  .lines { background:var(--white); border:1px solid var(--rule); }
+  .lines-row { display:grid; grid-template-columns:200px 1fr 1fr 110px; padding:20px 24px; border-bottom:1px solid var(--rule); align-items:center; }
+  .lines-row:last-child { border-bottom:0; }
+  .lines-row.head { background:#fafaf7; padding:14px 24px; }
+  .lines-row.head > div { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); }
+  .lines-row .site { font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:500; }
+  .lines-row .num { font-family:'IBM Plex Mono',monospace; font-size:13.5px; color:var(--ink); }
+  .lines-row .recep { font-size:13px; color:var(--mid); }
+  @media (max-width:880px) {
+    .lines-row { grid-template-columns:1fr; gap:6px; }
+    .lines-row.head { display:none; }
+  }
+
+  /* ─── LAYERS BLOCK ───────────────────────────────── */
+  .layers { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:14px; }
+  .layer-card { background:var(--white); border:1px solid var(--rule); padding:24px 22px; position:relative; }
+  .layer-card.l2 { border-left:3px solid var(--ink); }
+  .layer-card.l3 { border-left:3px solid var(--mid); }
+  .layer-card.l4 { border-left:3px solid var(--green); background:var(--green-bg); }
+  .layer-card.escape { border-left:3px solid var(--red); background:var(--red-bg); }
+  .layer-card .tier { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.2em; color:var(--muted); margin-bottom:6px; }
+  .layer-card .name { font-family:'IBM Plex Mono',monospace; font-size:14px; font-weight:500; margin-bottom:10px; }
+  .layer-card .desc { font-size:12.5px; color:var(--mid); line-height:1.55; }
+  @media (max-width:880px) { .layers { grid-template-columns:1fr 1fr; } }
+  @media (max-width:560px) { .layers { grid-template-columns:1fr; } }
+
+  /* ─── FLOW DIAGRAM ──────────────────────────────── */
+  .flow { background:var(--white); border:1px solid var(--rule); padding:36px 32px; }
+  .lane { display:flex; align-items:center; gap:18px; margin-bottom:8px; }
+  .lane-tag { font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.2em; text-transform:uppercase; color:var(--muted); width:64px; flex-shrink:0; text-align:right; }
+  .lane-card { flex:1; padding:14px 18px; border:1px solid var(--rule); background:var(--white); }
+  .lane-card.l2 { border-left:3px solid var(--ink); }
+  .lane-card.l3 { border-left:3px solid var(--mid); }
+  .lane-card.l4 { border-left:3px solid var(--green); background:var(--green-bg); }
+  .lane-card.gate { border-left:3px solid var(--amber); background:var(--amber-bg); }
+  .lane-card.cs { border-left:3px solid var(--blue); background:var(--blue-bg); }
+  .lane-card.escape { border-left:3px solid var(--red); background:var(--red-bg); }
+  .lane-card .who { font-family:'IBM Plex Mono',monospace; font-size:11.5px; font-weight:500; }
+  .lane-card .what { font-size:12.5px; color:var(--mid); margin-top:4px; line-height:1.5; }
+  .arrow-down { text-align:center; color:var(--muted); font-size:14px; margin:4px 0 4px 82px; font-family:'IBM Plex Mono',monospace; }
+  .branch { display:flex; gap:14px; margin:6px 0 6px 82px; }
+  .branch-col { flex:1; padding:12px 16px; border:1px solid var(--rule); background:var(--white); }
+  .branch-col .label { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
+  .branch-col .text { font-size:12.5px; color:var(--ink); line-height:1.5; }
+  .branch-col.yes { border-left:3px solid var(--green); }
+  .branch-col.no { border-left:3px solid var(--mid); }
+  .branch-col.amber { border-left:3px solid var(--amber); }
+  .branch-col.blue { border-left:3px solid var(--blue); }
+
+  /* ─── SPECIALISTS TABLE ──────────────────────────── */
+  .roster { background:var(--white); border:1px solid var(--rule); overflow:hidden; }
+  .roster-head, .roster-row {
+    display:grid;
+    grid-template-columns:1.3fr 1.5fr 0.7fr 1fr 1fr 1fr;
+    padding:14px 22px;
+    align-items:center;
+  }
+  .roster-head { background:#fafaf7; }
+  .roster-head > div { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); }
+  .roster-row { border-top:1px solid var(--rule); }
+  .roster-row .agent { font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:500; }
+  .roster-row .cell { font-size:12.5px; color:var(--mid); }
+  .roster-row .cell.x { color:var(--muted); font-family:'IBM Plex Mono',monospace; font-size:13px; }
+  .roster-row .cell .y { color:var(--green); font-weight:500; }
+  @media (max-width:880px) {
+    .roster-head { display:none; }
+    .roster-row { grid-template-columns:1fr; gap:4px; padding:16px 18px; }
+    .roster-row .cell::before { content:attr(data-l); font-family:'IBM Plex Mono',monospace; font-size:9px; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); margin-right:6px; }
+  }
+
+  /* ─── INTENT TABLE (sales + service) ─────────────── */
+  .intent { background:var(--white); border:1px solid var(--rule); }
+  .intent-row { display:grid; grid-template-columns:1fr 1.5fr; padding:14px 22px; border-bottom:1px solid var(--rule); align-items:center; gap:18px; }
+  .intent-row:last-child { border-bottom:0; }
+  .intent-row.head { background:#fafaf7; padding:12px 22px; }
+  .intent-row.head > div { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); }
+  .intent-row .what-they-say { font-family:'IBM Plex Sans',sans-serif; font-size:13.5px; color:var(--ink); }
+  .intent-row .what-happens { font-size:12.5px; color:var(--mid); line-height:1.5; }
+
+  /* ─── CALLOUT ────────────────────────────────────── */
+  .callout { background:var(--white); border-left:3px solid var(--green); padding:26px 30px; }
+  .callout.amber { border-left-color:var(--amber); }
+  .callout .label { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.2em; text-transform:uppercase; color:var(--green); margin-bottom:8px; }
+  .callout.amber .label { color:var(--amber); }
+  .callout h3 { font-family:'IBM Plex Mono',monospace; font-size:17px; font-weight:500; margin-bottom:10px; }
+  .callout p { font-size:14px; color:var(--mid); max-width:820px; margin-bottom:8px; line-height:1.6; }
+
+  /* ─── ROADMAP LIST ───────────────────────────────── */
+  .roadmap { background:var(--white); border:1px solid var(--rule); }
+  .road-row { display:flex; gap:18px; padding:18px 24px; border-bottom:1px solid var(--rule); align-items:flex-start; }
+  .road-row:last-child { border-bottom:0; }
+  .road-status { font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.15em; text-transform:uppercase; padding-top:2px; flex-shrink:0; width:90px; }
+  .road-status.imminent { color:var(--amber); }
+  .road-status.planning { color:var(--blue); }
+  .road-status.future { color:var(--muted); }
+  .road-body .title { font-size:14px; font-weight:500; margin-bottom:4px; }
+  .road-body .desc { font-size:12.5px; color:var(--mid); line-height:1.55; }
+
+  /* ─── FOOTER ─────────────────────────────────────── */
+  .footer { margin-top:88px; padding-top:28px; border-top:1px solid var(--rule); font-family:'IBM Plex Mono',monospace; font-size:10px; letter-spacing:.15em; text-transform:uppercase; color:var(--muted); }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div class="hero-eye">Call Center Architecture · As of 2026-05-19</div>
+    <h1 class="hero-h1">Farmer Brown Insurance<br>AI-powered call center</h1>
+    <p class="hero-sub">Three customer-facing sites, three toll-free numbers, and a tiered roster of specialist agents that qualify, quote, schedule, and now also collect underwriting data — keeping live agents focused on closing.</p>
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="num">3</div><div class="lbl">Sites / Lines</div></div>
+      <div class="hero-stat"><div class="num">4</div><div class="lbl">Agent tiers</div></div>
+      <div class="hero-stat"><div class="num">6</div><div class="lbl">Coverage lines</div></div>
+      <div class="hero-stat"><div class="num">EN+ES</div><div class="lbl">Languages</div></div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ─── PHONE LINES ───────────────────────────────── -->
+  <section class="sec">
+    <div class="sec-title">01 · Phone lines</div>
+    <h2 class="sec-h2">Three sites, three toll-free numbers</h2>
+    <p class="sec-lead">Each brand has its own dedicated toll-free number that lands directly on a brand-aware receptionist. Language (English vs Spanish) is detected at the greeting, not by which number was dialed.</p>
+
+    <div class="lines">
+      <div class="lines-row head">
+        <div>Site</div>
+        <div>Toll-free</div>
+        <div>Receptionist (greeting)</div>
+        <div style="text-align:right;">Status</div>
+      </div>
+      <div class="lines-row">
+        <div class="site">buildersrisk.net</div>
+        <div class="num">+1 (888) 293-4492</div>
+        <div class="recep">Grace</div>
+        <div style="text-align:right;"><span class="badge live">Live</span></div>
+      </div>
+      <div class="lines-row">
+        <div class="site">contractorsliability.com</div>
+        <div class="num">+1 (888) 435-6365</div>
+        <div class="recep">Olivia</div>
+        <div style="text-align:right;"><span class="badge live">Live</span></div>
+      </div>
+      <div class="lines-row">
+        <div class="site">farmerbrown.com</div>
+        <div class="num">+1 (888) 496-2029</div>
+        <div class="recep">Emma</div>
+        <div style="text-align:right;"><span class="badge imminent">Imminent</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── THE FOUR TIERS ─────────────────────────────── -->
+  <section class="sec">
+    <div class="sec-title">02 · How the call center is organized</div>
+    <h2 class="sec-h2">Four tiers, each with one job</h2>
+    <p class="sec-lead">Calls move through up to three conversational tiers, with a human-agent overflow path available at every step. Each tier is intentionally narrow so the caller is always speaking to the right person for the right step.</p>
+
+    <div class="layers">
+      <div class="layer-card l2">
+        <div class="tier">Tier L2</div>
+        <div class="name">Receptionist</div>
+        <div class="desc">Greets the caller, identifies brand, triages intent (new quote / existing policy / specific person / Spanish), and routes.</div>
+      </div>
+      <div class="layer-card l3">
+        <div class="tier">Tier L3</div>
+        <div class="name">Specialist</div>
+        <div class="desc">Owns one coverage line. Qualifies the lead, asks underwriting questions, delivers a price in-call when possible, books an appointment.</div>
+      </div>
+      <div class="layer-card l4">
+        <div class="tier">Tier L4 · New</div>
+        <div class="name">Binding info</div>
+        <div class="desc">Runs after the price is delivered. Collects the additional underwriting data needed to firm up pricing and bind the policy. Ends with a payment appointment.</div>
+      </div>
+      <div class="layer-card escape">
+        <div class="tier">Always on</div>
+        <div class="name">Live agent</div>
+        <div class="desc">At any moment, the caller can ask for a live agent (or trigger a fallback by being silent). The call is transferred immediately — no menu loops.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── RECEPTIONIST TRIAGE ─────────────────────── -->
+  <section class="sec">
+    <div class="sec-title">03 · The receptionist triage</div>
+    <h2 class="sec-h2">Four ways a call can branch at hello</h2>
+    <p class="sec-lead">Each site's receptionist (Grace, Olivia, Emma) opens with a brand-specific greeting and offers four distinct paths. The receptionist never tries to handle the call itself beyond routing — that's what the specialists are for.</p>
+
+    <div class="intent">
+      <div class="intent-row head"><div>If the caller says…</div><div>The receptionist does…</div></div>
+      <div class="intent-row">
+        <div class="what-they-say">"I'm looking for a new quote"</div>
+        <div class="what-happens">Asks what coverage and routes to the matching specialist (Jennifer, Sarah, Nora, Rachel, or Wendy).</div>
+      </div>
+      <div class="intent-row">
+        <div class="what-they-say">"I already have a quote from you"</div>
+        <div class="what-happens">Hot-lead path — forwards to the dedicated existing-quote team (5× higher conversion than service calls).</div>
+      </div>
+      <div class="intent-row">
+        <div class="what-they-say">"I'm an existing policy holder" or asks about payment, claim, certificate</div>
+        <div class="what-happens">Service path — forwards to the dedicated service team or, for certificates of insurance, runs the conversational COI flow.</div>
+      </div>
+      <div class="intent-row">
+        <div class="what-they-say">A specific person's name (Pedro, Gustavo, …)</div>
+        <div class="what-happens">Internal directory — looks up the person's direct number (currently 18 of 20 wired) and dials them. Falls back to live agent if the name doesn't match.</div>
+      </div>
+      <div class="intent-row">
+        <div class="what-they-say">"En español, por favor"</div>
+        <div class="what-happens">Forwards to the Spanish-speaking team line (cross-site, shared by all three brands).</div>
+      </div>
+      <div class="intent-row">
+        <div class="what-they-say">"I want to talk to a live agent"</div>
+        <div class="what-happens">Immediate transfer to the brand's live-agent line — no menu, no follow-up.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── SPECIALISTS ROSTER ─────────────────────────── -->
+  <section class="sec">
+    <div class="sec-title">04 · Specialists (Tier L3)</div>
+    <h2 class="sec-h2">One agent per coverage line</h2>
+    <p class="sec-lead">Each specialist owns a single product line end-to-end: qualification, underwriting questions, price (when possible), and appointment. Specialists are shared across all three sites — when a caller asks about General Liability on any of the three numbers, the same Sarah agent picks up.</p>
+
+    <div class="roster">
+      <div class="roster-head">
+        <div>Agent</div>
+        <div>Coverage</div>
+        <div>Language</div>
+        <div>Quote in-call?</div>
+        <div>Books appointment</div>
+        <div>Status</div>
+      </div>
+
+      <div class="roster-row">
+        <div class="agent">Jennifer</div>
+        <div class="cell" data-l="Coverage">Builder's Risk</div>
+        <div class="cell" data-l="Language">English</div>
+        <div class="cell" data-l="Quote"><span class="y">Yes</span> · instant</div>
+        <div class="cell" data-l="Books">Yes · round-robin</div>
+        <div class="cell" data-l="Status"><span class="badge live">Live</span></div>
+      </div>
+
+      <div class="roster-row">
+        <div class="agent">Sarah</div>
+        <div class="cell" data-l="Coverage">General Liability</div>
+        <div class="cell" data-l="Language">English</div>
+        <div class="cell" data-l="Quote"><span class="y">Yes</span> · instant</div>
+        <div class="cell" data-l="Books">Yes · round-robin</div>
+        <div class="cell" data-l="Status"><span class="badge live">Live</span></div>
+      </div>
+
+      <div class="roster-row">
+        <div class="agent">Valeria</div>
+        <div class="cell" data-l="Coverage">General Liability</div>
+        <div class="cell" data-l="Language">Spanish</div>
+        <div class="cell" data-l="Quote"><span class="y">Yes</span> · instant</div>
+        <div class="cell" data-l="Books">Yes · round-robin</div>
+        <div class="cell" data-l="Status"><span class="badge live">Live</span></div>
+      </div>
+
+      <div class="roster-row">
+        <div class="agent">Nora</div>
+        <div class="cell" data-l="Coverage">Commercial Auto</div>
+        <div class="cell" data-l="Language">English</div>
+        <div class="cell" data-l="Quote x">No · transfer for pricing</div>
+        <div class="cell" data-l="Books">—</div>
+        <div class="cell" data-l="Status"><span class="badge live">Live</span></div>
+      </div>
+
+      <div class="roster-row">
+        <div class="agent">Rachel</div>
+        <div class="cell" data-l="Coverage">Home &amp; Auto</div>
+        <div class="cell" data-l="Language">English</div>
+        <div class="cell" data-l="Quote x">No · short intake</div>
+        <div class="cell" data-l="Books">Yes · with our pros</div>
+        <div class="cell" data-l="Status"><span class="badge live">Live</span></div>
+      </div>
+
+      <div class="roster-row">
+        <div class="agent">Wendy</div>
+        <div class="cell" data-l="Coverage">Workers' Compensation</div>
+        <div class="cell" data-l="Language">English</div>
+        <div class="cell" data-l="Quote"><span class="y">Yes</span> · when zero W-2 employees</div>
+        <div class="cell" data-l="Books">Yes · round-robin</div>
+        <div class="cell" data-l="Status"><span class="badge live">Live</span></div>
+      </div>
+
+      <div class="roster-row">
+        <div class="agent">Rebecca · GL</div>
+        <div class="cell" data-l="Coverage">Binding Info (post-quote)</div>
+        <div class="cell" data-l="Language">English</div>
+        <div class="cell" data-l="Quote x">N/A · binding-only</div>
+        <div class="cell" data-l="Books">Yes · service rep</div>
+        <div class="cell" data-l="Status"><span class="badge imminent">In test</span></div>
+      </div>
+
+      <div class="roster-row">
+        <div class="agent">Bryan</div>
+        <div class="cell" data-l="Coverage">Surety Bonds (license/permit · bid · payment &amp; performance)</div>
+        <div class="cell" data-l="Language">English</div>
+        <div class="cell" data-l="Quote x">No · Tom calls back with pricing</div>
+        <div class="cell" data-l="Books">No · direct callback</div>
+        <div class="cell" data-l="Status"><span class="badge imminent">In test</span></div>
+      </div>
+    </div>
+
+    <p style="margin-top:18px; font-size:13px; color:var(--mid);">Both Rebecca and Bryan are deployed in a test environment and callable on the QA line <strong>+1 (702) 710-8075</strong>. The test line opens with a dispatcher that asks <em>"Rebecca for binding questions, or Bryan for bonds — which one are you here for?"</em>, so a single number covers both for demo purposes.</p>
+  </section>
+
+  <!-- ─── SALES FLOW (full path) ───────────────────── -->
+  <section class="sec">
+    <div class="sec-title">05 · Sales flow (end to end)</div>
+    <h2 class="sec-h2">From greeting to appointment</h2>
+    <p class="sec-lead">This is the full path for a new-quote call on any of the three brand lines. The new Binding Info stage (Tier L4) extends the flow for General Liability today, and will extend to Builder's Risk and other lines as John iterates the question lists.</p>
+
+    <div class="flow">
+
+      <div class="lane">
+        <div class="lane-tag">L2</div>
+        <div class="lane-card l2">
+          <div class="who">Receptionist (Grace · Olivia · Emma)</div>
+          <div class="what">Greets brand-specifically. Offers four branches: new quote, existing quote, existing policy, specific person — plus a Spanish offer at the end.</div>
+        </div>
+      </div>
+      <div class="arrow-down">↓</div>
+
+      <div class="lane">
+        <div class="lane-tag">L3</div>
+        <div class="lane-card l3">
+          <div class="who">Specialist (Jennifer · Sarah · Nora · Rachel · Wendy · Valeria)</div>
+          <div class="what">Qualifies, asks the coverage-specific underwriting questions, delivers a price in-call where possible. For Commercial Auto and Home &amp; Auto, transfers or schedules with our team instead.</div>
+        </div>
+      </div>
+      <div class="arrow-down">↓</div>
+
+      <div class="lane">
+        <div class="lane-tag">GATE</div>
+        <div class="lane-card gate">
+          <div class="who">Post-price gate question (NEW — GL first)</div>
+          <div class="what">"Would you like to answer a few additional questions to qualify for this price along with monthly payment options?"</div>
+        </div>
+      </div>
+
+      <div class="branch">
+        <div class="branch-col yes">
+          <div class="label">Yes → continue to L4</div>
+          <div class="text">Specialist hands off to Rebecca and steps out.</div>
+        </div>
+        <div class="branch-col no">
+          <div class="label">No → cordial close</div>
+          <div class="text">"No problem — be on the lookout for more quotes in your email. Call back anytime and ask for 'existing quote'."</div>
+        </div>
+      </div>
+
+      <div class="arrow-down">↓ (Yes branch only)</div>
+
+      <div class="lane">
+        <div class="lane-tag">L4</div>
+        <div class="lane-card l4">
+          <div class="who">Rebecca — Binding Info Specialist (one per product line)</div>
+          <div class="what">Collects ~22 binding questions (effective date, payment preference, operational exposure Y/N, business history Y/N). No re-quoting, no cross-sell.</div>
+        </div>
+      </div>
+      <div class="arrow-down">↓</div>
+
+      <div class="lane">
+        <div class="lane-tag">CLOSE</div>
+        <div class="lane-card cs">
+          <div class="who">Service rep appointment</div>
+          <div class="what">Round-robin booking with the service-rep team to take payment and finalize the policy. Closing line: "We'll be firming up pricing with underwriting and emailing you an application to sign within the hour."</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div style="margin-top:24px;">
+      <div class="callout amber">
+        <div class="label">Alternate entry · CS forward</div>
+        <h3>A returning caller can be dropped into Rebecca directly</h3>
+        <p>If a Customer Service agent is on the phone with someone who already received a quote, they can forward the caller straight into Rebecca via a dedicated public number — bypassing the receptionist and the specialist. The caller picks up the binding flow exactly where Rebecca starts.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── SERVICE FLOW ─────────────────────────────── -->
+  <section class="sec">
+    <div class="sec-title">06 · Service flow</div>
+    <h2 class="sec-h2">Certificates handled in-call · everything else routed</h2>
+    <p class="sec-lead">When a caller chooses the service path, the receptionist offers four service intents. Only certificates of insurance are handled in conversation — the other three are routed to a live human, with explicit "live agent" as an always-available escape.</p>
+
+    <div class="intent">
+      <div class="intent-row head"><div>Service intent</div><div>What happens</div></div>
+      <div class="intent-row">
+        <div class="what-they-say">Certificate of insurance</div>
+        <div class="what-happens">Conversational COI flow — identifies policyholder, collects additional-insured details, asks about endorsements, offers expedited (1-hour) turnaround in exchange for a review, cross-sells Home &amp; Auto at the end.</div>
+      </div>
+      <div class="intent-row">
+        <div class="what-they-say">Payment</div>
+        <div class="what-happens">Routed to the dedicated service team line for billing handling.</div>
+      </div>
+      <div class="intent-row">
+        <div class="what-they-say">Claim</div>
+        <div class="what-happens">Routed to the dedicated service team line with a claim-specific opener.</div>
+      </div>
+      <div class="intent-row">
+        <div class="what-they-say">"Live agent"</div>
+        <div class="what-happens">Immediate transfer — no menu repeat, no follow-up question.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── BONDS ─────────────────────────────────── -->
+  <section class="sec">
+    <div class="sec-title">07 · Bonds intake (new product line)</div>
+    <h2 class="sec-h2">Bryan · surety bonds for contractors</h2>
+    <p class="sec-lead">A new product line under the <strong>UnitedSuretyBonds.com</strong> brand. Bryan collects everything needed to issue or quote a surety bond, then our Bonding Specialist calls back with pricing. Unlike most other lines, Bryan does NOT quote in-call — pricing requires manual underwriting review.</p>
+
+    <div class="q-grid" style="margin-bottom:32px;">
+      <div class="q-card">
+        <h3>License or permit bond</h3>
+        <div class="meta">Most common · variable price</div>
+        <ol>
+          <li>Required by state/city/town to register as a contractor (general, roofing, HVAC, etc.).</li>
+          <li>Pricing: ~$100–250/year for permit bonds, $150–$3,000+ for state license bonds depending on credit.</li>
+          <li>SSN/ITIN required if bond &gt; $25k or in <strong>AZ, CA, FL, MD, NJ, WA</strong>.</li>
+        </ol>
+      </div>
+
+      <div class="q-card">
+        <h3>Bid bond</h3>
+        <div class="meta">Free · hard qualification</div>
+        <ol>
+          <li>Required by the project owner when a contractor bids on a contract.</li>
+          <li>Cost: <strong>free</strong> (supplied at no cost).</li>
+          <li>Hard requirements: <strong>more than 1 year in business · credit score &gt; 700 · no bankruptcy</strong>. No workarounds.</li>
+        </ol>
+      </div>
+
+      <div class="q-card">
+        <h3>Payment &amp; performance bond</h3>
+        <div class="meta">3% of contract · hard qualification</div>
+        <ol>
+          <li>Required by the project owner once a contract is awarded.</li>
+          <li>Cost: <strong>3% of contract price</strong> (e.g. $150k contract → $4,500 bond).</li>
+          <li>Same hard requirements as bid bond.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="flow">
+
+      <div class="lane">
+        <div class="lane-tag">L3</div>
+        <div class="lane-card l3">
+          <div class="who">Bryan — Bonds intake specialist</div>
+          <div class="what">Asks 6 common questions (business name, address, owner, email, phone, bond type) then branches based on bond type. Reads the bond category, runs hard-qualification gate where applicable, collects the rest of the data.</div>
+        </div>
+      </div>
+      <div class="arrow-down">↓</div>
+
+      <div class="lane">
+        <div class="lane-tag">CLOSE</div>
+        <div class="lane-card cs">
+          <div class="who">Email to Bonding Specialist · direct callback</div>
+          <div class="what">Bryan promises a callback from the Bonding Specialist with final pricing. No CRM, no Calendly — the Bonding Specialist calls back manually within the hour. Callers who ask for a live agent at any point are transferred directly.</div>
+        </div>
+      </div>
+
+      <div class="arrow-down" style="margin-top:24px;">— · — · — · — · — · — · — · —</div>
+
+      <div class="lane">
+        <div class="lane-tag">ALT</div>
+        <div class="lane-card escape">
+          <div class="who">Hard-qualification failure (bid · payment &amp; performance)</div>
+          <div class="what">If the caller fails any of the three hard requirements (under 1 year in business, credit &lt; 700, prior bankruptcy), Bryan politely declines and offers to refer them to other coverage we sell (General Liability, Workers' Comp, etc.) — or closes the call cordially. No workaround per our Bonding Specialist's policy.</div>
+        </div>
+      </div>
+
+    </div>
+
+    <div style="margin-top:24px;">
+      <div class="callout amber">
+        <div class="label">Biggest open decision · needs John</div>
+        <h3>Does Bonds get its own toll-free number under UnitedSuretyBonds.com?</h3>
+        <p>The single biggest architectural decision for Bonds is whether the product gets a dedicated public number (like buildersrisk.net has +1 888 293-4492) or whether "Bonds" becomes another option in the receptionist menu of the existing three brand lines. The first option preserves brand separation; the second concentrates traffic on three numbers. We need this answered before wiring Bryan into production.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── SPANISH ─────────────────────────────────── -->
+  <section class="sec">
+    <div class="sec-title">08 · Spanish coverage</div>
+    <h2 class="sec-h2">A dedicated Spanish team across all three brands</h2>
+    <p class="sec-lead">Spanish callers are offered Spanish at the end of the English greeting on every brand line. When they choose Spanish, the call is forwarded to a dedicated Spanish-speaking team line that is shared across all three brands. The single in-conversation Spanish-speaking agent today is Valeria (General Liability); the rest of the Spanish flow runs with human agents.</p>
+
+    <div class="flow">
+      <div class="lane">
+        <div class="lane-tag">L2</div>
+        <div class="lane-card l2">
+          <div class="who">English receptionist (Grace / Olivia / Emma)</div>
+          <div class="what">Ends the greeting with: "If you'd prefer to be helped in Spanish, just let me know."</div>
+        </div>
+      </div>
+      <div class="arrow-down">↓ Caller answers in Spanish</div>
+      <div class="lane">
+        <div class="lane-tag">→</div>
+        <div class="lane-card cs">
+          <div class="who">Spanish-speaking team line (shared)</div>
+          <div class="what">Cross-site — receives Spanish callers from all three brands. A Spanish-speaking team member picks up.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── DECISION CALLOUT (one Rebecca per line) ─── -->
+  <section class="sec">
+    <div class="sec-title">09 · Architectural decision</div>
+    <h2 class="sec-h2">One Rebecca per coverage line</h2>
+
+    <div class="callout">
+      <div class="label">Decided · 2026-05-19</div>
+      <h3>Per-product Binding Info agent, not one shared multi-product agent</h3>
+      <p>Each coverage line that adopts the Binding stage will have its own Rebecca with its own product-specific question list. Rebecca-GL ships first; Rebecca-BR is next per John's note. The alternative — one Rebecca with branches for all five products — was rejected because:</p>
+      <ul style="margin-top:14px; padding-left:18px;">
+        <li style="font-size:13.5px; color:var(--mid); margin-bottom:5px;"><strong>Cost efficiency.</strong> The conversational model reloads its full instruction set on every turn. A focused 22-question Rebecca is cheaper per call than a multi-line agent carrying all five products' branches — and the saving compounds over the entire L4 leg.</li>
+        <li style="font-size:13.5px; color:var(--mid); margin-bottom:5px;"><strong>Operational clarity.</strong> Specialists today (Jennifer, Sarah, Nora, Wendy, Rachel) are each one agent per product. Rebecca follows the same pattern — no new mental model.</li>
+        <li style="font-size:13.5px; color:var(--mid); margin-bottom:5px;"><strong>Independent iteration.</strong> John tweaks binding questions per product. Per-product agents mean no regression risk to other lines on every change.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- ─── ROADMAP ──────────────────────────────────── -->
+  <section class="sec">
+    <div class="sec-title">10 · Roadmap</div>
+    <h2 class="sec-h2">What's planned next</h2>
+    <p class="sec-lead">Organized by readiness: items currently in test waiting for your feedback, items in near-term planning, and items further out. Most are independent and can ship in parallel.</p>
+
+    <div class="roadmap">
+
+      <div style="padding:16px 24px; background:#fafaf7; border-bottom:1px solid var(--rule); font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--green);">
+        In test · awaiting your feedback
+      </div>
+
+      <div class="road-row">
+        <div class="road-status imminent">In test</div>
+        <div class="road-body">
+          <div class="title">Rebecca-GL · post-price Binding Info flow</div>
+          <div class="desc">22-question post-quote stage for General Liability. Already deployed in test and callable on the QA line. Seven open items pending with you before production deploy (see §12 below). Backend endpoint and service-rep round-robin calendar still to be built.</div>
+        </div>
+      </div>
+
+      <div class="road-row">
+        <div class="road-status imminent">In test</div>
+        <div class="road-body">
+          <div class="title">Bryan · surety bonds intake under UnitedSuretyBonds.com</div>
+          <div class="desc">First-contact bonds agent — 6 common questions + branches for license/permit, bid, payment &amp; performance. Already deployed in test and callable on the QA line. Four open items pending with you before production deploy (see §12 below). Backend endpoint to email the Bonding Specialist still to be built.</div>
+        </div>
+      </div>
+
+      <div style="padding:16px 24px; background:#fafaf7; border-top:1px solid var(--rule); border-bottom:1px solid var(--rule); font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--amber);">
+        Near-term planning
+      </div>
+
+      <div class="road-row">
+        <div class="road-status imminent">Imminent</div>
+        <div class="road-body">
+          <div class="title">Activate the farmerbrown.com toll-free</div>
+          <div class="desc">+1 (888) 496-2029 ready on Emma's side; needs to be re-pointed from its current legacy destination. Becomes the third active brand line.</div>
+        </div>
+      </div>
+
+      <div class="road-row">
+        <div class="road-status planning">Planning</div>
+        <div class="road-body">
+          <div class="title">Rebecca-BR · Builder's Risk binding (next Rebecca)</div>
+          <div class="desc">You have signaled a shorter Builder's Risk binding question list to follow Rebecca-GL. List pending — once we have it, Rebecca-BR ships in the same shape as Rebecca-GL.</div>
+        </div>
+      </div>
+
+      <div class="road-row">
+        <div class="road-status planning">Planning</div>
+        <div class="road-body">
+          <div class="title">Warm transfer with context (specific-person hand-offs)</div>
+          <div class="desc">When the receptionist transfers a caller to a specific person internally, the receiver should hear a brief context summary first ("you have a caller asking about a Builder's Risk quote, name…"). Specced; pending implementation.</div>
+        </div>
+      </div>
+
+      <div style="padding:16px 24px; background:#fafaf7; border-top:1px solid var(--rule); border-bottom:1px solid var(--rule); font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--muted);">
+        Future
+      </div>
+
+      <div class="road-row">
+        <div class="road-status future">Future</div>
+        <div class="road-body">
+          <div class="title">Spanish specialists beyond Valeria</div>
+          <div class="desc">Today Spanish callers on non-GL lines are routed to a human Spanish team. A natural next step is Spanish-speaking equivalents of Jennifer, Nora, Wendy, and Rachel.</div>
+        </div>
+      </div>
+
+      <div class="road-row">
+        <div class="road-status future">Future</div>
+        <div class="road-body">
+          <div class="title">Service flow expansion — payment + claim handled in-call</div>
+          <div class="desc">Today only COI is handled conversationally on the service side. Payment and claim could follow similar patterns once backend integrations exist.</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ─── PENDING INTEGRATIONS ─────────────────────── -->
+  <section class="sec">
+    <div class="sec-title">11 · Backend integrations · the dependency list</div>
+    <h2 class="sec-h2">What the AI flows need from the backend team</h2>
+    <p class="sec-lead">These are the data integrations that unlock features already designed on the conversational side. None of them require AI work — they are pure backend / scheduling configuration items.</p>
+
+    <div class="roadmap">
+
+      <div class="road-row">
+        <div class="road-status planning">Pending</div>
+        <div class="road-body">
+          <div class="title">Service-rep round-robin calendar</div>
+          <div class="desc">New scheduling pool for service reps that take payment and bind policies — used by Rebecca at the end of the binding flow. Separate pool from the Home &amp; Auto schedulers and the existing General Liability buy-now appointments.</div>
+        </div>
+      </div>
+
+      <div class="road-row">
+        <div class="road-status planning">Pending</div>
+        <div class="road-body">
+          <div class="title">Binding info data endpoint</div>
+          <div class="desc">Receives Rebecca's 22-field payload at the end of the binding flow. Same data-pattern as today's quote submissions.</div>
+        </div>
+      </div>
+
+      <div class="road-row">
+        <div class="road-status planning">Pending</div>
+        <div class="road-body">
+          <div class="title">Certificate-of-insurance data endpoint</div>
+          <div class="desc">Receives the captured COI data from the conversational COI flow. Currently the data lives only in the call transcript until manually processed.</div>
+        </div>
+      </div>
+
+      <div class="road-row">
+        <div class="road-status planning">Pending</div>
+        <div class="road-body">
+          <div class="title">Expedited-COI urgent alert</div>
+          <div class="desc">When a caller opts into the 1-hour expedited COI in exchange for a review, the ops team needs an immediate notification (email + Slack proposed).</div>
+        </div>
+      </div>
+
+      <div class="road-row">
+        <div class="road-status planning">Pending</div>
+        <div class="road-body">
+          <div class="title">Review-link and Home &amp; Auto application SMS triggers</div>
+          <div class="desc">Sent at the end of the COI flow when the caller agrees to the expedited quid-pro-quo, and when the caller accepts the Home &amp; Auto cross-sell.</div>
+        </div>
+      </div>
+
+      <div class="road-row">
+        <div class="road-status planning">Pending</div>
+        <div class="road-body">
+          <div class="title">Bonds data endpoint</div>
+          <div class="desc">Emails Tom Hester (Bonding Specialist) with the captured bond information at the end of the future Bonds flow. No CRM integration needed — Tom calls and closes manually.</div>
+        </div>
+      </div>
+
+      <div class="road-row">
+        <div class="road-status planning">Pending</div>
+        <div class="road-body">
+          <div class="title">Final lead destination — Hawksoft</div>
+          <div class="desc">All qualified leads ultimately need to land in Hawksoft. Today they reach the team via transcripts and per-flow submissions. Direct Hawksoft integration is the medium-term destination.</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ─── DECISIONS NEEDED FROM JOHN ───────────────── -->
+  <section class="sec">
+    <div class="sec-title">12 · What we need from you tomorrow</div>
+    <h2 class="sec-h2">Eleven open decisions before we go to production</h2>
+    <p class="sec-lead">These are the items currently blocking deploy of Rebecca-GL and Bryan (both already in test). None of them affect scoping — each one is a small product or operational decision. Once we have answers, both agents can move from QA to production in a single follow-up session.</p>
+
+    <div class="roadmap">
+
+      <div style="padding:16px 24px; background:#fafaf7; border-bottom:1px solid var(--rule); font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--green);">
+        Seven decisions for Rebecca-GL
+      </div>
+
+      <div class="road-row">
+        <div class="road-status planning">01</div>
+        <div class="road-body">
+          <div class="title">Real existing-quote phone number for the gate-No close</div>
+          <div class="desc">When a caller declines the gate question, Sarah says "call us back and ask for an existing quote." What's the public number we direct them to?</div>
+        </div>
+      </div>
+
+      <div class="road-row">
+        <div class="road-status planning">02</div>
+        <div class="road-body">
+          <div class="title">Calendly setup for the service-rep team</div>
+          <div class="desc">Rebecca needs a Calendly event type to book the payment-and-binding appointment. Is it round-robin across a service-rep team, or a single person? Separate pool from Angie/Andrés and from the GL Buy Now appointments.</div>
+        </div>
+      </div>
+
+      <div class="road-row">
+        <div class="road-status planning">03</div>
+        <div class="road-body">
+          <div class="title">Confirm the "AI in RED" annotation</div>
+          <div class="desc">Your binding doc has a stray duplicate "Do you use heavy equipment" question marked in red. We're reading that as a removal flag — confirm before we deploy.</div>
+        </div>
+      </div>
+
+      <div class="road-row">
+        <div class="road-status planning">04</div>
+        <div class="road-body">
+          <div class="title">Gate vs current Sarah cross-sell</div>
+          <div class="desc">Sarah currently cross-sells right after the quote. We're assuming the gate REPLACES that cross-sell on GL (binding is a higher-value path and the combined flow would lose callers). Confirm.</div>
+        </div>
+      </div>
+
+      <div class="road-row">
+        <div class="road-status planning">05</div>
+        <div class="road-body">
+          <div class="title">"Qualify for this price" — literal or psychological?</div>
+          <div class="desc">Does the price actually require the binding answers to hold (underwriting could modify), or is the framing a pure conversion device? Affects what we say if a caller bails mid-Rebecca.</div>
+        </div>
+      </div>
+
+      <div class="road-row">
+        <div class="road-status planning">06</div>
+        <div class="road-body">
+          <div class="title">CS-to-Rebecca transfer mechanics</div>
+          <div class="desc">When a CS agent has a returning caller with a quote on file, how do they get the caller into Rebecca? Dedicated public number that drops them straight into Rebecca? Warm transfer with context? For v1 the dedicated-number option is simplest.</div>
+        </div>
+      </div>
+
+      <div class="road-row">
+        <div class="road-status planning">07</div>
+        <div class="road-body">
+          <div class="title">Cross-sell at the end of Rebecca</div>
+          <div class="desc">Your closing line doesn't mention cross-sell. Default assumption: no cross-sell on Rebecca (caller is moving to bind, not compare). Confirm.</div>
+        </div>
+      </div>
+
+      <div style="padding:16px 24px; background:#fafaf7; border-top:1px solid var(--rule); border-bottom:1px solid var(--rule); font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.18em; text-transform:uppercase; color:var(--amber);">
+        Four decisions for Bryan (Bonds)
+      </div>
+
+      <div class="road-row">
+        <div class="road-status planning">08</div>
+        <div class="road-body">
+          <div class="title">Domain and phone-line strategy for Bonds</div>
+          <div class="desc">Biggest open decision. Does UnitedSuretyBonds.com get its own dedicated toll-free, or does "Bonds" become a menu option on the existing three brand lines? Changes the whole routing architecture.</div>
+        </div>
+      </div>
+
+      <div class="road-row">
+        <div class="road-status planning">09</div>
+        <div class="road-body">
+          <div class="title">What to say when a caller fails the hard qualification</div>
+          <div class="desc">For bid and payment&amp;performance bonds, the hard requirements (&gt;1 yr in business, credit &gt;700, no bankruptcy) have no workaround. If a caller fails, do we (a) thank-and-end politely, (b) cross-sell other coverage we sell (GL, WC, etc.), or (c) transfer to our Bonding Specialist anyway in case there's a workaround we don't know about?</div>
+        </div>
+      </div>
+
+      <div class="road-row">
+        <div class="road-status planning">10</div>
+        <div class="road-body">
+          <div class="title">Cross-sell at the end of Bryan</div>
+          <div class="desc">Every other line in the call center does end-of-call cross-sell except Home &amp; Auto. Default assumption: Bonds inherits the standard cross-sell. Confirm.</div>
+        </div>
+      </div>
+
+      <div class="road-row">
+        <div class="road-status planning">11</div>
+        <div class="road-body">
+          <div class="title">Bonding Specialist unavailable — what's the fallback?</div>
+          <div class="desc">Today the Bonding Specialist is a single destination. If he's out, on another call, or after-hours, what should Bryan do? Voicemail at his line, fallback to the generic live-agent number, offer a Calendly callback, or email-only and rely on the Bonding Specialist to call back?</div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ─── FOOTER ──────────────────────────────────── -->
+  <footer class="footer">
+    Generated 2026-05-20 · Internal architecture overview · Confidential
+  </footer>
+
+</main>
+
+</body>
+</html>

@@ -1,0 +1,1 @@
+Hi, this is Rebecca at Farmer Brown. I'm going to help you finalize your General Liability quote. I just have a few quick questions to lock in your price and set up your payment options — most are yes or no, and it'll only take a few minutes. Ready when you are.
