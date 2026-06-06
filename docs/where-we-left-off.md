@@ -1,5 +1,50 @@
 # Where we left off — Farmer Brown
-**Last touched:** 2026-05-18 — **Bonds discovery (planning, no code shipped).**
+**Last touched:** 2026-06-06 — huge multi-front session: backend migrated + repo cleaned + **Rebecca-BR scrapped (Jennifer absorbs binding)** + **Jennifer v2.15 & v2.16 shipped**. **v2.17 pricing change is PENDING John's reply (expected during the day).**
+
+---
+
+## 2026-06-06 — full session (read this first)
+
+### 1. Calforce backend MIGRATED ✅ (done without Pablo — Saturday, line was parked)
+- **Old domains are DEAD** — `farmerbrown-bi.calforce.pro` AND `farmerbrown.calforce.pro` no longer resolve. New domain: **`mission-control.farmerbrown.com`**. New `agent_api_key` = **`16bad4ae-bd41-4469-b0f9-09a6f9937d1c`** (now in `.env`; old `3a8c4681…` dead). Slim param is **`?slim=true`** (NOT `format=slim`), live on `available_times` only.
+- **5 VAPI tools migrated + verified** (host + key, + `slim=true` on the two availability tools): `submit_quote`, `check_availability`, `book_appointment`, `check_availability_angie`, `book_appointment_angie`. Idempotent script `scripts/migrate-tools-to-mission-control.js`. Angie event_type `901112a8` still alive on new backend.
+- **`submit_gl_form` NOT migrated** — old `/api/submit` removed (404); replacement is `POST /api/insurance_quote_submissions` (wrapper `insurance_quote_submission:{}`, different contract); the tool has `body:null` today → must be **REBUILT, pending Pablo's payload confirmation**.
+- **`event_type 43071621`** Pablo gave us returns slots from a DIFFERENT calendar than Angie's — purpose unconfirmed, NOT wired. Ask Pablo.
+- `book_event` slim deferred to next week (José). Full detail: memory `project_calforce_slim_response.md`.
+
+### 2. Repo cleanup — branch `chore/repo-cleanup` (2 commits, NOT merged) ✅
+- 38 files archived to `archive/`; junk deleted (3 `.DS_Store`, empty `marco-farmer-brown` stub); **2 dangerous DEAD-DOMAIN scripts quarantined** (`fix-calendly-tools.js`, `update-angie-tools-uuid.js` — re-running re-breaks the migrated tools); duplicate `architecture.html` archived; `CLAUDE.md` + `apis/*.md` refreshed to mission-control; Tyler→Pablo.
+- VAPI: **Service test squad `d989f711` + dispatcher `e8a656cf` DELETED** (Emma/Olivia/Grace Service members + proxies left intact).
+- **⚠️ Git state is messy:** commit 1 (`git add -A`) also swept in all the prior uncommitted WIP (Rebecca/Bryan/binding docs/migration script). Then the HTML retouches + Jennifer v2.15/v2.16 edits are UNCOMMITTED on top, same branch. **Needs ordering into clean commits + merge to `main` — José hasn't decided yet.**
+
+### 3. PIVOT: Rebecca-BR scrapped → Jennifer absorbs binding (John, 2026-06-06)
+No separate post-quote "Rebecca" agent for Builders Risk. The quote specialist (Jennifer) asks the binding/"Additional Underwriting" questions inline. **Invalidates** the Rebecca-BR premise in `docs/binding-questions-br-proposal.md`, the BR half of `docs/binding-questions.html`, `docs/binding-architecture.html`, and `agents/rebecca-general-liability-binding/` *as applied to BR*. **GL still open** — John said "we'll handle General Liability later"; likely Sarah absorbs the 22 GL questions the same way. Bryan/bonds unaffected. Memory `project_binding_in_specialist.md`.
+
+### 4. Jennifer v2.15 + v2.16 SHIPPED + verified (live in prod) ✅
+- **v2.15:** NEW **ADDITIONAL UNDERWRITING** block (AU1–AU9) after Q14, before risk check — occupied-during-term, project length months, completion date, model home + modular (NEW-CONSTRUCTION only), solar, previous-damage-by-peril (incl. uninsured), more-than-one-structure→`total_building_coverage`, open additional-coverages. Business-name-after-name → `company_name`. **Rule 10 (LEGAL):** never imply coverage active / "will start"; Q13 → "requested effective date". Zeros-in-value-figures hardened (Rule 3). Move-forward close ("transfer to an agent now or set up an appointment to move forward purchasing a policy… we take care of everything with your mortgage broker").
+- **🔴 CRITICAL preexisting bug fixed in v2.15:** the 4 risk flags + finished-project sqft were being sent under names that AREN'T backend columns → **silently lost for weeks**. Fixed: `has_prior_claims`→`claims_in_past_2_years`, `is_coastal`→`near_coast`, `construction_started`→`project_already_started`, `is_high_fire_risk`→`high_risk_fire_zone`, `total_square_footage`→`square_footage`. Memory `feedback_jennifer_field_name_mismatch.md`. (Verify field names against the live backend with a PATCH probe before trusting them; deployed prompt lives in `model.systemPrompt`.)
+- **Tool schema:** `submit_quote` body extended with 9 AU fields via `scripts/update-submit-quote-au-fields.js`. **8 still need backend COLUMNS (Pablo)**: `occupied_during_term`, `is_model_home`, `is_modular`, `has_solar`, `previous_damage_perils`, `multiple_structures`, `additional_coverages`, `project_length_months`. Until then they sit in the transcript; `expected_complete_date` + `total_building_coverage` + `project_start_date` already persist.
+- **v2.16:** sqft → "…including the basement **if there is one**"; NEW **AU2b** "projected start date" → `project_start_date`.
+- Deploy via `scripts/update-jennifer.js` (parses version header, PATCHes assistant + syncs 4 squads). Adversarial review workflow caught the legal SUMMARY bug + the field-name mismatch before deploy.
+
+### 5. ⏳ PENDING — Jennifer **v2.17: PRICING FORMULA** (awaiting John, expected today)
+John (2026-06-06): *"Use .29% for new construction and .573% for rehab. Prices too low now."* Mechanic is ambiguous → sent John a WhatsApp with 3 options + resulting prices on a $500k / $2,500-deductible quote (today ≈ $1,878):
+- **A (recommended):** project-type rate REPLACES the material rate, KEEP deductible factor + 1.15 + 1.30 → new build ≈ **$2,168** (+15%), rehab ≈ **$4,283**. (Only option that raises new construction, matching "too low".)
+- **B:** rate is final, `premium = value × rate` → new ≈ $1,450, rehab ≈ $2,865.
+- **C:** keep deductible factor, drop the 1.15/1.30 loads → same as B at $2,500.
+Also asked John: should construction material still affect price, or purely project-type now?
+**When John replies → edit the INSTANT QUOTE formula in Jennifer's prompt, bump v2.17, deploy.** Current formula: `premium = coverage × constructionRate(material) × deductibleMod × 1.15 × 1.30` (Frame 0.00251 / Brick 0.00242 / Masonry 0.002; deductMod 0.95/1.00/1.05 for $5k/$2.5k/$1k).
+
+### 6. Other pending
+- **Pablo (Mon):** create the 8 BR columns (§4) + GL `insurance_quote_submissions` payload/auth + what `event_type 43071621` is + `book_event` slim ETA + Swagger still lists the old host as "Production server" (errata he acknowledged).
+- **Grace (BR Unified) barge-in:** caller should be able to answer the first triage question before it finishes — VAPI config (startSpeakingPlan / interruptions), NOT prompt.
+- **GL binding:** Sarah likely absorbs the 22 GL questions (mirror Jennifer) — John "later".
+- **Git:** order commits (cleanup / migration / binding HTML / Jennifer) + merge `chore/repo-cleanup` to `main`.
+- Harmless test records left in BI: `vapi-migration-probe@farmerbrown.test` (id 1935), `v215-fieldprobe@farmerbrown.test`.
+
+---
+
+## Previously — 2026-05-18 — Bonds discovery (planning, no code shipped).
 
 John forwarded an email from Tom Hester (Bonding Specialist, ext. 105) on 2026-05-16 with the data-collection questionnaire for a new **Bonds** line. José ran a Slack Q&A with Tom on 2026-05-18 to close the gaps. All of it captured in [docs/bonds-discovery.md](bonds-discovery.md). **Nothing built yet** — 4 open items need a 20-min call with John before any code:
 
