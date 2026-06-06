@@ -1,3 +1,5 @@
+> ⚠️ **STALE (2026-06 migration).** This documents the removed `/api/submit` and `/api/gl_submissions/update_by_email` endpoints — both return 404 now. GL submissions moved to `POST https://mission-control.farmerbrown.com/api/insurance_quote_submissions` with a different payload contract (`insurance_quote_submission:{…}`). Pending rewrite once Pablo confirms the contract; `submit_gl_form` tool not yet migrated.
+
 # General Liability Quote API
 
 ## Endpoint

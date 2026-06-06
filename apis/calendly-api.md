@@ -2,7 +2,7 @@
 
 ## Base URL
 ```
-https://farmerbrown-bi.calforce.pro/api
+https://mission-control.farmerbrown.com/api
 ```
 
 ## Authentication

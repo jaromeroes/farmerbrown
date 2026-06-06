@@ -16,7 +16,7 @@ Internal tools hub for Farmer Brown Insurance. We build and manage VAPI voice ag
 - **Org ID:** `198209e2-169f-46ac-af2e-1e409ca93de3`
 
 ## Calforce backend credentials
-- **Agent API Key:** `$CALFORCE_AGENT_KEY` env var (see `.env.example`). Used as `agent_api_key` query param for `farmerbrown-bi.calforce.pro/api/*` endpoints.
+- **Agent API Key:** `$CALFORCE_AGENT_KEY` env var (see `.env.example`). Used as `agent_api_key` query param for `mission-control.farmerbrown.com/api/*` endpoints. **Backend migrated off `farmerbrown-bi.calforce.pro` on 2026-06 (old host dead) + key rotated — current value lives in `.env`.**
 
 ## Local setup
 1. `cp .env.example .env` and fill in `VAPI_KEY` + `CALFORCE_AGENT_KEY`.
@@ -60,16 +60,10 @@ One receptionist per phone line (9 total across 3 sites × 3 lines). Each line =
 - **Squad members (8):** Olivia + Jennifer + Sarah + Nora + Rachel + Wendy + CL Live Agent Proxy + Spanish Team Proxy (added 2026-05-15)
 - **Tools:** none (v1.6 fix)
 
-#### Grace — Builders Risk Receptionist (EN Sales) ✅ active
-- **Assistant ID:** `fa2897bb-00ee-4680-af00-0e31abeed228`
-- **Squad ID:** `ab53f568-82bf-439f-8fda-d04070864632` (Builders Risk — Sales EN Squad)
-- **Version:** v1.7
-- **Config:** `agents/receptionist-buildersrisk-sales/`
-- **Deploy scripts:** `scripts/create-receptionist-br-sales.js`, `scripts/update-receptionist-br-sales.js`, `scripts/create-squad-br-sales.js`, `scripts/update-squads-add-wendy.js`
-- **Line:** buildersrisk.net English Sales
-- **Flow:** Two-step menu optimized for BR — after "new quote", asks "Builder's Risk or something else?" (defaults to Jennifer). Alternate menu (GL→Sarah, CA→Nora, H&A→Rachel, WC→Wendy) only if "something else"
-- **Squad members:** Grace + Jennifer + Sarah + Nora + Rachel + Wendy + BR Live Agent Proxy
-- **Tools:** none (v1.6 fix)
+#### Grace — Builders Risk Receptionist ✅ active (Unified)
+- **Live config:** `agents/receptionist-buildersrisk-unified/` · **Squad:** `a3269fa7-6229-4bed-817a-c4684878a600` (BR Unified) · **Line:** `+18882934492` (public) + `+17027108075` (QA).
+- **Version:** v1.22 — single number for all intents (4-way triage + Mechanisms B/D/E/F/G: live-agent / direct-dial / Spanish / existing-quote / service). Squad has 11 members. Deploy: `scripts/create-receptionist-br-unified.js`, `scripts/update-receptionist-br-unified.js`. See `docs/squads-and-handoffs.md`.
+- ~~Legacy standalone "BR Sales EN" Grace v1.7 (squad `ab53f568`, config `agents/receptionist-buildersrisk-sales/`)~~ — **archived 2026-06** (no VAPI number; BR Unified replaced it). Config + the 3 `*-br-sales.js` scripts moved to `archive/`. The `ab53f568` squad still exists in VAPI but is numberless/dormant.
 
 #### Live Agent Handoff Proxies (3 silent SIP proxies) ✅ active
 One proxy per site. Each proxy is a minimal assistant whose only job is to invoke its site's `transfer_to_live_agent_*` tool immediately on connect. Used as the 5th squad destination from each receptionist so the LLM picks by name instead of being biased toward an explicit tool. Architectural fix for the L2→L3 handoff bug (2026-04-18) — see [docs/squads-and-handoffs.md](docs/squads-and-handoffs.md) §12.
@@ -111,7 +105,7 @@ Deploy scripts: [scripts/create-tool-transfer-to-spanish-team.js](scripts/create
 
 #### ~~Test Dispatcher — Single-number multiplexer for testing~~ ❌ DELETED 2026-05-15
 - Test Dispatcher Sales (assistant `753657c6-…` + squad `2ae25a8b-…`) deleted on 2026-05-15 because `+18884356365` became the production line for Contractors Liability (reapuntado al CL Sales Squad directly). The squad/assistant are gone from VAPI. If multi-site testing is needed again, build a new dispatcher under a fresh number — do not try to recover this one.
-- Test Dispatcher **Service** (squad `d989f711-…`) still exists but also has no number assigned. Likely candidate for deletion in the next pass — see Test Dispatcher Service section below.
+- Test Dispatcher **Service** (squad `d989f711-…`) **also deleted 2026-06-06** — same reason (no number). See section below.
 
 #### Emma — Farmer Brown Receptionist (EN Service) ✅ active
 - **Assistant ID:** `a1720268-a855-410e-bb7f-687910995dba`
@@ -123,7 +117,7 @@ Deploy scripts: [scripts/create-tool-transfer-to-spanish-team.js](scripts/create
 - **Flow:** Triage (Payment / Claim / COI / Sales-misroute) + inline 6-step COI flow (policyholder → additional insured → endorsements → contact → expedited-with-review quid-pro-quo → H&A cross-sell with SMS app). No L3 handoff — COI runs entirely inside Emma Service.
 - **Squad members (2):** Emma Service + FB Live Agent Proxy
 - **Tools:** none — same pattern as Sales v1.8+; every transfer is a squad destination
-- **Pending backends:** `send_review_sms`, `send_home_auto_application_sms`, `send_urgent_coi_alert`, `submit_coi_form` — all deferred to Tyler (see `docs/client-notes-pending.md`). V1 speaks the promises in future tense per Rule 12, without tool calls.
+- **Pending backends:** `send_review_sms`, `send_home_auto_application_sms`, `send_urgent_coi_alert`, `submit_coi_form` — all deferred to Pablo (see `docs/client-notes-pending.md`). V1 speaks the promises in future tense per Rule 12, without tool calls.
 
 #### Olivia — Contractors Liability Receptionist (EN Service) ✅ active
 - **Assistant ID:** `e4597689-cf8c-4801-96af-302bdbc0eb2a`
@@ -147,15 +141,8 @@ Deploy scripts: [scripts/create-tool-transfer-to-spanish-team.js](scripts/create
 - **Squad members (2):** Grace Service + BR Live Agent Proxy
 - **Tools:** none
 
-#### Test Dispatcher Service — Single-number multiplexer for testing ✅ active
-- **Assistant ID:** `e8a656cf-3017-4b3b-9dd7-78d8e85186ad`
-- **Squad ID:** `d989f711-a436-421d-a3c8-ce06b570ad40` (Test Squad — Service EN (all sites))
-- **Version:** v1.0
-- **Config:** `agents/test-dispatcher-service/`
-- **Deploy scripts:** `scripts/create-dispatcher-service.js`, `scripts/create-squad-test-service.js`
-- **Role:** Parallel to the Sales Test Dispatcher — routes test calls to Emma / Olivia / Grace Service.
-- **Squad members (7):** Dispatcher Service + Emma Service + Olivia Service + Grace Service + FB/CL/BR Live Agent Proxies
-- **Phone number:** to be attached by user (separate number from the Sales test line)
+#### ~~Test Dispatcher Service — Single-number multiplexer for testing~~ ❌ DELETED 2026-06-06
+- Squad `d989f711-…` + dispatcher assistant `e8a656cf-…` ("Test Dispatcher Service v1.0") deleted from VAPI on 2026-06-06 — never had a number, mirrored the already-deleted Sales test dispatcher. Config + `*-test-service.js` / `create-dispatcher-service.js` scripts moved to `archive/`. The Emma/Olivia/Grace Service members + proxies were left intact in their production squads.
 
 #### Pending receptionists
 - ES variants — "¿Ventas o servicio?" + Spanish flow mirroring EN
@@ -230,7 +217,7 @@ Deploy scripts: [scripts/create-tool-transfer-to-spanish-team.js](scripts/create
 - **Role:** Post-quote data-collection agent for the new **Binding Info Stage**. Invoked by Sarah (GL specialist) after she asks the gate question *"Would you like to answer a few additional questions to qualify for this price along with monthly payment options?"* and the caller says Yes. Also reachable via a public DID that CS humans can forward callers to (mechanism TBD). Collects ~22 underwriting/operational/legal fields and books an appointment with a service rep to take payment and bind the policy.
 - **Pattern:** Closest analogue is Nora (data-collection only, no quote engine, ends in handoff/appointment). Distinct from Sarah/Jennifer (which DO quote). One Rebecca per product line — token-efficiency decision validated 2026-05-19 (José).
 - **Pending before v1.0:** 7 open items with John — see [`docs/binding-stage-discovery.md`](docs/binding-stage-discovery.md) §6. None block scoping; all block deploy.
-- **Pending backends:** `submit_binding_info_form` (Tyler — `PATCH /api/binding_info_submissions/update_by_email`), Calendly event-type UUID for service rep round-robin.
+- **Pending backends:** `submit_binding_info_form` (Pablo — `PATCH /api/binding_info_submissions/update_by_email`), Calendly event-type UUID for service rep round-robin.
 - **Future siblings:** Rebecca-BR (Builders Risk version, "next" per John, shorter list), eventually Rebecca-CA / Rebecca-WC / Rebecca-H&A if the pattern extends across all lines.
 
 ### Sarah — Builders Risk (original, ARCHIVED — replaced by GL above)
@@ -255,11 +242,11 @@ Deploy scripts: [scripts/create-tool-transfer-to-spanish-team.js](scripts/create
 
 | Tool | ID | Type | Endpoint |
 |------|----|------|----------|
-| `submit_quote` | `da21631c-4ba2-4b41-9c06-cb7ffc1c8428` | apiRequest | PATCH `https://farmerbrown-bi.calforce.pro/api/builders_risk_submissions/update_by_email` |
-| `submit_gl_form` | `5d723598-1699-4ec9-96aa-a9d3e645f424` | apiRequest | POST `https://farmerbrown.calforce.pro/api/submit` |
-| `submit_home_quote` | TBD | apiRequest | PATCH `https://farmerbrown-bi.calforce.pro/api/home_submissions/update_by_email` |
-| `check_availability` | `dd2504ab-c665-493f-915d-345b0696017f` | apiRequest | GET `https://farmerbrown-bi.calforce.pro/api/calendly/available_times` (round-robin) |
-| `book_appointment` | `642280ea-5ea0-4d1e-a7fe-35439016de10` | apiRequest | POST `https://farmerbrown-bi.calforce.pro/api/calendly/book_event` (round-robin) |
+| `submit_quote` | `da21631c-4ba2-4b41-9c06-cb7ffc1c8428` | apiRequest | PATCH `https://mission-control.farmerbrown.com/api/builders_risk_submissions/update_by_email` |
+| `submit_gl_form` | `5d723598-1699-4ec9-96aa-a9d3e645f424` | apiRequest | ⚠️ **BROKEN since 2026-06 migration** — old `POST farmerbrown.calforce.pro/api/submit` removed (404). Replacement: `POST mission-control.farmerbrown.com/api/insurance_quote_submissions` (wrapper `insurance_quote_submission:{…}`, different contract). Tool has `body:null` today → must be **rebuilt, pending Pablo**. |
+| `submit_home_quote` | TBD | apiRequest | PATCH `https://mission-control.farmerbrown.com/api/home_submissions/update_by_email` |
+| `check_availability` | `dd2504ab-c665-493f-915d-345b0696017f` | apiRequest | GET `https://mission-control.farmerbrown.com/api/calendly/available_times` (round-robin) |
+| `book_appointment` | `642280ea-5ea0-4d1e-a7fe-35439016de10` | apiRequest | POST `https://mission-control.farmerbrown.com/api/calendly/book_event` (round-robin) |
 | `check_availability_angie` | `253df17f-2b43-4880-ad51-d5a3f2a4e655` | apiRequest | GET same URL + `&event_type_uuid=901112a8-…` (Angie only) |
 | `book_appointment_angie` | `35ff8b09-0a1f-4694-adb7-208f2a893434` | apiRequest | POST same URL + `&event_type_uuid=901112a8-…` (Angie only) |
 | `transfer_to_live_agent_farmer_brown` | `75d7c8f3-646e-4b44-9629-2baa2a2d81dd` | transferCall | SIP transfer to +18889730016 (Farmer Brown live-agent line) |
@@ -276,24 +263,24 @@ Deploy scripts: [scripts/create-tool-transfer-to-spanish-team.js](scripts/create
 ## APIs
 
 ### Calendly (scheduling)
-- **Base URL:** `https://farmerbrown-bi.calforce.pro/api`
+- **Base URL:** `https://mission-control.farmerbrown.com/api`
 - **API Key:** `agent_api_key=${CALFORCE_AGENT_KEY}` (query param)
 - **Docs:** `apis/calendly-api.md`
 - **Endpoints:** timezones, available_times, book_event
 
 ### Builders Risk (quote submission)
-- **URL:** `https://farmerbrown-bi.calforce.pro/api/builders_risk_submissions/update_by_email`
+- **URL:** `https://mission-control.farmerbrown.com/api/builders_risk_submissions/update_by_email`
 - **Method:** PATCH (upsert by email)
 - **Auth:** `agent_api_key=${CALFORCE_AGENT_KEY}` (query param)
 - **Docs:** `apis/builders-risk-api.md`
 - **Premium formula:** `(coverage × constructionRate × deductibleMod × 1.15) × 1.30`
 
-### General Liability (quote submission) — PENDING backend
-- **URL:** `https://farmerbrown-bi.calforce.pro/api/gl_submissions/update_by_email`
-- **Method:** PATCH (upsert by email)
-- **Auth:** `agent_api_key=${CALFORCE_AGENT_KEY}` (query param)
-- **Docs:** `apis/gl-submissions-api.md`
-- **No premium formula** — GL requires manual underwriting by licensed agent
+### General Liability (quote submission) — ⚠️ ENDPOINT CHANGED 2026-06
+- **URL:** `POST https://mission-control.farmerbrown.com/api/insurance_quote_submissions` — the old `/api/submit` and `/api/gl_submissions/update_by_email` paths were both removed (404 now).
+- **Payload:** wrapper `{ insurance_quote_submission: {…} }` (schema in the Mission Control OpenAPI; `apis/gl-submissions-api.md` is stale).
+- **Auth:** `agent_api_key` query param (confirmed) or `X-API-Key` header.
+- **Status:** `submit_gl_form` tool NOT yet rebuilt against this — **pending Pablo's payload confirmation.**
+- **No premium formula** — GL requires manual underwriting.
 
 ## Project Structure
 ```

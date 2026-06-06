@@ -1,7 +1,7 @@
 # Builders Risk Submission API
 
 ## Endpoint
-`PATCH https://farmerbrown-bi.calforce.pro/api/builders_risk_submissions/update_by_email`
+`PATCH https://mission-control.farmerbrown.com/api/builders_risk_submissions/update_by_email`
 
 ## Authentication
 `agent_api_key=${CALFORCE_AGENT_KEY}` as query parameter.
