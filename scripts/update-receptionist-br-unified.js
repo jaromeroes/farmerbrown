@@ -103,7 +103,13 @@ async function main() {
       idleMessageMaxSpokenCount: 2,
       idleTimeoutSeconds: 20
     },
-    silenceTimeoutSeconds: 30
+    silenceTimeoutSeconds: 30,
+    // 2026-06-11 — barge-in (John: "first sentence you should be able to answer right
+    // away"). The greeting is non-interruptible by VAPI default; this lets callers
+    // answer the triage question mid-greeting. numWords: 2 = needs a real two-word
+    // utterance to interrupt, so coughs/background noise don't cut Grace off.
+    firstMessageInterruptionsEnabled: true,
+    stopSpeakingPlan: { numWords: 2 }
   });
 
   const after = await vapi('GET', `/assistant/${ASSISTANT_ID}`);
@@ -113,7 +119,10 @@ async function main() {
   if (after.messagePlan?.idleTimeoutSeconds !== 20) {
     throw new Error(`idleTimeoutSeconds did not stick: got ${after.messagePlan?.idleTimeoutSeconds}, expected 20`);
   }
-  console.log(`[after]  name="${after.name}", idleTimeout=${after.messagePlan?.idleTimeoutSeconds}, toolIds=${(after.model?.toolIds || []).length}`);
+  if (after.firstMessageInterruptionsEnabled !== true) {
+    throw new Error(`firstMessageInterruptionsEnabled did not stick: got ${after.firstMessageInterruptionsEnabled}`);
+  }
+  console.log(`[after]  name="${after.name}", idleTimeout=${after.messagePlan?.idleTimeoutSeconds}, toolIds=${(after.model?.toolIds || []).length}, bargeIn=on (numWords=${after.stopSpeakingPlan?.numWords})`);
   console.log(`\n✓ Done. Grace is now ${targetName}.`);
 }
 

@@ -1,6 +1,21 @@
 # Notes for Client — Pending Items
 **Running log of items to discuss with Farmer Brown (John) at end-of-day syncs.**
-**Last updated:** 2026-06-04
+**Last updated:** 2026-06-11
+
+---
+
+## 2026-06-11 — Jennifer v2.19 (feedback test-call de John) — items para Pablo y para John
+
+### Para Pablo (backend)
+1. **2 columnas nuevas en `builders_risk_submissions`** — Jennifer v2.19 ya las envía (pass-through hasta que existan): `quoted_premium` (número — el total anual hablado al caller, premium + fee) y `hard_to_place_details` (texto libre — respuestas drill-down de los flags de riesgo). Verificar nombres con PATCH-probe antes de confiar en la persistencia (lección `feedback_jennifer_field_name_mismatch`).
+2. **DEPRIORIZAR las 6 columnas de binding** pedidas con v2.18 (`developer_name`, `has_property_loan`, `mortgage_broker_name/_phone/_email`, `payment_preference`) — el bloque REHAB BINDING se eliminó en v2.19 (el live agent recoge esos datos en persona tras el fast transfer). Las 8 columnas AU de v2.15 siguen pendientes y siguen haciendo falta (menos `expected_complete_date` y `additional_coverages`, que v2.19 dejó de enviar — si no existen aún, no crearlas).
+3. **Slim response para `PATCH /api/builders_risk_submissions/update_by_email`** — hoy devuelve el registro completo como echo en cada checkpoint; ese body queda cargado en el contexto LLM el resto de la llamada ×4 checkpoints. Con `{ok: true}` (o `?slim=true`) basta. Mismo patrón ya aplicado en available_times/book_event. Driver real: la test call de John del 2026-06-10 quemó 1.27M prompt tokens.
+4. **Notificación de lead al equipo** — John pregunta "how does the person see questions already answered". La mitad audio ya está (warm transfer briefing); falta la mitad visual: email/notificación al equipo con el registro cuando se dispara el transfer (CP4), para que el agente lo tenga delante. Explorar con Pablo qué tiene Mission Control hoy (¿notifica `update_by_email`? ¿hay vista de lead por email del caller?).
+
+### Para John (confirmar, no bloquean)
+1. **Multi-estructura**: cuando la póliza cubre >1 estructura, v2.19 calcula el premium sobre el **valor combinado** de todas (era ambiguo antes — podía cotizar solo la principal). Confirmar que es lo que quiere.
+2. **Closing en hard-to-place**: el cierre aprobado dice "within the hour"; en llamadas hard-to-place contradecía el "2 business days" dicho un minuto antes → v2.19 dice "within about two business days" SOLO en esas llamadas. Confirmar wording.
+3. **−15% en deductible $5,000**: implementado según su texto (su ejemplo usaba −10% por error de cálculo, confirmado por José).
 
 ---
 

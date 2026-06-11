@@ -1,5 +1,43 @@
 # Where we left off — Farmer Brown
-**Last touched:** 2026-06-06 — huge multi-front session: backend migrated + repo cleaned + **Rebecca-BR scrapped (Jennifer absorbs binding)** + **Jennifer v2.15 & v2.16 shipped**. **v2.17 pricing change is PENDING John's reply (expected during the day).**
+**Last touched:** 2026-06-11 — **Jennifer v2.19 + barge-in + warm transfer DEPLOYED** (full batch of John's 2026-06-10 test-call feedback). **José test-calls TOMORROW (2026-06-12)** — see "What to verify" below.
+
+---
+
+## 2026-06-11 — Jennifer v2.19 + barge-in + warm transfer (read this first)
+
+**Trigger:** John's test call 2026-06-10 08:10 UTC (call `019eb095-2a28-7000-8e4f-83a8b94e228b`, $4.31, 8 min) + two WhatsApp feedback messages (pricing + UX). Transcript analysis found MORE than John reported: he never heard his quote, said YES twice to a live-agent offer and was never transferred (idle-message yes → model resumed script), filler phrases back ("Just a sec" ×4), 12–22s dead-air gaps, building-type mis-asked (dropped "or commercial", accepted "No" as answer).
+
+### Shipped (all LIVE in production)
+1. **Jennifer v2.19** (deployed via `update-jennifer.js`; 4 squads synced):
+   - **Pricing replaced**: `premium = insuredValue × rate` re-based to $2,500 deductible — NC Frame 0.251% / Brick 0.242% / Masonry NC 0.113%; Rehab 0.492% / 0.462% / 0.192%. Deductible: $5k = −15% (**José confirmed John's −10% example was John's miscalc — the −15% text wins**), $1k = +10%. Round to whole dollars → flat fee $95 (<$2,000) / $195 (≥$2,000), threshold on the adjusted premium. Spoken as ONE total "including fees". insuredValue = combined `total_building_coverage` when multi-structure (was ambiguous — flagged to John).
+   - **Flow cuts per John**: business-name question now clean yes/no; Individual first in form-of-business; AU+risk merged into ONE underwriting block, single intro; AU3 (completion date) + AU9 (additional coverages) DELETED; H&A cross-sell DELETED; **appointment offer DELETED → FAST TRANSFER** right after the quote (scheduling only if the CALLER asks); HARD TO PLACE also transfers (no booking).
+   - **NEW Rule 11**: any YES to a live-agent offer (incl. idle prompt) → immediate CP4 + transfer. Fixes John's exact failure.
+   - **CP4 redefined** (adversarial review caught the gaps): fires before ANY transfer OR after caller-initiated booking OR as step 0 of NO-TRANSFER CLOSE (safety net); sends all-data-so-far + `quoted_premium` ONLY if an estimate was actually spoken; skip if no email captured; explicit sequencing (submit_quote first, never both tools in one turn). NEW fields sent: `quoted_premium`, `hard_to_place_details` (pending Pablo columns — pass-through meanwhile).
+   - Closing script EXCEPTION on hard-to-place ("within about two business days" instead of "within the hour") — flagged to John for wording sign-off.
+   - firstMessage trimmed; `update-jennifer.js` now PATCHes firstMessage too (it never did — silent drift risk closed).
+2. **Barge-in** on Jennifer AND Grace: `firstMessageInterruptionsEnabled: true` + `stopSpeakingPlan: { numWords: 2 }` (2 real words to interrupt — noise-safe). John's "first sentence you should be able to answer right away". Enforced by both update scripts now.
+3. **Warm transfer** on `transfer_to_live_agent_builders_risk` (7eb304a7): mode `warm-transfer-wait-for-operator-to-speak-first-and-then-say-summary` — waits for the human to speak (hunt-group-safe), reads a 2-sentence LLM summary (name, project, location, coverage, quoted premium), then bridges. **⚠ Shared tool — Jennifer's transfers AND Grace's Mechanism B (BR Live Agent Proxy) both get it.** Rollback: `node scripts/add-warm-transfer-to-br-live-agent-tool.js --rollback`. NOT yet test-called.
+4. **book_event slim** applied (`slim-book-event-tools.js`) — both book_appointment tools now send `&slim=true` (Pablo confirmed live 2026-06-09).
+5. Squad assembly validated post-deploy (POST /call probe → call object created, no config errors).
+
+### Process notes
+- **Adversarial review workflow caught 24 real findings pre-deploy** (5 lenses × verify). Top catches: multi-structure pricing base undefined; CP4 lost on decline-path; "within the hour" contradiction; 3 mandated lines starting with meta-check trigger words ("Just a few more details…" → "A few more details…", "Let me read that back" → "I'll read that back", "One last thing" → "Before we wrap up"); "finalize everything" → "finalize your quote and go over next steps" (Rule 10).
+- **Cost finding (José's $4.31 concern):** 88% of John's call cost was LLM — 1.27M prompt tokens (gpt-4o, ~40 completions × ~30k tokens). Calendly slim irrelevant on that call (never invoked). Levers queued: Pablo slims the `update_by_email` echo (#3 in client-notes-pending), v2.19's shorter flow (~8 fewer turns), and the open MODEL question (gpt-4.1 for Jennifer: better instruction-following → filler fix + cheaper) — discuss separately, don't mix with this test round.
+
+### What to verify (José, 2026-06-12 — call +18882934492)
+1. **Barge-in**: interrupt Grace's greeting mid-sentence (2+ words) — she should stop and route.
+2. **Full quote flow (new construction)**: business-name yes/no · Individual-first options · ONE underwriting intro, no second "risk questions" preamble · no completion-date question · no additional-coverages question · quote = coverage × rate (+fee, whole dollars, "including fees") · NO appointment offer · fast transfer with the new line.
+3. **Warm transfer**: whoever answers +18775131573 should hear the 2-sentence briefing BEFORE the caller is bridged. Check caller-side wait feels OK. If awkward → rollback script.
+4. **No-repeat**: after the call, check the BI record in mission-control has `quoted_premium` (and on a hard-to-place test, `hard_to_place_details`) — pass-through until Pablo's columns, so check the record JSON, not the UI.
+5. **Filler**: listen for "Just a sec" after checkpoints — if still there, it's the gpt-4o model issue (prompt levers exhausted since v2.11) → model conversation.
+6. Optional: deductible $5,000 quote → should be base −15% + fee (NOT John's $2,454 example — his math slip).
+
+### Open after this session
+- John confirmations (see client-notes-pending §2026-06-11): multi-structure pricing base, hard-to-place closing wording, −15% note.
+- Pablo: 2 new columns + deprioritized binding columns + update_by_email slim + lead-notification email + the pre-existing list (8 AU columns minus 2, GL `submit_gl_form` rebuild, event_type 43071621).
+- Warm transfer NOT yet extended to Grace's other proxies (Spanish/Existing-Quote/Service/direct-dial) — pending the Phase-1 test result (docs/warm-transfer-plan.md).
+- Git: `chore/repo-cleanup` branch has v2.18 + v2.19 commits — merge to `main` still undecided (José).
+- Model swap conversation (gpt-4.1 on Jennifer): filler + cost. Separate test round.
 
 ---
 

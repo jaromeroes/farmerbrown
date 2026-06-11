@@ -40,6 +40,7 @@ if (!VAPI_KEY) {
 const JENNIFER_ID = '273d2d5a-27e0-40aa-b817-76a51d1c302d';
 const SQUAD_ID = 'a3269fa7-6229-4bed-817a-c4684878a600';
 const SYSTEM_PROMPT_PATH = './agents/jennifer-builders-risk/system-prompt.md';
+const FIRST_MESSAGE_PATH = './agents/jennifer-builders-risk/first-message.md';
 
 // Tools Jennifer MUST have. Stripping any of these silently breaks the line:
 //   - submit_quote          → no quote data persists; transcript is the only record
@@ -93,6 +94,7 @@ async function main() {
   const { systemPrompt, version } = readSystemPromptAndVersion();
   const targetName = `Jennifer — Builders Risk ${version}`;
   const requiredTools = Object.values(REQUIRED_TOOL_IDS);
+  const firstMessage = fs.readFileSync(FIRST_MESSAGE_PATH, 'utf8').trim();
 
   console.log(`→ Target name: "${targetName}"`);
   console.log(`→ Required toolIds: ${requiredTools.length} tools`);
@@ -114,6 +116,7 @@ async function main() {
   // to the engine default. Symmetric to Grace v1.13 (idleTimeout 7 → 20).
   await vapi('PATCH', `/assistant/${JENNIFER_ID}`, {
     name: targetName,
+    firstMessage: firstMessage, // v2.19 — was never PATCHed before; first-message.md drifted from the live value silently
     model: {
       provider: 'openai',
       model: 'gpt-4o',
@@ -128,6 +131,12 @@ async function main() {
       idleTimeoutSeconds: 20,
     },
     silenceTimeoutSeconds: 30,
+    // v2.19 — barge-in (John 2026-06-10: "first sentence you should be able to answer right away").
+    // firstMessageInterruptionsEnabled lets the caller interrupt the greeting (non-interruptible
+    // by VAPI default). numWords: 2 = a real two-word utterance is needed to barge in, so coughs
+    // and background noise don't cut Jennifer off mid-sentence.
+    firstMessageInterruptionsEnabled: true,
+    stopSpeakingPlan: { numWords: 2 },
   });
 
   // Verify assistant
@@ -144,7 +153,13 @@ async function main() {
   if (afterIdle !== 20) {
     throw new Error(`messagePlan.idleTimeoutSeconds did not stick: got ${afterIdle}, expected 20`);
   }
-  console.log(`\n[step 1/2] ✓ Assistant patched: name="${afterAssistant.name}", toolIds=[${afterTools.length}], idleTimeout=${afterIdle}`);
+  if (afterAssistant.firstMessage !== firstMessage) {
+    throw new Error(`firstMessage did not stick (got ${JSON.stringify(afterAssistant.firstMessage).slice(0, 120)}…)`);
+  }
+  if (afterAssistant.firstMessageInterruptionsEnabled !== true) {
+    throw new Error(`firstMessageInterruptionsEnabled did not stick: got ${afterAssistant.firstMessageInterruptionsEnabled}`);
+  }
+  console.log(`\n[step 1/2] ✓ Assistant patched: name="${afterAssistant.name}", toolIds=[${afterTools.length}], idleTimeout=${afterIdle}, bargeIn=on (numWords=${afterAssistant.stopSpeakingPlan?.numWords})`);
 
   // ─── 3. PATCH squad destination ────────────────────────────────────────────
   // The squad references Jennifer by `assistantName` string. After renaming the

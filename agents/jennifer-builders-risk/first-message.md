@@ -1,1 +1,1 @@
-Hi, this is Jennifer, and I'll be getting you an instant quote for your Builder's Risk insurance. It takes under 5 minutes, and you'll receive up to 5 quotes from top carriers by email. If you get stuck or need assistance any time, please say "live agent". Let's get started — what's your full name?
+Hi, this is Jennifer — I'll be getting you an instant quote for your Builder's Risk insurance, and you'll receive up to 5 quotes from top carriers by email. If you ever need help, just say "live agent". Let's get started — what's your full name?
