@@ -59,10 +59,15 @@ async function main() {
     firstMessage: firstMessage,
     model: {
       provider: 'openai',
-      model: 'gpt-4o',
+      // 2026-06-14 — gpt-4o → gpt-4.1-mini for lower latency + cost on the triage leg.
+      // Grace does NO arithmetic (she only routes), so a mini model is safe here —
+      // unlike Jennifer, whose premium calc stays on gpt-4o until the calc moves off
+      // the LLM (Pablo backend / calc tool). 4.1-mini > 4o-mini at following Grace's
+      // multi-branch routing. If routing degrades, revert this line to 'gpt-4o'.
+      model: 'gpt-4.1-mini',
       systemPrompt: systemPrompt,
       // v1.7 — toolIds: [] is intentional. Keeping receptionist tool-less
-      // forces gpt-4o to use squad destinations for ALL transfers, eliminating
+      // forces the model to use squad destinations for ALL transfers, eliminating
       // the function-call bias bug. See memory/feedback_vapi_function_call_bias.md
       // and the v1.7 changelog entry above for the full story.
       toolIds: []
