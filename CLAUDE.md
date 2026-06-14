@@ -228,7 +228,8 @@ Deploy scripts: [scripts/create-tool-transfer-to-spanish-team.js](scripts/create
 
 ### Jennifer — Builders Risk (active builders risk agent)
 - **Assistant ID:** `273d2d5a-27e0-40aa-b817-76a51d1c302d`
-- **Version:** v2.19 (2026-06-11 — John's test-call feedback batch: pricing re-based to $2,500 deductible + flat fee ($95/$195), AU+risk merged into ONE underwriting block, AU3/AU9/H&A-cross-sell/appointment-offer/rehab-binding DELETED, **FAST TRANSFER post-quote** (scheduling only caller-initiated), Rule 11 honor-the-live-agent-yes, CP4 redefined (fires pre-transfer, carries `quoted_premium` + `hard_to_place_details`). Full history in `agents/jennifer-builders-risk/CHANGELOG.md`.)
+- **Version:** v2.20 (2026-06-14 — **pricing reliability fix**: rate-per-$100k calc + sanity-check (gpt-4o was quoting wrong — $875 on a $2M project), and the spoken premium now persists as **`annual_premium`** not `quoted_premium` (backend column verified by probe; old name was silently dropped). v2.19 = John's test-call feedback batch: pricing re-based to $2,500 deductible + fee, AU+risk merged, cross-sell/appointment/rehab-binding deleted, FAST TRANSFER post-quote, Rule 11. Full history in `agents/jennifer-builders-risk/CHANGELOG.md`.)
+- **⚠ Premium calc is the weak point:** gpt-4o computes the formula unreliably. Definitive fix (not yet shipped) = take the math off the LLM — backend computes `annual_premium` (Pablo; formula in `scripts/lib/br-premium.js`) OR the coded `calculate_premium` VAPI tool (`premium-api/` + `scripts/create-tool-calculate-premium.js`, awaiting deploy). See `docs/where-we-left-off.md`.
 - **Barge-in (2026-06-11):** `firstMessageInterruptionsEnabled: true` + `stopSpeakingPlan.numWords: 2` on Jennifer AND Grace BR Unified — enforced by both update scripts on every deploy.
 - **Config:** `agents/jennifer-builders-risk/`
 - **Deploy scripts:** `scripts/create-jennifer.js`, `scripts/update-jennifer.js` (PATCHes firstMessage too since v2.19)

@@ -1,6 +1,25 @@
 # Notes for Client — Pending Items
 **Running log of items to discuss with Farmer Brown (John) at end-of-day syncs.**
-**Last updated:** 2026-06-11
+**Last updated:** 2026-06-14
+
+---
+
+## 2026-06-14 — Jennifer pricing reliability (Pablo: HIGH PRIORITY) + field fix
+
+Two real test calls quoted the premium WRONG (gpt-4o can't do the arithmetic reliably): $900k NC Masonry $1k-ded → agent said $1,017 (base only, skipped the +10% and the fee; correct **$1,214**); $2M NC Frame $2.5k-ded → said $875 (hallucinated; correct **$5,215**). v2.20 mitigates in-prompt (rate-per-$100k + sanity check), but the real fix must take the math off the LLM.
+
+**PATCH-probe findings (mission-control `builders_risk_submissions`, 2026-06-14):**
+1. **The spoken-premium column is `annual_premium`, NOT `quoted_premium`.** Jennifer v2.19 was sending `quoted_premium` → silently dropped (the premium never persisted). **Fixed in v2.20** (now sends `annual_premium`). No backend action needed for the fix itself — just confirming the column name with Pablo.
+2. **The backend does NOT autocalculate `annual_premium`** — sent coverage + construction + deductible with no premium → `annual_premium` came back null.
+
+**THE ASK for Pablo (preferred, definitive fix):** compute `annual_premium` in the backend on write, from the fields it already stores. Exact formula (single source of truth, with tests) is in the repo at `scripts/lib/br-premium.js`:
+- rate (per $1 of insured value): NC Frame .00251 / Brick .00242 / Masonry .00113; Rehab .00492 / .00462 / .00192.
+- insured value = `total_building_coverage` if multi-structure else `building_coverage`.
+- deductible factor on the base: $2,500 = ×1.00, $5,000 = ×0.85, $1,000 = ×1.10. Round to whole dollar.
+- flat fee: +$95 if premium <$2,000, +$195 if ≥$2,000. `annual_premium` = premium + fee.
+- (Alternative if Pablo can't: we deploy our own calc endpoint — coded at `premium-api/`, activatable by José with a `vercel deploy`. Backend is cleaner — one source, no new infra.)
+
+**Still-missing columns (re-confirmed dropped on write 2026-06-14):** the v2.15 AU fields (`occupied_during_term`, `is_model_home`, `is_modular`, `has_solar`, `previous_damage_perils`, `multiple_structures`, `project_length_months`), the v2.18 rehab fields (`existing_structure_age_years/_condition/_description/_weatherproof`), and the new `hard_to_place_details`. All silently discarded today. Binding fields from v2.18 are DEPRIORITIZED (block removed in v2.19). Plus the still-open items below (slim echo on `update_by_email`, lead-notification email).
 
 ---
 

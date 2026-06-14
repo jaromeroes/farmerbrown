@@ -1,5 +1,32 @@
 # Where we left off — Farmer Brown
-**Last touched:** 2026-06-11 — **Jennifer v2.19 + barge-in + warm transfer DEPLOYED** (full batch of John's 2026-06-10 test-call feedback). **José test-calls TOMORROW (2026-06-12)** — see "What to verify" below.
+**Last touched:** 2026-06-14 — **Jennifer v2.20 DEPLOYED: pricing reliability fix** after two test calls quoted wrong. Plus the deterministic-calc "hook" coded (awaiting a deploy target / Pablo). Model NOT changed (still gpt-4o — see below). caffeinate 6h running.
+
+---
+
+## 2026-06-14 — Pricing was broken in two ways; v2.20 fixes/mitigates both (read first)
+
+**Two real test calls quoted WRONG:**
+- Car call `019ec0bf` (2026-06-13, $5.59, 7.5 min): $900k NC Masonry, $1k ded → Jennifer said **$1,017** = base only, skipped the +10% deductible AND the $95 fee. Correct: **$1,214**.
+- "Romero" call (transcript José pasted): $2M NC Frame, $2.5k ded → said **$875** = pure hallucination. Correct: **$5,215**.
+
+**Two distinct root causes, both addressed:**
+1. **gpt-4o can't do the arithmetic.** Either hallucinates (`$875`) or skips steps (`$1,017`). → v2.20 rewrites INSTANT QUOTE as **rate-per-$100,000** (whole-dollar rates so it multiplies small integers: units = value÷100k, × rate), **5 mandatory steps**, a **SANITY CHECK** (total must be 0.1–0.7% of insured value, recompute if not — explicitly catches the $875/$2M case), full worked examples per deductible, compute silently. This is mitigation, **not a guarantee** — gpt-4o doing any mental math is fundamentally unreliable.
+2. **🔴 The premium wasn't even being saved.** PATCH-probe of the live backend: the column is **`annual_premium`**, but Jennifer sent **`quoted_premium`** → silently dropped (same class as the field-name-mismatch bug). → v2.20 sends `annual_premium`. (100% fixed.)
+
+**The REAL fix (definitive, not shipped yet): take the math off the LLM.**
+- Canonical formula coded + tested: `scripts/lib/br-premium.js` (`node scripts/test-br-premium.js` → 6/6, incl. both failed calls). This is the single source of truth.
+- Deterministic endpoint coded: `premium-api/api/quote.js` (Vercel-ready) + `scripts/create-tool-calculate-premium.js` (VAPI `calculate_premium` tool). **NOT deployed** — no deploy target available this session (vercel token invalid, wrangler unauth).
+- **Preferred path: Pablo computes `annual_premium` in the backend** (it has the field + inputs, just doesn't autocalc — verified). Formula handed to him in `client-notes-pending.md` §2026-06-14. Backend = one source, no new infra.
+- **Option B (José can do alone): `cd premium-api && vercel deploy`** → run the create-tool script → bump Jennifer to v2.21 to CALL the tool instead of computing. Full steps in `premium-api/README.md`.
+
+**Cost — why a 7.5-min call cost $5.59 (José's "why so much"):**
+- 88% is LLM: **1.68M prompt tokens** on gpt-4o. The car call was long + chaotic (caller testing, re-asking addresses/deductible), so ~40+ turns, each re-sending the full context (Grace+Jennifer prompts compounding in the squad, the big v2.x prompt, 4 tool schemas, and submit_quote's full-record echo) → tokens balloon.
+- **MODEL DID NOT CHANGE.** José thought he'd switched to something cheaper — Jennifer (and Grace) are STILL gpt-4o (verified on the live assistant + in the call's cost breakdown). The "feels faster to answer" is the barge-in (v2.19), not a model swap. **The dashboard change didn't stick / wasn't saved.**
+- Levers (in order): (a) **move premium calc to a tool → THEN safely drop Jennifer to gpt-4o-mini / gpt-4.1-mini** (the calc was the main reason a smart model was needed; mini is ~15–20× cheaper on input and also kills the "Just a sec" filler gpt-4o keeps emitting). (b) Pablo slims the `update_by_email` echo (pending). (c) shorter prompt. The model swap is coupled to the calc fix — do the tool first, then swap.
+
+### What to verify next call (José)
+- New-construction quote: confirm the spoken total matches `scripts/test-br-premium.js` for the same inputs, and that the BI record now has `annual_premium` populated (was being dropped).
+- Still listen for "Just a sec" filler (gpt-4o) — expected until the model swap.
 
 ---
 
