@@ -279,7 +279,7 @@ export const POST: APIRoute = async ({ request, url }) => {
 
 export const GET: APIRoute = async ({ request, url }) => {
   if (url.searchParams.get('ping')) {
-    return json({ ok: true, service: 'vapi-lead-email', build: 'h7' }, 200);
+    return json({ ok: true, service: 'vapi-lead-email', build: 'h8-monorepo' }, 200);
   }
 
   const secret = import.meta.env.CRON_SECRET;
