@@ -1,0 +1,8 @@
+# Monorepo root — per-folder .gitignore files also apply (voice-agents/, billing/)
+**/.env
+**/.env.local
+**/.env.*.local
+**/node_modules
+**/.DS_Store
+**/.vercel
+.DS_Store
