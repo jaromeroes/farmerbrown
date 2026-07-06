@@ -1,0 +1,23 @@
+---
+/**
+ * Landing — server-side redirect.
+ *
+ * Logged in → /portal, otherwise → /login. Magic-links never reach
+ * here in the new flow; they go through /auth/verify, which establishes
+ * the session before redirecting to /portal.
+ */
+import { createSupabaseServerClient } from '@lib/supabase';
+import { getCustomerSession } from '@lib/auth';
+
+export const prerender = false;
+
+const supabase = createSupabaseServerClient({
+  request: Astro.request,
+  cookies: Astro.cookies,
+});
+
+return Astro.redirect(
+  (await getCustomerSession(supabase)) ? '/portal' : '/login',
+  307,
+);
+---

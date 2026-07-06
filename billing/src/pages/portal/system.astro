@@ -1,0 +1,848 @@
+---
+/**
+ * /portal/system — customer-facing architecture overview of the live AI call
+ * center: phone lines, agent tiers, triage, specialists, sales + service +
+ * bonds flows, roadmap, backend dependencies, open decisions.
+ *
+ * Data sourced from src/lib/sites.ts. Auth-gated like the rest of the portal.
+ */
+import Portal from '@layouts/Portal.astro';
+import { createSupabaseServerClient } from '@lib/supabase';
+import { getCustomerSession } from '@lib/auth';
+import {
+  SYSTEM_SITES,
+  HERO,
+  HERO_STATS,
+  TIERS,
+  TRIAGE_INTENTS,
+  SPECIALISTS_V5,
+  SPECIALISTS_TEST_LINE,
+  SALES_FLOW,
+  SALES_GATE_BRANCHES,
+  SALES_FLOW_POST_GATE,
+  ALT_ENTRY_CS_FORWARD,
+  SERVICE_INTENTS,
+  BOND_TYPES,
+  BONDS_FLOW,
+  BONDS_HARD_QUAL_FAIL,
+  BONDS_OPEN_DECISION,
+  SPANISH_FLOW,
+  ARCH_DECISION,
+  ROADMAP,
+  BACKEND_DEPS,
+  OPEN_DECISIONS,
+} from '@lib/sites';
+
+export const prerender = false;
+
+const supabase = createSupabaseServerClient({
+  request: Astro.request,
+  cookies: Astro.cookies,
+});
+const session = await getCustomerSession(supabase);
+if (!session) {
+  return Astro.redirect('/login', 307);
+}
+
+type StatusKind = 'live' | 'imminent' | 'planning' | 'in-test';
+
+const statusBadge = (s: StatusKind): { className: string; label: string } => {
+  switch (s) {
+    case 'live':       return { className: 'badge badge-live',     label: 'Live' };
+    case 'imminent':   return { className: 'badge badge-imminent', label: 'Imminent' };
+    case 'planning':   return { className: 'badge badge-planning', label: 'Planning' };
+    case 'in-test':    return { className: 'badge badge-imminent', label: 'In test' };
+  }
+};
+
+const rebeccaDecisions = OPEN_DECISIONS.filter((d) => d.group === 'rebecca-gl');
+const bryanDecisions   = OPEN_DECISIONS.filter((d) => d.group === 'bryan');
+
+const roadmapBuckets = [
+  { key: 'in-test'   as const, label: 'In test · awaiting your feedback', color: 'success' },
+  { key: 'near-term' as const, label: 'Near-term planning',               color: 'warning' },
+  { key: 'future'    as const, label: 'Future',                           color: 'muted'   },
+];
+---
+
+<Portal title="System">
+
+  <!-- ───────── Hero ───────── -->
+  <section class="hero">
+    <div class="hero-eyebrow">{HERO.eyebrow}</div>
+    <h1 class="hero-title">{HERO.title}</h1>
+    <p class="hero-sub">{HERO.subtitle}</p>
+    <div class="hero-stats">
+      {HERO_STATS.map((s) => (
+        <div class="hero-stat">
+          <div class="num mono">{s.num}</div>
+          <div class="lbl">{s.label}</div>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <!-- ───────── 01 · Phone lines ───────── -->
+  <section class="sec">
+    <div class="sec-eye">01 · Phone lines</div>
+    <h2 class="sec-h2">Three sites, three toll-free numbers</h2>
+    <p class="sec-lead">
+      Each brand has its own dedicated toll-free number that lands directly on a brand-aware
+      receptionist. Language (English vs Spanish) is detected at the greeting, not by which
+      number was dialed.
+    </p>
+    <div class="card pad-0">
+      <table class="lines">
+        <thead>
+          <tr>
+            <th>Site</th>
+            <th>Toll-free</th>
+            <th>Receptionist</th>
+            <th class="right">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {SYSTEM_SITES.map((s) => {
+            const b = statusBadge(s.status);
+            return (
+              <tr>
+                <td><span class="mono">{s.websiteDomain}</span></td>
+                <td class="mono">{s.phoneDisplay}</td>
+                <td>{s.agentName}</td>
+                <td class="right"><span class={b.className}>{b.label}</span></td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ───────── 02 · Tiers ───────── -->
+  <section class="sec">
+    <div class="sec-eye">02 · How the call center is organized</div>
+    <h2 class="sec-h2">Four tiers, each with one job</h2>
+    <p class="sec-lead">
+      Calls move through up to three conversational tiers, with a human-agent overflow path
+      available at every step. Each tier is intentionally narrow so the caller is always
+      speaking to the right person for the right step.
+    </p>
+    <div class="tiers">
+      {TIERS.map((t) => (
+        <div class={`tier-card tier-${t.variant}`}>
+          <div class="tier-tag">{t.tier}</div>
+          <div class="tier-name">{t.name}</div>
+          <p class="tier-desc">{t.description}</p>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <!-- ───────── 03 · Triage ───────── -->
+  <section class="sec">
+    <div class="sec-eye">03 · The receptionist triage</div>
+    <h2 class="sec-h2">Four ways a call can branch at hello</h2>
+    <p class="sec-lead">
+      Each site's receptionist (Grace, Olivia, Emma) opens with a brand-specific greeting
+      and offers four distinct paths. The receptionist never tries to handle the call itself
+      beyond routing — that's what the specialists are for.
+    </p>
+    <div class="card pad-0">
+      <table class="kv">
+        <thead>
+          <tr>
+            <th>If the caller says…</th>
+            <th>The receptionist does…</th>
+          </tr>
+        </thead>
+        <tbody>
+          {TRIAGE_INTENTS.map((i) => (
+            <tr>
+              <td class="say">{i.saying}</td>
+              <td class="text-muted">{i.doing}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ───────── 04 · Specialists ───────── -->
+  <section class="sec">
+    <div class="sec-eye">04 · Specialists (Tier L3)</div>
+    <h2 class="sec-h2">One agent per coverage line</h2>
+    <p class="sec-lead">
+      Each specialist owns a single product line end-to-end: qualification, underwriting
+      questions, price (when possible), and appointment. Specialists are shared across all
+      three sites — when a caller asks about General Liability on any of the three numbers,
+      the same Sarah agent picks up.
+    </p>
+    <div class="card pad-0">
+      <div class="table-scroll">
+        <table class="specialists">
+          <thead>
+            <tr>
+              <th>Agent</th>
+              <th>Coverage</th>
+              <th>Lang</th>
+              <th>Quote in-call?</th>
+              <th>Books appointment</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {SPECIALISTS_V5.map((sp) => {
+              const b = statusBadge(sp.status);
+              const q = sp.quoteInCall;
+              return (
+                <tr>
+                  <td><span class="mono name">{sp.name}</span></td>
+                  <td class="small">{sp.coverage}</td>
+                  <td class="small">{sp.language}</td>
+                  <td class="small">
+                    {q.kind === 'yes'
+                      ? <><span class="text-success" style="font-weight:600;">Yes</span> · {q.note}</>
+                      : <span class="text-muted">{q.kind === 'na' ? 'N/A' : 'No'} · {q.note}</span>}
+                  </td>
+                  <td class="small text-muted">{sp.booksAppointment}</td>
+                  <td><span class={b.className}>{b.label}</span></td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <p class="footnote small text-muted">
+      Both Rebecca and Bryan are deployed in a test environment and callable on the QA line{' '}
+      <strong class="mono">{SPECIALISTS_TEST_LINE.phone}</strong>. The test line opens with a dispatcher
+      that asks <em>"Rebecca for binding questions, or Bryan for bonds — which one are you here for?"</em>,
+      so a single number covers both for demo purposes.
+    </p>
+  </section>
+
+  <!-- ───────── 05 · Sales flow ───────── -->
+  <section class="sec">
+    <div class="sec-eye">05 · Sales flow (end to end)</div>
+    <h2 class="sec-h2">From greeting to appointment</h2>
+    <p class="sec-lead">
+      This is the full path for a new-quote call on any of the three brand lines. The new
+      Binding Info stage (Tier L4) extends the flow for General Liability today, and will
+      extend to Builder's Risk and other lines as John iterates the question lists.
+    </p>
+    <div class="card flow">
+      {SALES_FLOW.map((st) => (
+        <>
+          <div class="lane">
+            <div class="lane-tag mono">{st.tag}</div>
+            <div class={`lane-card lane-${st.variant}`}>
+              <div class="lane-who mono">{st.who}</div>
+              <div class="lane-what">{st.what}</div>
+            </div>
+          </div>
+          <div class="lane-arrow mono">↓</div>
+        </>
+      ))}
+
+      <!-- Gate branch -->
+      <div class="branches">
+        <div class="branch branch-yes">
+          <div class="branch-label mono">{SALES_GATE_BRANCHES.yes.label}</div>
+          <div class="branch-text">{SALES_GATE_BRANCHES.yes.text}</div>
+        </div>
+        <div class="branch branch-no">
+          <div class="branch-label mono">{SALES_GATE_BRANCHES.no.label}</div>
+          <div class="branch-text">{SALES_GATE_BRANCHES.no.text}</div>
+        </div>
+      </div>
+      <div class="lane-arrow lane-arrow-note mono">↓ (Yes branch only)</div>
+
+      {SALES_FLOW_POST_GATE.map((st, i) => (
+        <>
+          <div class="lane">
+            <div class="lane-tag mono">{st.tag}</div>
+            <div class={`lane-card lane-${st.variant}`}>
+              <div class="lane-who mono">{st.who}</div>
+              <div class="lane-what">{st.what}</div>
+            </div>
+          </div>
+          {i < SALES_FLOW_POST_GATE.length - 1 && <div class="lane-arrow mono">↓</div>}
+        </>
+      ))}
+    </div>
+
+    <div class="callout callout-warning">
+      <div class="callout-eye">{ALT_ENTRY_CS_FORWARD.eyebrow}</div>
+      <h3 class="callout-title">{ALT_ENTRY_CS_FORWARD.title}</h3>
+      <p>{ALT_ENTRY_CS_FORWARD.body}</p>
+    </div>
+  </section>
+
+  <!-- ───────── 06 · Service flow ───────── -->
+  <section class="sec">
+    <div class="sec-eye">06 · Service flow</div>
+    <h2 class="sec-h2">Certificates handled in-call · everything else routed</h2>
+    <p class="sec-lead">
+      When a caller chooses the service path, the receptionist offers four service intents.
+      Only certificates of insurance are handled in conversation — the other three are
+      routed to a live human, with explicit "live agent" as an always-available escape.
+    </p>
+    <div class="card pad-0">
+      <table class="kv">
+        <thead>
+          <tr>
+            <th>Service intent</th>
+            <th>What happens</th>
+          </tr>
+        </thead>
+        <tbody>
+          {SERVICE_INTENTS.map((i) => (
+            <tr>
+              <td class="say">{i.intent}</td>
+              <td class="text-muted">{i.outcome}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ───────── 07 · Bonds ───────── -->
+  <section class="sec">
+    <div class="sec-eye">07 · Bonds intake (new product line)</div>
+    <h2 class="sec-h2">Bryan · surety bonds for contractors</h2>
+    <p class="sec-lead">
+      A new product line under the <strong>UnitedSuretyBonds.com</strong> brand. Bryan
+      collects everything needed to issue or quote a surety bond, then our Bonding
+      Specialist calls back with pricing. Unlike most other lines, Bryan does NOT quote
+      in-call — pricing requires manual underwriting review.
+    </p>
+
+    <div class="bond-types">
+      {BOND_TYPES.map((b) => (
+        <div class="card bond-card">
+          <h3 class="bond-name">{b.name}</h3>
+          <div class="bond-meta mono">{b.meta}</div>
+          <ol class="bond-bullets">
+            {b.bullets.map((x) => <li>{x}</li>)}
+          </ol>
+        </div>
+      ))}
+    </div>
+
+    <div class="card flow">
+      {BONDS_FLOW.map((st, i) => (
+        <>
+          <div class="lane">
+            <div class="lane-tag mono">{st.tag}</div>
+            <div class={`lane-card lane-${st.variant}`}>
+              <div class="lane-who mono">{st.who}</div>
+              <div class="lane-what">{st.what}</div>
+            </div>
+          </div>
+          {i < BONDS_FLOW.length - 1 && <div class="lane-arrow mono">↓</div>}
+        </>
+      ))}
+
+      <div class="lane-divider mono">· · · · · ·</div>
+
+      <div class="lane">
+        <div class="lane-tag mono">{BONDS_HARD_QUAL_FAIL.tag}</div>
+        <div class={`lane-card lane-${BONDS_HARD_QUAL_FAIL.variant}`}>
+          <div class="lane-who mono">{BONDS_HARD_QUAL_FAIL.who}</div>
+          <div class="lane-what">{BONDS_HARD_QUAL_FAIL.what}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="callout callout-warning">
+      <div class="callout-eye">{BONDS_OPEN_DECISION.eyebrow}</div>
+      <h3 class="callout-title">{BONDS_OPEN_DECISION.title}</h3>
+      <p>{BONDS_OPEN_DECISION.body}</p>
+    </div>
+  </section>
+
+  <!-- ───────── 08 · Spanish ───────── -->
+  <section class="sec">
+    <div class="sec-eye">08 · Spanish coverage</div>
+    <h2 class="sec-h2">A dedicated Spanish team across all three brands</h2>
+    <p class="sec-lead">
+      Spanish callers are offered Spanish at the end of the English greeting on every brand
+      line. When they choose Spanish, the call is forwarded to a dedicated Spanish-speaking
+      team line that is shared across all three brands. The single in-conversation
+      Spanish-speaking agent today is Valeria (General Liability); the rest of the Spanish
+      flow runs with human agents.
+    </p>
+    <div class="card flow">
+      <div class="lane">
+        <div class="lane-tag mono">{SPANISH_FLOW[0].tag}</div>
+        <div class={`lane-card lane-${SPANISH_FLOW[0].variant}`}>
+          <div class="lane-who mono">{SPANISH_FLOW[0].who}</div>
+          <div class="lane-what">{SPANISH_FLOW[0].what}</div>
+        </div>
+      </div>
+      <div class="lane-arrow mono">↓ Caller answers in Spanish</div>
+      <div class="lane">
+        <div class="lane-tag mono">{SPANISH_FLOW[1].tag}</div>
+        <div class={`lane-card lane-${SPANISH_FLOW[1].variant}`}>
+          <div class="lane-who mono">{SPANISH_FLOW[1].who}</div>
+          <div class="lane-what">{SPANISH_FLOW[1].what}</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ───────── 09 · Architectural decision ───────── -->
+  <section class="sec">
+    <div class="sec-eye">09 · Architectural decision</div>
+    <h2 class="sec-h2">One Rebecca per coverage line</h2>
+    <div class="callout callout-success">
+      <div class="callout-eye">{ARCH_DECISION.eyebrow}</div>
+      <h3 class="callout-title">{ARCH_DECISION.title}</h3>
+      <p>{ARCH_DECISION.intro}</p>
+      <ul class="reason-list">
+        {ARCH_DECISION.reasons.map((r) => (
+          <li><strong>{r.title}</strong> {r.text}</li>
+        ))}
+      </ul>
+    </div>
+  </section>
+
+  <!-- ───────── 10 · Roadmap ───────── -->
+  <section class="sec">
+    <div class="sec-eye">10 · Roadmap</div>
+    <h2 class="sec-h2">What's planned next</h2>
+    <p class="sec-lead">
+      Organized by readiness: items currently in test waiting for your feedback, items in
+      near-term planning, and items further out. Most are independent and can ship in
+      parallel.
+    </p>
+    <div class="card pad-0">
+      {roadmapBuckets.map((bucket) => (
+        <>
+          <div class={`bucket-head bucket-${bucket.color}`}>{bucket.label}</div>
+          {ROADMAP.filter((r) => r.bucket === bucket.key).map((r) => (
+            <div class="road-row">
+              <div class={`road-status road-${r.status.toLowerCase().replace(/\s+/g, '-')} mono`}>
+                {r.status}
+              </div>
+              <div class="road-body">
+                <div class="road-title">{r.title}</div>
+                <div class="road-desc small text-muted">{r.desc}</div>
+              </div>
+            </div>
+          ))}
+        </>
+      ))}
+    </div>
+  </section>
+
+  <!-- ───────── 11 · Backend integrations ───────── -->
+  <section class="sec">
+    <div class="sec-eye">11 · Backend integrations · the dependency list</div>
+    <h2 class="sec-h2">What the AI flows need from the backend team</h2>
+    <p class="sec-lead">
+      These are the data integrations that unlock features already designed on the
+      conversational side. None of them require AI work — they are pure backend / scheduling
+      configuration items.
+    </p>
+    <div class="card pad-0">
+      {BACKEND_DEPS.map((d) => (
+        <div class="road-row">
+          <div class="road-status road-planning mono">Pending</div>
+          <div class="road-body">
+            <div class="road-title">{d.title}</div>
+            <div class="road-desc small text-muted">{d.desc}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <!-- ───────── 12 · Open decisions ───────── -->
+  <section class="sec">
+    <div class="sec-eye">12 · What we need from you</div>
+    <h2 class="sec-h2">Eleven open decisions before we go to production</h2>
+    <p class="sec-lead">
+      These are the items currently blocking deploy of Rebecca-GL and Bryan (both already in
+      test). None of them affect scoping — each one is a small product or operational
+      decision. Once we have answers, both agents can move from QA to production in a single
+      follow-up session.
+    </p>
+    <div class="card pad-0">
+      <div class="bucket-head bucket-success">Seven decisions for Rebecca-GL</div>
+      {rebeccaDecisions.map((d) => (
+        <div class="road-row">
+          <div class="road-status road-num mono">{d.num}</div>
+          <div class="road-body">
+            <div class="road-title">{d.title}</div>
+            <div class="road-desc small text-muted">{d.desc}</div>
+          </div>
+        </div>
+      ))}
+      <div class="bucket-head bucket-warning">Four decisions for Bryan (Bonds)</div>
+      {bryanDecisions.map((d) => (
+        <div class="road-row">
+          <div class="road-status road-num mono">{d.num}</div>
+          <div class="road-body">
+            <div class="road-title">{d.title}</div>
+            <div class="road-desc small text-muted">{d.desc}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <footer class="page-footer mono">
+    Generated 2026-05-20 · Internal architecture overview · Confidential
+  </footer>
+</Portal>
+
+<style>
+  /* ───────── Hero ───────── */
+  .hero {
+    background: var(--text);
+    color: white;
+    padding: 2.25rem 1.5rem 2rem;
+    border-radius: 8px;
+    margin-bottom: 2.5rem;
+  }
+  .hero-eyebrow {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.35);
+    margin-bottom: 0.75rem;
+  }
+  .hero-title {
+    font-size: 1.875rem;
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    margin: 0 0 1rem;
+  }
+  .hero-sub {
+    font-size: 0.9375rem;
+    color: rgba(255, 255, 255, 0.65);
+    max-width: 640px;
+    margin: 0 0 1.5rem;
+    line-height: 1.55;
+  }
+  .hero-stats {
+    display: flex;
+    gap: 2.5rem;
+    flex-wrap: wrap;
+  }
+  .hero-stat .num { font-size: 1.625rem; font-weight: 500; line-height: 1; }
+  .hero-stat .lbl {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.45);
+    margin-top: 0.5rem;
+  }
+
+  /* ───────── Section scaffolding ───────── */
+  .sec { margin-bottom: 2.75rem; }
+  .sec-eye {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.625rem;
+  }
+  .sec-h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    margin: 0 0 0.625rem;
+  }
+  .sec-lead {
+    font-size: 0.9375rem;
+    color: var(--muted);
+    margin: 0 0 1.25rem;
+    line-height: 1.6;
+  }
+  .card.pad-0 { padding: 0; overflow: hidden; }
+
+  /* ───────── Status badges ───────── */
+  .badge {
+    display: inline-block;
+    font-family: var(--mono);
+    font-size: 0.625rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 0.1875rem 0.5rem;
+    border: 1px solid;
+    border-radius: 4px;
+    line-height: 1.2;
+    white-space: nowrap;
+  }
+  .badge-live     { color: var(--success); border-color: var(--success); background: #ecfdf5; }
+  .badge-imminent { color: var(--warning); border-color: var(--warning); background: #fef3c7; }
+  .badge-planning { color: var(--accent);  border-color: var(--accent);  background: #eff6ff; }
+
+  /* ───────── Tables ───────── */
+  table.lines, table.kv, table.specialists {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  table.lines th, table.lines td,
+  table.kv th, table.kv td,
+  table.specialists th, table.specialists td {
+    padding: 0.875rem 1rem;
+    vertical-align: middle;
+  }
+  table.lines tr, table.kv tr, table.specialists tr {
+    border-bottom: 1px solid var(--border);
+  }
+  table.lines tbody tr:last-child,
+  table.kv tbody tr:last-child,
+  table.specialists tbody tr:last-child {
+    border-bottom: none;
+  }
+  table.lines thead tr,
+  table.kv thead tr,
+  table.specialists thead tr {
+    background: var(--bg);
+  }
+  table.lines .right, table.specialists .right { text-align: right; }
+  table.kv .say { font-size: 0.9375rem; }
+  table.specialists .name { font-weight: 600; font-size: 0.875rem; }
+
+  .table-scroll { overflow-x: auto; }
+  table.specialists th, table.specialists td { white-space: nowrap; }
+  table.specialists td.small { white-space: normal; }
+
+  /* ───────── Tiers ───────── */
+  .tiers {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+  @media (min-width: 640px) {
+    .tiers { grid-template-columns: 1fr 1fr; }
+  }
+  @media (min-width: 920px) {
+    .tiers { grid-template-columns: 1fr 1fr 1fr 1fr; }
+  }
+  .tier-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left-width: 3px;
+    border-radius: 8px;
+    padding: 1.25rem 1.125rem;
+  }
+  .tier-l2     { border-left-color: var(--text); }
+  .tier-l3     { border-left-color: var(--muted); }
+  .tier-l4     { border-left-color: var(--success); background: #ecfdf5; }
+  .tier-escape { border-left-color: var(--danger);  background: #fef2f2; }
+  .tier-tag {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.375rem;
+  }
+  .tier-name {
+    font-family: var(--mono);
+    font-size: 0.9375rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+  }
+  .tier-desc { font-size: 0.8125rem; color: var(--muted); margin: 0; line-height: 1.5; }
+
+  /* ───────── Flow diagram ───────── */
+  .flow { padding: 1.5rem 1.25rem; }
+  .lane { display: flex; align-items: center; gap: 0.75rem; }
+  .lane-tag {
+    font-size: 0.625rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    width: 54px;
+    flex-shrink: 0;
+    text-align: right;
+  }
+  .lane-card {
+    flex: 1;
+    padding: 0.75rem 0.875rem;
+    border: 1px solid var(--border);
+    border-left-width: 3px;
+    border-radius: 6px;
+    background: var(--card);
+  }
+  .lane-l2     { border-left-color: var(--text); }
+  .lane-l3     { border-left-color: var(--muted); }
+  .lane-l4     { border-left-color: var(--success); background: #ecfdf5; }
+  .lane-gate   { border-left-color: var(--warning); background: #fef3c7; }
+  .lane-cs     { border-left-color: var(--accent);  background: #eff6ff; }
+  .lane-escape { border-left-color: var(--danger);  background: #fef2f2; }
+  .lane-who { font-size: 0.8125rem; font-weight: 600; }
+  .lane-what { font-size: 0.8125rem; color: var(--muted); margin-top: 0.25rem; line-height: 1.5; }
+  .lane-arrow {
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.875rem;
+    margin: 0.25rem 0 0.25rem 66px;
+  }
+  .lane-arrow-note { font-size: 0.75rem; }
+  .lane-divider { text-align: center; color: var(--border); letter-spacing: 0.5em; margin: 1rem 0; }
+
+  /* Branches (gate yes/no) */
+  .branches {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.625rem;
+    margin: 0.5rem 0 0.5rem 66px;
+  }
+  @media (min-width: 560px) {
+    .branches { grid-template-columns: 1fr 1fr; }
+  }
+  .branch {
+    padding: 0.625rem 0.875rem;
+    border: 1px solid var(--border);
+    border-left-width: 3px;
+    border-radius: 6px;
+    background: var(--card);
+  }
+  .branch-yes { border-left-color: var(--success); }
+  .branch-no  { border-left-color: var(--muted); }
+  .branch-label {
+    font-size: 0.625rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.25rem;
+  }
+  .branch-text { font-size: 0.8125rem; line-height: 1.5; }
+
+  /* ───────── Callouts ───────── */
+  .callout {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-left-width: 3px;
+    border-radius: 8px;
+    padding: 1.25rem 1.5rem;
+    margin-top: 1.25rem;
+  }
+  .callout-success { border-left-color: var(--success); }
+  .callout-warning { border-left-color: var(--warning); }
+  .callout-eye {
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+    color: var(--muted);
+  }
+  .callout-success .callout-eye { color: var(--success); }
+  .callout-warning .callout-eye { color: var(--warning); }
+  .callout-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0 0 0.5rem;
+  }
+  .callout p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .reason-list {
+    margin: 0.75rem 0 0;
+    padding-left: 1.125rem;
+  }
+  .reason-list li {
+    font-size: 0.875rem;
+    color: var(--muted);
+    margin-bottom: 0.375rem;
+    line-height: 1.55;
+  }
+  .reason-list li strong { color: var(--text); }
+
+  /* ───────── Bond type cards ───────── */
+  .bond-types {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+  @media (min-width: 720px) {
+    .bond-types { grid-template-columns: 1fr 1fr 1fr; }
+  }
+  .bond-card { margin-bottom: 0; }
+  .bond-name { font-size: 0.9375rem; margin: 0 0 0.25rem; }
+  .bond-meta {
+    font-size: 0.6875rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.625rem;
+  }
+  .bond-bullets { margin: 0; padding-left: 1.125rem; }
+  .bond-bullets li {
+    font-size: 0.8125rem;
+    color: var(--muted);
+    margin-bottom: 0.375rem;
+    line-height: 1.5;
+  }
+
+  /* ───────── Roadmap / decisions rows ───────── */
+  .bucket-head {
+    padding: 0.625rem 1rem;
+    background: var(--bg);
+    font-family: var(--mono);
+    font-size: 0.6875rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+    border-top: 1px solid var(--border);
+  }
+  .bucket-head:first-child { border-top: none; }
+  .bucket-success { color: var(--success); }
+  .bucket-warning { color: var(--warning); }
+  .bucket-muted   { color: var(--muted); }
+
+  .road-row {
+    display: flex;
+    gap: 1rem;
+    padding: 0.875rem 1rem;
+    align-items: flex-start;
+    border-bottom: 1px solid var(--border);
+  }
+  .road-row:last-child { border-bottom: none; }
+  .road-status {
+    font-size: 0.6875rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    width: 86px;
+    flex-shrink: 0;
+    padding-top: 0.125rem;
+  }
+  .road-in-test   { color: var(--warning); }
+  .road-imminent  { color: var(--warning); }
+  .road-planning  { color: var(--accent); }
+  .road-future    { color: var(--muted); }
+  .road-num       { color: var(--muted); }
+  .road-title { font-size: 0.875rem; font-weight: 600; margin-bottom: 0.25rem; }
+  .road-desc { margin: 0; }
+
+  /* ───────── Footnote ───────── */
+  .footnote { margin: 0.75rem 0 0; line-height: 1.6; }
+
+  /* ───────── Page footer ───────── */
+  .page-footer {
+    margin-top: 3.5rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.6875rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+</style>

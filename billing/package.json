@@ -1,0 +1,36 @@
+{
+  "name": "farmerbrown-billing",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Prepaid billing portal for Farmer Brown — meters VAPI calls (cost × 1.25) and lets the customer top up via Stripe Checkout.",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "stripe:listen": "bash ./scripts/stripe-listen.sh",
+    "supabase:start": "supabase start",
+    "supabase:push": "supabase db push",
+    "supabase:reset": "supabase db reset"
+  },
+  "dependencies": {
+    "@astrojs/check": "^0.9.4",
+    "@astrojs/vercel": "^7.8.2",
+    "@supabase/ssr": "^0.5.2",
+    "@supabase/supabase-js": "^2.45.4",
+    "astro": "^4.16.0",
+    "resend": "^4.0.0",
+    "stripe": "^17.2.0",
+    "ws": "^8.18.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^22.7.4",
+    "@types/ws": "^8.5.13",
+    "typescript": "^5.6.3"
+  },
+  "engines": {
+    "node": "20.x"
+  }
+}

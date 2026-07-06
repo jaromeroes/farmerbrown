@@ -1,0 +1,28 @@
+---
+/**
+ * /portal/topup — pick an amount, get redirected to Stripe Checkout.
+ * The form component handles the POST to /api/checkout and the redirect.
+ */
+import Portal from '@layouts/Portal.astro';
+import TopupForm from '@components/TopupForm.astro';
+import { createSupabaseServerClient } from '@lib/supabase';
+import { getCustomerSession } from '@lib/auth';
+
+export const prerender = false;
+
+const supabase = createSupabaseServerClient({
+  request: Astro.request,
+  cookies: Astro.cookies,
+});
+const session = await getCustomerSession(supabase);
+if (!session) {
+  return Astro.redirect('/login', 307);
+}
+---
+
+<Portal title="Add credit">
+  <p style="margin-bottom: 1.5rem;">
+    <a href="/portal" class="small">← Back to portal</a>
+  </p>
+  <TopupForm currency={session.currency} />
+</Portal>

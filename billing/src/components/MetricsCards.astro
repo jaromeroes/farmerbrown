@@ -1,0 +1,87 @@
+---
+/**
+ * MetricsCards — 4 KPI cards above the calls table for the selected period.
+ *
+ * Numbers come pre-aggregated from the `customer_period_stats` RPC
+ * (server-side, RLS-scoped). All money is in integer cents.
+ */
+import { formatMoney, formatDurationLong } from '@lib/format';
+
+interface Props {
+  totalChargeCents: number;
+  callCount: number;
+  /** Already rounded to integer cents in the page; we don't re-round here. */
+  avgChargeCents: number;
+  totalDurationSeconds: number;
+  currency: string;
+}
+const {
+  totalChargeCents,
+  callCount,
+  avgChargeCents,
+  totalDurationSeconds,
+  currency,
+} = Astro.props;
+
+const cur = currency.toUpperCase();
+---
+
+<div class="metrics row">
+  <div class="card metric">
+    <div class="label small text-muted">Total spent</div>
+    <div class="value mono">
+      {formatMoney(totalChargeCents)}
+      <span class="cur">{cur}</span>
+    </div>
+  </div>
+
+  <div class="card metric">
+    <div class="label small text-muted">Calls</div>
+    <div class="value mono">{callCount}</div>
+  </div>
+
+  <div class="card metric">
+    <div class="label small text-muted">Average per call</div>
+    <div class="value mono">
+      {callCount > 0 ? formatMoney(avgChargeCents) : '—'}
+      {callCount > 0 && <span class="cur">{cur}</span>}
+    </div>
+  </div>
+
+  <div class="card metric">
+    <div class="label small text-muted">Total talk time</div>
+    <div class="value mono">{formatDurationLong(totalDurationSeconds)}</div>
+  </div>
+</div>
+
+<style>
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  .metric {
+    margin: 0;
+    padding: 1rem 1.25rem;
+  }
+  .label {
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.6875rem;
+  }
+  .value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-top: 0.25rem;
+  }
+  .cur {
+    font-size: 0.75rem;
+    color: var(--muted);
+    font-weight: 400;
+    margin-left: 0.125rem;
+  }
+  @media (max-width: 720px) {
+    .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+</style>

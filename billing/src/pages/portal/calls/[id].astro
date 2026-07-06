@@ -1,0 +1,158 @@
+---
+/**
+ * /portal/calls/[id] — single-call detail page.
+ *
+ * Layout (top to bottom): Back link → CallDetailHeader → Summary card →
+ * CallTranscript → Newer/Older nav. Server-rendered, RLS-scoped, no
+ * client-side fetching.
+ *
+ * Older/Newer scope is constrained to the active filter range so John
+ * doesn't accidentally walk out of the period he was browsing.
+ */
+import Portal from '@layouts/Portal.astro';
+import CallDetailHeader from '@components/CallDetailHeader.astro';
+import CallTranscript from '@components/CallTranscript.astro';
+import { createSupabaseServerClient } from '@lib/supabase';
+import { getCustomerSession } from '@lib/auth';
+import { parseCallsQuery, buildHref } from '@lib/filters';
+import { pickCallDetail } from '@lib/callDetail';
+
+export const prerender = false;
+
+const supabase = createSupabaseServerClient({
+  request: Astro.request,
+  cookies: Astro.cookies,
+});
+const session = await getCustomerSession(supabase);
+if (!session) {
+  return Astro.redirect('/login', 307);
+}
+
+const callId = Astro.params.id;
+if (typeof callId !== 'string' || callId.length === 0) {
+  return new Response('Not found', { status: 404 });
+}
+
+const q = parseCallsQuery(Astro.url.searchParams);
+
+// Focal call. RLS hides rows that don't belong to this customer.
+const { data: call } = await supabase
+  .from('calls')
+  .select('id, started_at, duration_seconds, ended_reason, charge_cents, vapi_raw, vapi_assistant_id, vapi_squad_id')
+  .eq('id', callId)
+  .maybeSingle();
+
+if (!call) {
+  return new Response('Not found', { status: 404 });
+}
+
+// `calls.started_at` is `timestamptz` and *not* declared NOT NULL in the schema
+// (see supabase/migrations/20260508_000000_init.sql). The cron always populates
+// it from VAPI, but if a future code path ever lands a row with `null`, the
+// older/newer queries below would send `lt.null` to PostgREST and crash the
+// page. Treat such rows as missing data and 404 instead.
+if (!call.started_at) {
+  return new Response('Not found', { status: 404 });
+}
+
+const detail = pickCallDetail(call.vapi_raw);
+
+// Older = newer in DESC table order, but older in time. We label by time
+// to avoid the "next in DESC list" ambiguity, so:
+//   Older button → call with started_at LESS THAN current
+//   Newer button → call with started_at GREATER THAN current
+// Both scoped to the active filter range so John stays inside what he was
+// looking at.
+const [{ data: older }, { data: newer }] = await Promise.all([
+  supabase
+    .from('calls')
+    .select('id')
+    .eq('customer_id', session.customerId)
+    .lt('started_at', call.started_at as string)
+    .gte('started_at', q.fromIso)
+    .lt('started_at', q.toIso)
+    .order('started_at', { ascending: false })
+    .limit(1)
+    .maybeSingle(),
+  supabase
+    .from('calls')
+    .select('id')
+    .eq('customer_id', session.customerId)
+    .gt('started_at', call.started_at as string)
+    .gte('started_at', q.fromIso)
+    .lt('started_at', q.toIso)
+    .order('started_at', { ascending: true })
+    .limit(1)
+    .maybeSingle(),
+]);
+
+const backHref = buildHref('/portal', q);
+
+function detailHref(id: string): string {
+  // Detail-page URLs preserve the active filter so Back + Newer/Older keep context.
+  return buildHref(`/portal/calls/${id}`, q);
+}
+const olderHref = older?.id ? detailHref(older.id) : null;
+const newerHref = newer?.id ? detailHref(newer.id) : null;
+---
+
+<Portal title="Call detail">
+  <div class="topbar">
+    <a href={backHref}>← Back to portal</a>
+  </div>
+
+  <CallDetailHeader
+    startedAt={call.started_at}
+    durationSeconds={call.duration_seconds}
+    endedReason={call.ended_reason}
+    chargeCents={call.charge_cents}
+    currency={session.currency}
+    detail={detail}
+    vapiAssistantId={call.vapi_assistant_id}
+    vapiSquadId={call.vapi_squad_id}
+  />
+
+  <div class="card">
+    <h2>Summary</h2>
+    {detail.summary ? (
+      <p>{detail.summary}</p>
+    ) : (
+      <p class="text-muted small">No summary available for this call.</p>
+    )}
+  </div>
+
+  <CallTranscript transcript={detail.transcriptRaw} />
+
+  <nav class="bottom-nav" aria-label="Call navigation">
+    {newerHref ? (
+      <a class="btn secondary" href={newerHref} rel="prev">← Newer call</a>
+    ) : (
+      <span class="btn secondary disabled" aria-disabled="true">← Newer call</span>
+    )}
+    {olderHref ? (
+      <a class="btn secondary" href={olderHref} rel="next">Older call →</a>
+    ) : (
+      <span class="btn secondary disabled" aria-disabled="true">Older call →</span>
+    )}
+  </nav>
+</Portal>
+
+<style>
+  .topbar {
+    margin-bottom: 1rem;
+  }
+  .topbar a {
+    font-size: 0.875rem;
+  }
+  .bottom-nav {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 0.5rem 0 1.5rem;
+  }
+  .btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+</style>
