@@ -159,7 +159,13 @@
 </footer>
 
 <script>
-var ELEVEN_KEY = 'sk_d2f433f6992c2565ff4dbee4f9256e2452049f31cdc2d0e9';
+// SECURITY: never hardcode the ElevenLabs API key here (it ends up in git).
+// Entered at runtime and kept only in this browser's localStorage.
+var ELEVEN_KEY = localStorage.getItem('ELEVEN_KEY') || '';
+if (!ELEVEN_KEY) {
+  ELEVEN_KEY = (prompt('Paste your ElevenLabs API key (kept only in this browser):') || '').trim();
+  if (ELEVEN_KEY) localStorage.setItem('ELEVEN_KEY', ELEVEN_KEY);
+}
 var SAMPLE = "Thank you for calling Farmer Brown Insurance. My name is Sarah, and I'm here to help you get a free insurance quote today. It'll only take a few minutes. Can I start with your full name?";
 
 var shortlist = [];
