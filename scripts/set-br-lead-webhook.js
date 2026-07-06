@@ -26,6 +26,9 @@ const VAPI_KEY = process.env.VAPI_KEY;
 const CRON_SECRET = process.env.CRON_SECRET;
 const WEBHOOK_URL = 'https://farmerbrown.theb2btinkerers.com/api/vapi-lead-email';
 const BR_SQUAD_ID = 'a3269fa7-6229-4bed-817a-c4684878a600';
+// Target ONLY the public production BR number — never QA/test numbers that may
+// also route to the BR Unified squad, so QA calls can't email leads@.
+const PUBLIC_BR_NUMBER = '+18882934492';
 const ROLLBACK = process.argv.includes('--rollback');
 
 if (!VAPI_KEY) {
@@ -58,9 +61,9 @@ const api = async (method, path, body) => {
 
 (async () => {
   const numbers = await api('GET', '/phone-number');
-  const brNumbers = (numbers || []).filter((n) => n.squadId === BR_SQUAD_ID);
+  const brNumbers = (numbers || []).filter((n) => n.number === PUBLIC_BR_NUMBER);
   if (brNumbers.length === 0) {
-    console.error('No phone numbers route to the BR Unified squad — nothing to do.');
+    console.error(`Public BR number ${PUBLIC_BR_NUMBER} not found — nothing to do.`);
     process.exit(1);
   }
 
