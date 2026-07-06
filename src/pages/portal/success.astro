@@ -1,0 +1,89 @@
+---
+/**
+ * /portal/success?session_id=cs_...
+ *
+ * Stripe redirects here after a successful Checkout. The webhook may take a
+ * moment to land (Stripe sometimes delivers within a second, sometimes longer).
+ * The page polls /api/topup-status until it sees status='paid' or timeout.
+ */
+import Portal from '@layouts/Portal.astro';
+import { createSupabaseServerClient } from '@lib/supabase';
+import { getCustomerSession } from '@lib/auth';
+
+export const prerender = false;
+
+const supabase = createSupabaseServerClient({
+  request: Astro.request,
+  cookies: Astro.cookies,
+});
+const session = await getCustomerSession(supabase);
+if (!session) {
+  return Astro.redirect('/login', 307);
+}
+
+const sessionId = Astro.url.searchParams.get('session_id') ?? '';
+---
+
+<Portal title="Payment received">
+  <div class="card">
+    <h2>Processing your payment…</h2>
+    <p id="status-msg" class="small text-muted">
+      Confirming with Stripe. This usually takes 1–2 seconds.
+    </p>
+    <p id="balance" class="mono" style="font-size: 1.5rem; margin: 1rem 0; display: none;"></p>
+    <p>
+      <a class="btn" href="/portal" id="back-btn" style="display: none;">Back to portal</a>
+    </p>
+  </div>
+
+  <script is:inline define:vars={{ sessionId }}>
+    const statusMsg = document.getElementById('status-msg');
+    const balanceEl = document.getElementById('balance');
+    const backBtn = document.getElementById('back-btn');
+
+    if (!sessionId) {
+      statusMsg.textContent = 'Missing session identifier.';
+      statusMsg.classList.add('text-danger');
+      backBtn.style.display = 'inline-block';
+    } else {
+      const start = Date.now();
+      const TIMEOUT_MS = 15000;
+      const POLL_MS = 1500;
+
+      async function poll() {
+        try {
+          const res = await fetch(`/api/topup-status?session_id=${encodeURIComponent(sessionId)}`);
+          const body = await res.json();
+
+          if (res.ok && body.status === 'paid') {
+            statusMsg.textContent = 'Top-up confirmed.';
+            statusMsg.classList.remove('text-muted');
+            statusMsg.classList.add('text-success');
+            const balance = (body.balance_cents / 100).toFixed(2);
+            balanceEl.textContent = `Current balance: ${balance} ${String(body.currency || '').toUpperCase()}`;
+            balanceEl.style.display = 'block';
+            backBtn.style.display = 'inline-block';
+            return;
+          }
+
+          if (Date.now() - start > TIMEOUT_MS) {
+            statusMsg.textContent =
+              'Your payment is processing. Return to the portal in a moment to see the updated balance.';
+            statusMsg.classList.remove('text-muted');
+            statusMsg.classList.add('text-warning');
+            backBtn.style.display = 'inline-block';
+            return;
+          }
+
+          setTimeout(poll, POLL_MS);
+        } catch (err) {
+          statusMsg.textContent = 'Could not verify the payment. Please reload the page.';
+          statusMsg.classList.add('text-danger');
+          backBtn.style.display = 'inline-block';
+        }
+      }
+
+      poll();
+    }
+  </script>
+</Portal>

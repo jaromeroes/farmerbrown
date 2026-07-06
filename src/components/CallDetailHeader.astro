@@ -1,0 +1,123 @@
+---
+/**
+ * CallDetailHeader — top metadata card for /portal/calls/[id].
+ *
+ * Renders a definition list of curated fields. Anything `null` or not
+ * applicable is omitted entirely — no "—" placeholders, less noise.
+ *
+ * Inputs come from the page: row fields (started_at, duration, charge,
+ * ended_reason) directly from `calls`, plus the curated `CallDetailView`
+ * for everything that lives in `vapi_raw`.
+ */
+import { formatTime, formatDuration, formatMoney } from '@lib/format';
+import { formatEndedReason, isForwardedReason } from '@lib/endedReason';
+import type { CallDetailView, CallOutcome } from '@lib/callDetail';
+import { resolveAgent, formatAgentLabel } from '@lib/assistants';
+import { resolveSite } from '@lib/sites';
+
+interface Props {
+  startedAt:       string | null;
+  durationSeconds: number | null;
+  endedReason:     string | null;
+  chargeCents:     number;
+  currency:        string;
+  detail:          CallDetailView;
+  vapiAssistantId: string | null;
+  vapiSquadId:     string | null;
+}
+const {
+  startedAt, durationSeconds, endedReason, chargeCents, currency, detail,
+  vapiAssistantId, vapiSquadId,
+} = Astro.props;
+
+const cur = currency.toUpperCase();
+const showForwarded = isForwardedReason(endedReason) && detail.forwardedTo !== null;
+
+function outcomeLabel(o: CallOutcome): string | null {
+  if (o.kind === 'bool')  return o.value ? 'Successful' : 'Failed';
+  if (o.kind === 'label') {
+    return o.value.charAt(0).toUpperCase() + o.value.slice(1);
+  }
+  return null;
+}
+function outcomeClass(o: CallOutcome): string {
+  if (o.kind === 'bool') return o.value ? 'text-success' : 'text-danger';
+  return 'text-muted';
+}
+const outcome = outcomeLabel(detail.outcome);
+
+const agent = resolveAgent(vapiAssistantId, vapiSquadId);
+const agentLabel = formatAgentLabel(agent);
+const site = resolveSite(agent?.website);
+---
+
+<div class="card">
+  <dl class="header-grid">
+    {detail.callerNumber && (
+      <>
+        <dt>Caller</dt>
+        <dd class="mono"><strong>{detail.callerNumber}</strong></dd>
+      </>
+    )}
+    <dt>Started</dt>
+    <dd>{formatTime(startedAt)}</dd>
+
+    <dt>Duration</dt>
+    <dd class="mono">{formatDuration(durationSeconds)}</dd>
+
+    <dt>Status</dt>
+    <dd>{formatEndedReason(endedReason)}</dd>
+
+    {site && (
+      <>
+        <dt>Site</dt>
+        <dd>{site.website}</dd>
+      </>
+    )}
+    {agentLabel && (
+      <>
+        <dt>Agent</dt>
+        <dd>{agentLabel}</dd>
+      </>
+    )}
+    {showForwarded && (
+      <>
+        <dt>Forwarded to</dt>
+        <dd class="mono">{detail.forwardedTo}</dd>
+      </>
+    )}
+    {outcome && (
+      <>
+        <dt>Outcome</dt>
+        <dd class={outcomeClass(detail.outcome)}>{outcome}</dd>
+      </>
+    )}
+
+    <dt>Charge</dt>
+    <dd class="mono"><strong>{formatMoney(chargeCents)} {cur}</strong></dd>
+  </dl>
+</div>
+
+<style>
+  .header-grid {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.5rem 1.25rem;
+    margin: 0;
+  }
+  .header-grid dt {
+    color: var(--muted);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    align-self: center;
+  }
+  .header-grid dd {
+    margin: 0;
+    align-self: center;
+  }
+  @media (max-width: 540px) {
+    .header-grid { grid-template-columns: 1fr; gap: 0.125rem 0; }
+    .header-grid dd { margin-bottom: 0.5rem; }
+  }
+</style>

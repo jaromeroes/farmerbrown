@@ -1,0 +1,140 @@
+---
+/**
+ * FilterBar — preset chips + custom date range picker for /portal.
+ *
+ * Plain `<form method="get">`: every preset chip is a submit button that
+ * carries `name="preset"`, the custom inputs are `name="from"` and
+ * `name="to"`. A hidden `page=1` resets pagination on every filter change.
+ *
+ * No JS. The active preset is highlighted by comparing `query.preset` to
+ * each chip's value at render time.
+ */
+import type { CallsQuery, Preset } from '@lib/filters';
+
+interface Props {
+  query: CallsQuery;
+  action: string;
+  /** ISO timestamp of the oldest call on file; used for the "history since" notice. */
+  earliestCallAt?: string | null;
+}
+const { query, action, earliestCallAt = null } = Astro.props;
+
+const earliestLabel = earliestCallAt
+  ? new Date(earliestCallAt).toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    })
+  : null;
+
+const presetOptions: { value: Exclude<Preset, 'custom'>; label: string }[] = [
+  { value: '7d', label: 'Last 7 days' },
+  { value: '30d', label: 'Last 30 days' },
+  { value: '90d', label: 'Last 90 days' },
+];
+---
+
+<div class="card filter-bar">
+  <form method="get" action={action} class="filter-form">
+    <div class="presets row">
+      {presetOptions.map((p) => (
+        <button
+          type="submit"
+          name="preset"
+          value={p.value}
+          class={`chip ${query.preset === p.value ? 'chip-active' : ''}`}
+        >
+          {p.label}
+        </button>
+      ))}
+    </div>
+
+    <div class="custom row">
+      <label class="small">
+        From
+        <input
+          type="date"
+          name="from"
+          value={query.preset === 'custom' ? query.fromDate : ''}
+          max={query.toDate}
+        />
+      </label>
+      <label class="small">
+        To
+        <input
+          type="date"
+          name="to"
+          value={query.preset === 'custom' ? query.toDate : ''}
+        />
+      </label>
+      <button
+        type="submit"
+        name="preset"
+        value="custom"
+        class={`chip ${query.preset === 'custom' ? 'chip-active' : ''}`}
+      >
+        Apply range
+      </button>
+    </div>
+
+    <input type="hidden" name="page" value="1" />
+  </form>
+
+  {(query.rangeCapped || earliestLabel) && (
+    <div class="notices">
+      {query.rangeCapped && (
+        <p class="small text-muted notice">
+          Range capped at 365 days.
+        </p>
+      )}
+      {earliestLabel && (
+        <p class="small text-muted notice">
+          Call history available from {earliestLabel}.
+        </p>
+      )}
+    </div>
+  )}
+</div>
+
+<style>
+  .filter-bar { padding: 1rem 1.25rem; }
+  .filter-form { display: flex; flex-direction: column; gap: 0.75rem; }
+  .presets, .custom { gap: 0.5rem; }
+  .custom label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    color: var(--muted);
+  }
+  .custom input[type="date"] {
+    font: inherit;
+    padding: 0.375rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: white;
+  }
+  .chip {
+    background: white;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.375rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.8125rem;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .chip:hover { background: var(--bg); }
+  .chip-active {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+  }
+  .chip-active:hover { background: var(--accent-hover); }
+  .notices {
+    margin-top: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .notice { margin: 0; }
+</style>

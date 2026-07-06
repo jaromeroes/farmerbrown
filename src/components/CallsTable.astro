@@ -1,0 +1,172 @@
+---
+import { formatTime, formatDuration, formatMoney, formatPhone } from '@lib/format';
+import { formatEndedReason } from '@lib/endedReason';
+import { buildHref, type CallsQuery } from '@lib/filters';
+import { resolveAgent, formatAgentLabel } from '@lib/assistants';
+import { resolveSite } from '@lib/sites';
+
+// Stripe live mode + pre-go-live ledger reset happened at this timestamp.
+// Anything earlier is "beta period" — invoiced to John separately and flagged
+// in the UI so he can tell historical usage apart from live-billed usage.
+const PRE_GOLIVE_CUTOFF_MS = Date.parse('2026-05-26T20:20:28Z');
+
+interface Call {
+  id: string;
+  started_at: string | null;
+  duration_seconds: number | null;
+  charge_cents: number;
+  ended_reason: string | null;
+  /** Short AI summary lifted from vapi_raw.analysis.summary by SUMMARY_PREVIEW_SELECT. */
+  summary: string | null;
+  customer_phone: string | null;
+  vapi_assistant_id: string | null;
+  vapi_squad_id: string | null;
+}
+interface Props {
+  calls: Call[];
+  currency: string;
+  /** Active filter, used to build detail-page links that preserve context. */
+  query: CallsQuery;
+}
+const { calls, currency, query } = Astro.props;
+---
+
+<div class="card">
+  <h2>Calls</h2>
+  <p class="hint text-muted small">
+    Click any row to view its AI summary, full transcript and details.
+  </p>
+  {calls.length === 0 ? (
+    <p class="text-muted small">No calls in this range.</p>
+  ) : (
+    <table class="calls-table">
+      <thead>
+        <tr>
+          <th>Site</th>
+          <th>Date</th>
+          <th>Duration</th>
+          <th>Status</th>
+          <th>Summary</th>
+          <th style="text-align: right;">Charge</th>
+        </tr>
+      </thead>
+      <tbody>
+        {calls.map((c) => {
+          const href = buildHref(`/portal/calls/${c.id}`, query);
+          const isPreGoLive = c.started_at !== null && Date.parse(c.started_at) < PRE_GOLIVE_CUTOFF_MS;
+          // One aria-label per row keeps screen-reader announcements to a single link
+          // per row instead of four. Other anchors stay clickable visually but are
+          // hidden from assistive tech and removed from the tab order.
+          const ariaLabel = [
+            `Call on ${formatTime(c.started_at)}`,
+            formatDuration(c.duration_seconds),
+            formatEndedReason(c.ended_reason),
+            `charged ${formatMoney(c.charge_cents)} ${currency.toUpperCase()}`,
+            isPreGoLive ? 'pre go-live' : null,
+          ].filter(Boolean).join(', ');
+          const phoneLabel = formatPhone(c.customer_phone);
+          const agent      = resolveAgent(c.vapi_assistant_id, c.vapi_squad_id);
+          const agentRaw   = formatAgentLabel(agent);
+          const agentLabel = agentRaw ? `from ${agentRaw}` : null;
+          const site       = resolveSite(agent?.website);
+          return (
+            <tr class={`clickable${isPreGoLive ? ' pre-go-live' : ''}`}>
+              <td class="small mono text-muted"><a class="cell" href={href} aria-label={ariaLabel} title={site ? site.website : 'View call details'}>
+                {site ? site.code : ''}
+              </a></td>
+              <td class="small"><a class="cell" href={href} aria-hidden="true" tabindex="-1" title="View call details">
+                <div>{formatTime(c.started_at)}</div>
+                {phoneLabel && <div class="subtitle mono">{phoneLabel}</div>}
+              </a></td>
+              <td class="small mono"><a class="cell" href={href} aria-hidden="true" tabindex="-1" title="View call details">{formatDuration(c.duration_seconds)}</a></td>
+              <td class="small text-muted"><a class="cell" href={href} aria-hidden="true" tabindex="-1" title="View call details">
+                <div>{formatEndedReason(c.ended_reason)}</div>
+                {agentLabel && <div class="subtitle">{agentLabel}</div>}
+                {isPreGoLive && <span class="badge-pre-golive">Pre go-live</span>}
+              </a></td>
+              <td class="small text-muted summary-cell"><a class="cell summary-link" href={href} aria-hidden="true" tabindex="-1" title={c.summary ?? 'View call details'}>{c.summary ?? '—'}</a></td>
+              <td class="small mono align-right"><a class="cell align-right" href={href} aria-hidden="true" tabindex="-1" title="View call details">
+                {formatMoney(c.charge_cents)} {currency.toUpperCase()}
+              </a></td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  )}
+</div>
+
+<style>
+  .hint { margin: -0.25rem 0 1rem; }
+
+  /* Whole row reads as a click target: cursor + visible hover tint. */
+  tr.clickable { cursor: pointer; }
+  tr.clickable:hover { background: #f3f4f6; }
+  a.cell {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+    padding: 0;
+  }
+  a.cell:hover { text-decoration: none; }
+  .align-right { text-align: right; }
+
+  /* `table-layout: fixed` is what makes per-column widths actually stick.
+     With the default `auto`, browsers ignore max-width on <td> when the
+     content is wider, which was wrapping the Date column onto multiple
+     lines. Fixing the layout + nowrap on every cell keeps each column on
+     a single line; only the Summary column is allowed to ellipsis-truncate. */
+  table.calls-table { table-layout: fixed; width: 100%; }
+  table.calls-table th,
+  table.calls-table td { white-space: nowrap; }
+
+  /* Column widths sum to <100% so the Summary column gets the leftover. */
+  table.calls-table th:nth-child(1),
+  table.calls-table td:nth-child(1) { width: 4rem;  }   /* Site     */
+  table.calls-table th:nth-child(2),
+  table.calls-table td:nth-child(2) { width: 12rem; }   /* Date     */
+  table.calls-table th:nth-child(3),
+  table.calls-table td:nth-child(3) { width: 5rem;  }   /* Duration */
+  table.calls-table th:nth-child(4),
+  table.calls-table td:nth-child(4) { width: 11rem; }   /* Status   */
+  table.calls-table th:nth-child(6),
+  table.calls-table td:nth-child(6) { width: 6.5rem; }  /* Charge   */
+
+  a.cell.summary-link {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Two-line cells under Date and Status: timestamp / status on the first
+     line, caller phone / agent label on the second in muted small. The
+     ellipsis truncates if the agent label is too long for the column. */
+  .subtitle {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 0.125rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Pre go-live: subtle amber tint on the row + a small pill under the
+     Status column so the user can tell which calls happened before live
+     billing started (those are invoiced separately, not against current
+     balance). */
+  tr.pre-go-live { background-color: #fefce8; }       /* amber-50 */
+  tr.pre-go-live:hover { background-color: #fef3c7; } /* amber-100 */
+  .badge-pre-golive {
+    display: inline-block;
+    font-size: 0.625rem;
+    line-height: 1;
+    padding: 0.2rem 0.4rem;
+    margin-top: 0.25rem;
+    background: #fde68a;  /* amber-200 */
+    color: #78350f;       /* amber-900 */
+    border-radius: 0.5rem;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+</style>

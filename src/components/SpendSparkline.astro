@@ -1,0 +1,67 @@
+---
+/**
+ * SpendSparkline — daily spend bar chart for /portal.
+ *
+ * Inline SVG, no JS, no charting library. Bars share the card width via
+ * `preserveAspectRatio="none"` on the SVG. When all totals are zero or
+ * the data array is empty, render the empty state instead.
+ */
+import type { DayPoint } from '@lib/charts';
+import { formatMoney } from '@lib/format';
+
+interface Props {
+  data: DayPoint[];
+  currency: string;
+}
+const { data, currency } = Astro.props;
+
+const total = data.reduce((s, d) => s + d.totalCents, 0);
+const max   = Math.max(...data.map(d => d.totalCents), 0);
+const isEmpty = data.length === 0 || total === 0;
+
+const VIEW_W = 800;
+const VIEW_H = 80;
+const GAP = 2;
+const barWidth = data.length > 0 ? (VIEW_W / data.length) : 0;
+
+const cur = currency.toUpperCase();
+const avg = data.length > 0 ? Math.round(total / data.length) : 0;
+---
+
+<div class="card">
+  <h2>Daily spend</h2>
+  {isEmpty ? (
+    <p class="text-muted small">No data for this range.</p>
+  ) : (
+    <>
+      <svg
+        viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
+        preserveAspectRatio="none"
+        role="img"
+        aria-label="Daily spend over the selected range"
+        class="chart"
+      >
+        {data.map((d, i) => {
+          const h = max > 0 ? (d.totalCents / max) * (VIEW_H - 2) : 0;
+          const x = i * barWidth + GAP / 2;
+          const y = VIEW_H - h;
+          const w = Math.max(0, barWidth - GAP);
+          return <rect x={x} y={y} width={w} height={h} fill="var(--accent)" />;
+        })}
+      </svg>
+      <p class="text-muted small caption">
+        Total {formatMoney(total)} {cur} · Average {formatMoney(avg)} {cur} / day · {data.length} days
+      </p>
+    </>
+  )}
+</div>
+
+<style>
+  .chart {
+    display: block;
+    width: 100%;
+    height: 5rem;
+    margin-top: 0.25rem;
+  }
+  .caption { margin: 0.5rem 0 0; }
+</style>

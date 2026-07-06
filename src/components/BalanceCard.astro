@@ -1,0 +1,35 @@
+---
+interface Props {
+  balanceCents: number;
+  currency: string;
+  thresholdCents: number;
+}
+const { balanceCents, currency, thresholdCents } = Astro.props;
+
+const balance = (balanceCents / 100).toFixed(2);
+const isLow = balanceCents < thresholdCents;
+const isNegative = balanceCents < 0;
+
+let stateClass = 'text-success';
+let stateLabel = 'Balance OK';
+if (isNegative) {
+  stateClass = 'text-danger';
+  stateLabel = 'Negative balance';
+} else if (isLow) {
+  stateClass = 'text-warning';
+  stateLabel = `Low balance (alert below ${(thresholdCents / 100).toFixed(2)} ${currency.toUpperCase()})`;
+}
+---
+
+<div class="card">
+  <h2>Current balance</h2>
+  <p style="font-size: 2rem; font-weight: 600; margin: 0.5rem 0; font-family: var(--mono);">
+    {balance} <span style="font-size: 1rem; color: var(--muted); font-weight: 400;">{currency.toUpperCase()}</span>
+  </p>
+  <p class={`small ${stateClass}`} style="margin: 0;">
+    {stateLabel}
+  </p>
+  <div style="margin-top: 1rem;">
+    <a class="btn" href="/portal/topup">Add credit</a>
+  </div>
+</div>

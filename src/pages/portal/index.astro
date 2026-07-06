@@ -1,0 +1,183 @@
+---
+/**
+ * /portal — main authenticated page.
+ *
+ * Layout (top to bottom):
+ *   • Balance card (current saldo + state + Add credit button)
+ *   • Filter bar (preset chips + custom date range)
+ *   • Spend sparkline (daily spend bars across the selected range)
+ *   • Metric cards for the selected period (total spent, calls,
+ *     avg/call, total talk time) — pre-aggregated by RPC.
+ *   • Calls table for the page
+ *   • Pagination (Prev / Next, 50 per page)
+ *
+ * All state lives in the URL (?preset=&from=&to=&page=). Filter changes
+ * are plain <form method="get"> submissions; no JS framework, no client-
+ * side fetching. RLS on `calls` (and SECURITY INVOKER on the RPC) is the
+ * single security boundary.
+ */
+import Portal from '@layouts/Portal.astro';
+import BalanceCard from '@components/BalanceCard.astro';
+import CallsTable from '@components/CallsTable.astro';
+import FilterBar from '@components/FilterBar.astro';
+import MetricsCards from '@components/MetricsCards.astro';
+import Pagination from '@components/Pagination.astro';
+import SpendSparkline from '@components/SpendSparkline.astro';
+import { createSupabaseServerClient } from '@lib/supabase';
+import { getCustomerSession } from '@lib/auth';
+import { getBalanceCents } from '@lib/ledger';
+import { parseCallsQuery, PAGE_SIZE } from '@lib/filters';
+import { SUMMARY_PREVIEW_SELECT } from '@lib/callDetail';
+import { aggregateByDay } from '@lib/charts';
+
+export const prerender = false;
+
+const supabase = createSupabaseServerClient({
+  request: Astro.request,
+  cookies: Astro.cookies,
+});
+const session = await getCustomerSession(supabase);
+if (!session) {
+  return Astro.redirect('/login', 307);
+}
+
+const q = parseCallsQuery(Astro.url.searchParams);
+
+// Balance + threshold come from the existing ledger view; unchanged from
+// before the filter refactor.
+const balanceCents = await getBalanceCents(supabase, session.customerId);
+
+const { data: customer } = await supabase
+  .from('customers')
+  .select('low_balance_threshold_cents')
+  .eq('id', session.customerId)
+  .single();
+
+const thresholdCents = customer?.low_balance_threshold_cents ?? 2000;
+
+// Period stats: one RPC, four aggregates. SECURITY INVOKER means the
+// underlying RLS on `calls` does the customer-scoping for us.
+//
+// PostgREST serializes `bigint` and `numeric` as strings to preserve
+// precision, while `integer` comes through as a JS number. Coerce via
+// Number() at the boundary so the components only ever see numbers.
+interface PeriodStatsRow {
+  total_charge_cents: string | number;
+  call_count: number;
+  avg_charge_cents: string | number;
+  total_duration_seconds: string | number;
+}
+
+const { data: statsRaw, error: statsError } = await supabase
+  .rpc('customer_period_stats', { p_from: q.fromIso, p_to: q.toIso })
+  .single();
+
+if (statsError) {
+  // Most likely: migration 20260510_000005 not applied yet in Supabase.
+  // Page still renders with zeros so John doesn't see a 500.
+  console.error('[portal] customer_period_stats RPC failed:', statsError);
+}
+
+const stats = (statsRaw ?? null) as PeriodStatsRow | null;
+
+const totalChargeCents = Number(stats?.total_charge_cents ?? 0);
+const callCount = Number(stats?.call_count ?? 0);
+const avgChargeCents = callCount > 0
+  ? Math.round(Number(stats?.avg_charge_cents ?? 0))
+  : 0;
+const totalDurationSeconds = Number(stats?.total_duration_seconds ?? 0);
+
+// Page of calls in the same window, sorted newest first. `count: 'exact'`
+// gives us the total for pagination in a single round-trip.
+const { data: calls, count } = await supabase
+  .from('calls')
+  .select(
+    `id, started_at, duration_seconds, charge_cents, ended_reason, customer_phone, vapi_assistant_id, vapi_squad_id, ${SUMMARY_PREVIEW_SELECT}`,
+    { count: 'exact' }
+  )
+  .eq('customer_id', session.customerId)
+  .gte('started_at', q.fromIso)
+  .lt('started_at', q.toIso)
+  .order('started_at', { ascending: false })
+  .range(q.offset, q.offset + q.limit - 1);
+
+const totalRows = count ?? 0;
+const pageCount = Math.max(1, Math.ceil(totalRows / PAGE_SIZE));
+
+// Daily spend series for the sparkline above MetricsCards. Two scalar
+// columns over the same range as the page; bounded by parseCallsQuery's
+// 365-day cap.
+const { data: chartCalls } = await supabase
+  .from('calls')
+  .select('started_at, charge_cents')
+  .eq('customer_id', session.customerId)
+  .gte('started_at', q.fromIso)
+  .lt('started_at', q.toIso)
+  .order('started_at', { ascending: true });
+
+const dailySpend = aggregateByDay(chartCalls ?? [], q.fromIso, q.toIso);
+
+// Earliest call we have on file. Used to render a small "history since X"
+// notice in the FilterBar so the customer understands that gaps before that
+// date aren't missing data — there simply was no call history before then
+// (VAPI itself only retains 14 days, but the portal's `calls` table holds
+// everything the cron has ever synced).
+const { data: earliest } = await supabase
+  .from('calls')
+  .select('started_at')
+  .eq('customer_id', session.customerId)
+  .order('started_at', { ascending: true })
+  .limit(1)
+  .maybeSingle();
+const earliestCallAt = earliest?.started_at ?? null;
+---
+
+<Portal title="Operations">
+  <header class="page-header">
+    <h1>Operations</h1>
+    <p class="text-muted small">Live activity, balance, and call history across your three Farmer Brown websites.</p>
+  </header>
+
+  <BalanceCard
+    balanceCents={balanceCents}
+    currency={session.currency}
+    thresholdCents={thresholdCents}
+  />
+
+  <FilterBar query={q} action="/portal" earliestCallAt={earliestCallAt} />
+
+  <SpendSparkline data={dailySpend} currency={session.currency} />
+
+  <MetricsCards
+    totalChargeCents={totalChargeCents}
+    callCount={callCount}
+    avgChargeCents={avgChargeCents}
+    totalDurationSeconds={totalDurationSeconds}
+    currency={session.currency}
+  />
+
+  <CallsTable
+    calls={(calls ?? []) as any}
+    currency={session.currency}
+    query={q}
+  />
+
+  <Pagination
+    page={q.page}
+    pageCount={pageCount}
+    query={q}
+  />
+</Portal>
+
+<style>
+  .page-header {
+    margin: 0 0 1.5rem;
+  }
+  .page-header h1 {
+    font-size: 1.5rem;
+    margin: 0 0 0.25rem;
+  }
+  .page-header p {
+    margin: 0;
+  }
+</style>

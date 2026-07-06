@@ -1,0 +1,70 @@
+---
+/**
+ * Pagination — Prev / Next + "Page X of Y" for the calls table.
+ *
+ * Server-rendered, JS-free. Disabled state is rendered as a non-link
+ * <span> so there's nothing to tab into and nothing to click. Links
+ * preserve the active filter (preset, custom range) via `buildHref`.
+ *
+ * Hidden entirely when there's only one page: the table itself already
+ * tells the story when there's nothing to paginate.
+ */
+import { buildHref, type CallsQuery } from '@lib/filters';
+
+interface Props {
+  page: number;
+  pageCount: number;
+  query: CallsQuery;
+  base?: string;
+}
+const { page, pageCount, query, base = '/portal' } = Astro.props;
+
+const hasPrev = page > 1;
+const hasNext = page < pageCount;
+
+const prevHref = hasPrev
+  ? buildHref(base, { preset: query.preset, fromDate: query.fromDate, toDate: query.toDate, page: page - 1 })
+  : null;
+const nextHref = hasNext
+  ? buildHref(base, { preset: query.preset, fromDate: query.fromDate, toDate: query.toDate, page: page + 1 })
+  : null;
+---
+
+{pageCount > 1 && (
+  <nav class="pagination" aria-label="Calls pagination">
+    {prevHref ? (
+      <a class="btn secondary" href={prevHref} rel="prev">← Prev</a>
+    ) : (
+      <span class="btn secondary disabled" aria-disabled="true">← Prev</span>
+    )}
+
+    <span class="page-indicator small text-muted">
+      Page {page} of {pageCount}
+    </span>
+
+    {nextHref ? (
+      <a class="btn secondary" href={nextHref} rel="next">Next →</a>
+    ) : (
+      <span class="btn secondary disabled" aria-disabled="true">Next →</span>
+    )}
+  </nav>
+)}
+
+<style>
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin: 1rem 0 1.5rem;
+  }
+  .page-indicator {
+    flex: 1;
+    text-align: center;
+  }
+  .btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+</style>

@@ -1,0 +1,37 @@
+---
+/**
+ * CallTranscript — render parsed turns from vapi_raw.transcript.
+ *
+ * Parsing lives in @lib/transcript so it's testable as a pure function;
+ * the component just renders.
+ */
+import { parseTranscript } from '@lib/transcript';
+
+interface Props {
+  /** Raw VAPI transcript string (newline-separated, label-prefixed). */
+  transcript: string | null;
+}
+const { transcript } = Astro.props;
+const turns = parseTranscript(transcript);
+---
+
+<div class="card">
+  <h2>Transcript</h2>
+  {turns.length === 0 ? (
+    <p class="text-muted small">Transcript not available.</p>
+  ) : (
+    <div class="turns">
+      {turns.map((t) => (
+        <p><strong>{t.speaker}:</strong> {t.text}</p>
+      ))}
+    </div>
+  )}
+</div>
+
+<style>
+  .turns p {
+    margin: 0 0 0.5rem;
+    line-height: 1.55;
+  }
+  .turns p:last-child { margin-bottom: 0; }
+</style>

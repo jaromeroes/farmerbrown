@@ -1,0 +1,93 @@
+---
+interface Props {
+  currency: string;
+}
+const { currency } = Astro.props;
+---
+
+<div class="card">
+  <h2>Choose amount</h2>
+  <p class="small text-muted">
+    Pick a preset or enter a custom amount. Secure payment processed by Stripe.
+  </p>
+
+  <div class="row" style="margin: 1rem 0;">
+    <button class="btn secondary topup-preset" data-amount="10000" type="button">100 {currency.toUpperCase()}</button>
+    <button class="btn secondary topup-preset" data-amount="25000" type="button">250 {currency.toUpperCase()}</button>
+    <button class="btn secondary topup-preset" data-amount="50000" type="button">500 {currency.toUpperCase()}</button>
+  </div>
+
+  <div style="margin: 1rem 0;">
+    <label for="custom-amount" class="small">Custom amount ({currency.toUpperCase()})</label><br/>
+    <input
+      id="custom-amount"
+      type="number"
+      min="1"
+      max="5000"
+      step="1"
+      placeholder="e.g. 150"
+      style="font: inherit; padding: 0.5rem; border: 1px solid var(--border); border-radius: 6px; width: 12rem; margin-top: 0.25rem;"
+    />
+  </div>
+
+  <button id="topup-submit" class="btn" type="button" disabled>Continue to payment</button>
+  <p id="topup-error" class="small text-danger" style="margin-top: 1rem; display: none;"></p>
+</div>
+
+<script>
+  const presets = document.querySelectorAll<HTMLButtonElement>('.topup-preset');
+  const custom = document.getElementById('custom-amount') as HTMLInputElement;
+  const submit = document.getElementById('topup-submit') as HTMLButtonElement;
+  const errorEl = document.getElementById('topup-error') as HTMLElement;
+
+  let selected: number | null = null;
+
+  function setSelected(cents: number | null) {
+    selected = cents;
+    submit.disabled = !cents;
+    presets.forEach((btn) => {
+      btn.classList.remove('btn');
+      btn.classList.add('btn', 'secondary');
+      if (cents !== null && Number(btn.dataset.amount) === cents) {
+        btn.classList.remove('secondary');
+      }
+    });
+  }
+
+  presets.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const cents = Number(btn.dataset.amount);
+      custom.value = '';
+      setSelected(cents);
+    });
+  });
+
+  custom.addEventListener('input', () => {
+    const dollars = Number(custom.value);
+    if (!dollars || dollars < 1) return setSelected(null);
+    setSelected(Math.round(dollars * 100));
+  });
+
+  submit.addEventListener('click', async () => {
+    if (!selected) return;
+    submit.disabled = true;
+    errorEl.style.display = 'none';
+
+    try {
+      const res = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount_cents: selected }),
+      });
+      const body = await res.json();
+      if (!res.ok || !body.url) {
+        throw new Error(body.error ?? 'Could not start payment');
+      }
+      window.location.href = body.url;
+    } catch (err) {
+      errorEl.textContent = err instanceof Error ? err.message : 'Unexpected error';
+      errorEl.style.display = 'block';
+      submit.disabled = false;
+    }
+  });
+</script>
