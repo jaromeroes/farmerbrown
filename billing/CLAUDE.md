@@ -9,19 +9,20 @@ rest of this CLAUDE.md is reference material; the where-we-left-off file is what
 ## Overview
 
 Prepaid billing portal for Farmer Brown (a single client today, multi-tenant
-schema for tomorrow). Hourly cron pulls completed VAPI calls, applies a 25%
-margin, and decrements the customer's balance in Supabase. The customer tops
-up via Stripe Checkout. José invoices from B2B Tinkers SL.
+schema for tomorrow). A daily cron pulls completed VAPI calls, applies a 35%
+margin (`margin_bps = 3500`), and decrements the customer's balance in Supabase.
+The customer tops up via Stripe Checkout. José invoices from B2B Tinkers SL.
 
 ## Why this project exists
 
 VAPI bills José's account directly. Without this portal he eats every cost +
 loses time tracking what John consumes. With this portal John tops up a
-prepaid balance with his card, every VAPI call costs him `(vapi_cost × 1.25)`,
-and José books the 25% margin transparently. No invoicing back-and-forth.
+prepaid balance with his card, every VAPI call costs him `(vapi_cost × 1.35)`,
+and José books the 35% margin transparently. No invoicing back-and-forth.
 
-The 25% margin is intentionally **opaque** to John — he only sees a single
-per-call charge, not the breakdown. Source: José, 2026-05-08.
+The 35% margin is intentionally **opaque** to John — he only sees a single
+per-call charge, not the breakdown. Source: José (25% at 2026-05-08, raised to
+35% by go-live; confirmed 2026-07-06).
 
 ## Stack
 
@@ -130,7 +131,7 @@ The Vercel cron runs `/api/cron/sync-vapi` hourly per `vercel.json`.
 
 ## Linked projects
 
-- [`../farmerbrown/`](../farmerbrown/) — the voice-agent project that produces
-  the VAPI calls this portal bills for. The VAPI assistant / squad / phone-
-  number IDs to bill John for live in `farmerbrown/CLAUDE.md` and are seeded
-  into `customers.vapi_*_ids` arrays.
+- [`../voice-agents/`](../voice-agents/) — the voice-agent project (sibling
+  folder in this monorepo) that produces the VAPI calls this portal bills for.
+  The VAPI assistant / squad / phone-number IDs to bill John for live in
+  `voice-agents/CLAUDE.md` and are seeded into `customers.vapi_*_ids` arrays.

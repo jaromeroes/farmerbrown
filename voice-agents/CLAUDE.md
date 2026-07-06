@@ -63,7 +63,7 @@ One receptionist per phone line (9 total across 3 sites × 3 lines). Each line =
 #### Grace — Builders Risk Receptionist ✅ active (Unified)
 - **Live config:** `agents/receptionist-buildersrisk-unified/` · **Squad:** `a3269fa7-6229-4bed-817a-c4684878a600` (BR Unified) · **Line:** `+18882934492` (public) + `+17027108075` (QA).
 - **Version:** v1.22 — single number for all intents (4-way triage + Mechanisms B/D/E/F/G: live-agent / direct-dial / Spanish / existing-quote / service). Squad has 11 members. Deploy: `scripts/create-receptionist-br-unified.js`, `scripts/update-receptionist-br-unified.js`. See `docs/squads-and-handoffs.md`.
-- ~~Legacy standalone "BR Sales EN" Grace v1.7 (squad `ab53f568`, config `agents/receptionist-buildersrisk-sales/`)~~ — **archived 2026-06** (no VAPI number; BR Unified replaced it). Config + the 3 `*-br-sales.js` scripts moved to `archive/`. The `ab53f568` squad still exists in VAPI but is numberless/dormant.
+- ~~Legacy standalone "BR Sales EN" Grace v1.7 (squad `ab53f568`, config `agents/receptionist-buildersrisk-sales/`)~~ — **archived 2026-06** (no VAPI number; BR Unified replaced it). Config + the 3 `*-br-sales.js` scripts moved to `archive/`. The `ab53f568` squad + the legacy Grace BR Sales EN assistant (`fa2897bb`) were **DELETED from VAPI 2026-07-06** (audit cleanup).
 
 #### Live Agent Handoff Proxies (3 silent SIP proxies) ✅ active
 One proxy per site. Each proxy is a minimal assistant whose only job is to invoke its site's `transfer_to_live_agent_*` tool immediately on connect. Used as the 5th squad destination from each receptionist so the LLM picks by name instead of being biased toward an explicit tool. Architectural fix for the L2→L3 handoff bug (2026-04-18) — see [docs/squads-and-handoffs.md](docs/squads-and-handoffs.md) §12.
@@ -209,16 +209,8 @@ Deploy scripts: [scripts/create-tool-transfer-to-spanish-team.js](scripts/create
 - **Pending: Spanish PPC routing.** Per John (2026-05-06), Spanish PPC calls should route to a new Spanish team with a new phone number — pending. v2.0 falls back to the EN live-agent line for Spanish callers via Rule 14. When the number arrives, decide between (a) building a Wendy ES Spanish-language assistant, or (b) adding a `transfer_to_spanish_ppc_team` SIP transfer tool.
 - **Squad integration:** ✅ wired into all 3 sales squads (Emma/Olivia/Grace) and Test Squad. When a caller picks Workers' Comp, the receptionist hands off to Wendy.
 
-### Rebecca — GL Binding Info (L4 post-quote) 🔵 planning
-- **Assistant ID:** TBD — not deployed
-- **Version:** v0.1 (DRAFT 2026-05-19)
-- **Config:** `agents/rebecca-general-liability-binding/`
-- **Deploy scripts:** TBD — none yet
-- **Role:** Post-quote data-collection agent for the new **Binding Info Stage**. Invoked by Sarah (GL specialist) after she asks the gate question *"Would you like to answer a few additional questions to qualify for this price along with monthly payment options?"* and the caller says Yes. Also reachable via a public DID that CS humans can forward callers to (mechanism TBD). Collects ~22 underwriting/operational/legal fields and books an appointment with a service rep to take payment and bind the policy.
-- **Pattern:** Closest analogue is Nora (data-collection only, no quote engine, ends in handoff/appointment). Distinct from Sarah/Jennifer (which DO quote). One Rebecca per product line — token-efficiency decision validated 2026-05-19 (José).
-- **Pending before v1.0:** 7 open items with John — see [`docs/binding-stage-discovery.md`](docs/binding-stage-discovery.md) §6. None block scoping; all block deploy.
-- **Pending backends:** `submit_binding_info_form` (Pablo — `PATCH /api/binding_info_submissions/update_by_email`), Calendly event-type UUID for service rep round-robin.
-- **Future siblings:** Rebecca-BR (Builders Risk version, "next" per John, shorter list), eventually Rebecca-CA / Rebecca-WC / Rebecca-H&A if the pattern extends across all lines.
+### Rebecca — GL Binding Info ❌ SCRAPPED (2026-06-06)
+The post-quote "binding" agent idea was **scrapped**. The binding / additional-underwriting questions are asked **inline by the specialist** (Jennifer for BR; Sarah likely for GL later), not a separate agent. Config + scripts archived to `archive/`; the VAPI draft assistant + its test squad were **DELETED from VAPI 2026-07-06**. Binding docs archived under `archive/docs/binding-*`. See memory `binding-in-specialist`.
 
 ### Sarah — Builders Risk (original, ARCHIVED — replaced by GL above)
 - **Assistant ID:** `1364ed31-51fa-41a4-8831-491b2ee3ef77` (now used by Sarah GL)
@@ -275,7 +267,7 @@ Deploy scripts: [scripts/create-tool-transfer-to-spanish-team.js](scripts/create
 - **Method:** PATCH (upsert by email)
 - **Auth:** `agent_api_key=${CALFORCE_AGENT_KEY}` (query param)
 - **Docs:** `apis/builders-risk-api.md`
-- **Premium formula:** `(coverage × constructionRate × deductibleMod × 1.15) × 1.30`
+- **Premium formula:** ⚠️ superseded by v2.19/v2.20 pricing (rate-per-$100k + flat fee). Canonical implementation with tests: `scripts/lib/br-premium.js`. The old `(coverage × constructionRate × deductibleMod × 1.15) × 1.30` is **no longer used**.
 
 ### General Liability (quote submission) — ⚠️ ENDPOINT CHANGED 2026-06
 - **URL:** `POST https://mission-control.farmerbrown.com/api/insurance_quote_submissions` — the old `/api/submit` and `/api/gl_submissions/update_by_email` paths were both removed (404 now).
