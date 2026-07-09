@@ -42,10 +42,9 @@ const IDEMPOTENCY_WINDOW_HOURS = 24;
 
 // Who gets the COMPLETE lead (end of call): José + the client's sales inbox.
 const COMPLETE_RECIPIENTS = ['jaromero.es@gmail.com', 'leads@farmerbrown.com'];
-// Who gets the mid-call "[In progress]" heads-up: internal only. Sending
-// incomplete mid-call notices to the client's inbox reads as noise — keep it to
-// José. (To also send partials to leads@, add it here.)
-const PARTIAL_RECIPIENTS = ['jaromero.es@gmail.com'];
+// Who gets the mid-call "[In progress]" heads-up: José + the client's sales
+// inbox (client asked for partials too — 2026-07-10).
+const PARTIAL_RECIPIENTS = ['jaromero.es@gmail.com', 'leads@farmerbrown.com'];
 
 function dedupe(list: string[]): string[] {
   const seen = new Set<string>();
@@ -279,7 +278,7 @@ export const POST: APIRoute = async ({ request, url }) => {
 
 export const GET: APIRoute = async ({ request, url }) => {
   if (url.searchParams.get('ping')) {
-    return json({ ok: true, service: 'vapi-lead-email', build: 'h8-monorepo' }, 200);
+    return json({ ok: true, service: 'vapi-lead-email', build: 'h9-partials-to-leads' }, 200);
   }
 
   const secret = import.meta.env.CRON_SECRET;
