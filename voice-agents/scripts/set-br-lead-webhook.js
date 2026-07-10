@@ -13,13 +13,19 @@
  * against it), so no new env var is needed anywhere.
  *
  * Env required:
- *   VAPI_KEY      (farmerbrown/.env)
- *   CRON_SECRET   (farmerbrown-billing/.env)  ← must match the deployed app
+ *   VAPI_KEY      (voice-agents/.env)
+ *   CRON_SECRET   (../billing/.env)  ← must match the DEPLOYED app's CRON_SECRET
  *
- * Run:
- *   set -a; source .env; source ../farmerbrown-billing/.env; set +a
+ * Run (from voice-agents/):
+ *   set -a; source .env; source ../billing/.env; set +a
  *   node scripts/set-br-lead-webhook.js            # apply
  *   node scripts/set-br-lead-webhook.js --rollback # clear server
+ *
+ * ⚠ VAPI never returns `server.secret` on GET/PATCH responses, so a wrong
+ * secret is INVISIBLE from the API and every webhook 401s silently (zero lead
+ * emails, no error anywhere) — exactly the 2026-07-06→10 outage. This script
+ * now pre-validates CRON_SECRET against the live endpoint before touching
+ * VAPI, and the only true end-to-end check remains a real test call.
  */
 
 const VAPI_KEY = process.env.VAPI_KEY;
@@ -59,7 +65,29 @@ const api = async (method, path, body) => {
   return d;
 };
 
+/** Guard against the 2026-07-06 outage class: refuse to arm the webhook with a
+ * CRON_SECRET the deployed endpoint does not accept (VAPI would 401 silently
+ * on every webhook and no lead email would ever send). */
+async function assertSecretMatchesProd() {
+  const r = await fetch(`${WEBHOOK_URL}?sinceHours=1&dryRun=true&maxCalls=1`, {
+    headers: { Authorization: `Bearer ${CRON_SECRET}` },
+  });
+  if (r.status === 401) {
+    throw new Error(
+      `CRON_SECRET REJECTED by ${WEBHOOK_URL} (401). The secret you sourced does NOT match ` +
+        'the deployed app — arming VAPI with it would silently kill all lead emails. ' +
+        'Source ../billing/.env (the monorepo billing folder) and check the Vercel env.'
+    );
+  }
+  if (!r.ok) {
+    throw new Error(`Endpoint pre-check failed (${r.status}) — fix the endpoint before arming the webhook.`);
+  }
+  console.log('Pre-check OK: deployed endpoint accepts this CRON_SECRET.');
+}
+
 (async () => {
+  if (!ROLLBACK) await assertSecretMatchesProd();
+
   const numbers = await api('GET', '/phone-number');
   const brNumbers = (numbers || []).filter((n) => n.number === PUBLIC_BR_NUMBER);
   if (brNumbers.length === 0) {
@@ -73,7 +101,7 @@ const api = async (method, path, body) => {
     const got = updated.server?.url ?? null;
     console.log(
       `${ROLLBACK ? 'CLEARED' : 'SET'} ${n.number} (${n.name || n.id}) → server.url=${got} ` +
-        `secret=${updated.server?.url ? 'set' : '-'} | squadId intact: ${updated.squadId === BR_SQUAD_ID}`
+        `secret=sent (VAPI never echoes it back — verify with a test call) | squadId intact: ${updated.squadId === BR_SQUAD_ID}`
     );
   }
   console.log(`\nDone (${brNumbers.length} number(s)). ${ROLLBACK ? 'Webhook removed.' : 'Webhook live.'}`);
