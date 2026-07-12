@@ -285,16 +285,23 @@ const otherOut = classifyCall(spokeNoIntake) as CallOutcome;
 ok(otherOut.kind === 'other', 'spoke-but-no-intake classifies as other');
 ok(outcomeSubject(extractLead(spokeNoIntake), otherOut).includes('no lead'), 'other subject says no lead');
 
-console.log('classify — silent misdial → empty (the noise floor):');
+console.log('classify — silent misdial → empty (José-only visibility):');
 // The original triage fixture: user message empty + "[hung up]" marker only.
 ok(!hasCustomerSpeech(triage), 'misdial: no real caller speech');
-ok(classifyCall(triage).kind === 'empty', 'silent triage/misdial classifies as empty (skipped)');
+ok(classifyCall(triage).kind === 'empty', 'silent triage/misdial classifies as empty');
 const trulyEmpty = {
   id: 'test-empty-call',
   endedReason: 'customer-did-not-answer',
   artifact: { transcript: 'AI: Thanks for calling Builders Risk.', messages: [{ role: 'bot', message: 'Thanks for calling Builders Risk.' }] },
 };
-ok(classifyCall(trulyEmpty).kind === 'empty', 'no user turn at all classifies as empty');
+const emptyOut = classifyCall(trulyEmpty) as CallOutcome;
+ok(emptyOut.kind === 'empty', 'no user turn at all classifies as empty');
+const emptyLead = extractLead(trulyEmpty);
+ok(outcomeSubject(emptyLead, emptyOut).includes('no answer / hang-up'), 'empty subject: ' + outcomeSubject(emptyLead, emptyOut));
+const emptyHtml = renderOutcomeBodyHtml(emptyLead, emptyOut);
+ok(emptyHtml.includes('No conversation'), 'empty html banner');
+ok(!/vapi/i.test(emptyHtml) && !/recording/i.test(emptyHtml), 'empty html has NO vapi/recording ref');
+ok(renderOutcomeText(emptyLead, emptyOut).includes('NO ANSWER / HANG-UP'), 'empty text header');
 
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail > 0) process.exit(1);

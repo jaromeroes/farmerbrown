@@ -15,10 +15,12 @@
  *     ?ping=1 (no auth)       health check
  *
  * Every FINISHED BR call is notified, classified by outcome: a Jennifer lead
- * (full quote-form email), a transfer to a human team (light "routed to <team>"
- * email — e.g. the Spanish team), or a spoke-but-no-intake call. Only silent
- * misdials / instant hang-ups are skipped (the noise floor). Idempotent via
- * Resend keys `br-lead-<callId>` (leads) and `br-call-<callId>` (outcomes).
+ * (full quote-form email), a completed transfer to a team/person (light
+ * "routed to <team>" email), a spoke-but-no-intake call, or a silent
+ * misdial/hang-up. NOTHING is skipped — José sees 100% of calls; leads@ only
+ * receives good outcomes (leads + transfers), everything else is José-only.
+ * Idempotent via Resend keys `br-lead-<callId>` (leads) and `br-call-<callId>`
+ * (outcomes), each folded with the recipient set.
  */
 
 import type { APIRoute } from 'astro';
@@ -52,6 +54,10 @@ const COMPLETE_RECIPIENTS = ['jaromero.es@gmail.com', 'leads@farmerbrown.com'];
 // Who gets the mid-call "[In progress]" heads-up: José + the client's sales
 // inbox (client asked for partials too — 2026-07-10).
 const PARTIAL_RECIPIENTS = ['jaromero.es@gmail.com', 'leads@farmerbrown.com'];
+// José-only stream: every call that did NOT reach a good outcome (spoke-but-no-
+// intake, and silent misdials/hang-ups) goes here for full visibility, so the
+// client's sales inbox (leads@) stays free of noise (2026-07-12).
+const SELF_ONLY_RECIPIENTS = ['jaromero.es@gmail.com'];
 
 function dedupe(list: string[]): string[] {
   const seen = new Set<string>();
@@ -78,6 +84,26 @@ function recipients(): string[] {
 /** Mid-call partial recipients (internal only). */
 function partialRecipients(): string[] {
   return dedupe(PARTIAL_RECIPIENTS);
+}
+
+/** José-only visibility stream (non-good-outcome calls). */
+function selfOnlyRecipients(): string[] {
+  return dedupe(SELF_ONLY_RECIPIENTS);
+}
+
+/**
+ * Recipients for a finished call, by outcome:
+ *   • lead / transfer → José + leads@ (a good outcome the client should see)
+ *   • other / empty   → José only (full visibility; keeps leads@ noise-free)
+ * A `?to=` override (auth-gated, test only) always wins.
+ */
+function recipientsForOutcome(
+  kind: 'lead' | 'transfer' | 'other' | 'empty',
+  toOverride?: string[]
+): string[] {
+  if (toOverride?.length) return toOverride;
+  if (kind === 'lead' || kind === 'transfer') return recipients();
+  return selfOnlyRecipients();
 }
 
 /** Constant-time secret compare (length-guarded). */
@@ -110,11 +136,12 @@ interface ProcessResult {
 }
 
 /**
- * Every FINISHED BR call now produces a notification, classified by outcome:
- *   • lead     → full quote-form email  (unchanged from before)
- *   • transfer → light "routed to <team>" email (Spanish / service / …)
- *   • other    → light "no lead, no transfer" email (caller spoke, no intake)
- *   • empty    → skipped (the noise floor: silent misdial / instant hang-up)
+ * Every FINISHED BR call produces a notification, classified by outcome:
+ *   • lead     → full quote-form email       → José + leads@
+ *   • transfer → light "routed to <team>"     → José + leads@  (a good outcome)
+ *   • other    → light "no lead, no transfer" → José only      (visibility)
+ *   • empty    → light "no answer / hang-up"  → José only      (visibility)
+ * José sees 100% of calls; leads@ only sees good outcomes (leads + transfers).
  * Lead + outcome emails use SEPARATE idempotency prefixes so they can't collide.
  */
 async function processCallObject(
@@ -123,13 +150,8 @@ async function processCallObject(
 ): Promise<ProcessResult> {
   const callId = call.id ?? '';
   const outcome = classifyCall(call);
-
-  if (outcome.kind === 'empty') {
-    return { callId, status: 'skipped', kind: 'empty', reason: 'silent misdial / no caller speech, no data, no transfer' };
-  }
-
   const lead = extractLead(call);
-  const to = opts.toOverride?.length ? opts.toOverride : recipients();
+  const to = recipientsForOutcome(outcome.kind, opts.toOverride);
 
   if (outcome.kind === 'lead') {
     const subject = leadSubject(lead);
@@ -148,7 +170,7 @@ async function processCallObject(
     return { callId, status: 'sent', kind: 'lead', subject, email: lead.email, premium: lead.premium, to };
   }
 
-  // transfer | other → light outcome email
+  // transfer | other | empty → light outcome email
   const subject = outcomeSubject(lead, outcome);
   if (opts.dryRun) {
     return { callId, status: 'would-send', kind: outcome.kind, subject, email: lead.email, to };
@@ -312,7 +334,7 @@ export const POST: APIRoute = async ({ request, url }) => {
 
 export const GET: APIRoute = async ({ request, url }) => {
   if (url.searchParams.get('ping')) {
-    return json({ ok: true, service: 'vapi-lead-email', build: 'h11-any-transfer-is-success' }, 200);
+    return json({ ok: true, service: 'vapi-lead-email', build: 'h12-jose-sees-all-calls' }, 200);
   }
 
   const secret = import.meta.env.CRON_SECRET;

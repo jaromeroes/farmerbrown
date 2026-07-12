@@ -657,6 +657,7 @@ export function renderLeadText(lead: BrLead): string {
 /** Scannable subject line for a non-lead call. */
 export function outcomeSubject(lead: BrLead, outcome: CallOutcome): string {
   if (outcome.kind === 'transfer') return `BR call — routed to ${outcome.label}`;
+  if (outcome.kind === 'empty') return `BR call — no answer / hang-up (ended: ${lead.endedReason ?? 'unknown'})`;
   return `BR call — no lead (ended: ${lead.endedReason ?? 'unknown'})`;
 }
 
@@ -668,6 +669,14 @@ function outcomeBanner(outcome: CallOutcome): string {
       <p style="margin:0 0 1.25rem;padding:0.75rem 1rem;background:#ecfdf5;
                 border:1px solid #a7f3d0;border-radius:8px;font-size:1.05rem;">
         ✅ <strong>Handled by the agent — call routed to the ${escapeHtml(outcome.label)}.</strong>
+      </p>`;
+  }
+  if (outcome.kind === 'empty') {
+    return `
+      <p style="margin:0 0 1.25rem;padding:0.75rem 1rem;background:#f9fafb;
+                border:1px solid #e5e7eb;border-radius:8px;">
+        <strong>No conversation</strong> — misdial or immediate hang-up; the
+        caller never spoke and there was no transfer. (Visibility copy — José only.)
       </p>`;
   }
   return `
@@ -713,7 +722,9 @@ export function renderOutcomeBodyHtml(lead: BrLead, outcome: CallOutcome): strin
 export function renderOutcomeText(lead: BrLead, outcome: CallOutcome): string {
   const lines: string[] = [];
   if (outcome.kind === 'transfer') {
-    lines.push(`BR CALL — ROUTED TO ${outcome.label.toUpperCase()}`);
+    lines.push(`BR CALL — HANDLED BY THE AGENT — ROUTED TO ${outcome.label.toUpperCase()}`);
+  } else if (outcome.kind === 'empty') {
+    lines.push('BR CALL — NO ANSWER / HANG-UP (no conversation)');
   } else {
     lines.push('BR CALL — NO LEAD, NO TRANSFER');
   }
