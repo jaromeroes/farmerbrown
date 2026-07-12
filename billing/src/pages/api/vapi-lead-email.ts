@@ -14,18 +14,25 @@
  *       &maxCalls=N           cap GETs during catch-up (default 60)
  *     ?ping=1 (no auth)       health check
  *
- * Only calls that reached Jennifer AND captured data (a `submit_quote` tool
- * call) produce an email. Idempotent via Resend key `br-lead-<callId>`.
+ * Every FINISHED BR call is notified, classified by outcome: a Jennifer lead
+ * (full quote-form email), a transfer to a human team (light "routed to <team>"
+ * email — e.g. the Spanish team), or a spoke-but-no-intake call. Only silent
+ * misdials / instant hang-ups are skipped (the noise floor). Idempotent via
+ * Resend keys `br-lead-<callId>` (leads) and `br-call-<callId>` (outcomes).
  */
 
 import type { APIRoute } from 'astro';
 import { createVapiClient, type VapiCall } from '@lib/vapi';
 import {
   extractLead,
-  reachedJenniferWithData,
+  classifyCall,
   renderLeadBodyHtml,
   renderLeadText,
   leadSubject,
+  renderOutcomeBodyHtml,
+  renderOutcomeText,
+  outcomeSubject,
+  reachedJenniferWithData,
   type VapiCallLike,
 } from '@lib/leadEmail';
 import { sendLeadSummary } from '@lib/email';
@@ -94,6 +101,7 @@ function recipientsToken(to: string[]): string {
 interface ProcessResult {
   callId: string;
   status: 'sent' | 'would-send' | 'skipped';
+  kind?: 'lead' | 'transfer' | 'other' | 'empty';
   reason?: string;
   subject?: string;
   email?: string | null;
@@ -101,33 +109,59 @@ interface ProcessResult {
   to?: string[];
 }
 
+/**
+ * Every FINISHED BR call now produces a notification, classified by outcome:
+ *   • lead     → full quote-form email  (unchanged from before)
+ *   • transfer → light "routed to <team>" email (Spanish / service / …)
+ *   • other    → light "no lead, no transfer" email (caller spoke, no intake)
+ *   • empty    → skipped (the noise floor: silent misdial / instant hang-up)
+ * Lead + outcome emails use SEPARATE idempotency prefixes so they can't collide.
+ */
 async function processCallObject(
   call: VapiCallLike,
   opts: { dryRun: boolean; toOverride?: string[] }
 ): Promise<ProcessResult> {
   const callId = call.id ?? '';
-  if (!reachedJenniferWithData(call)) {
-    return { callId, status: 'skipped', reason: 'no submit_quote data (did not reach Jennifer)' };
+  const outcome = classifyCall(call);
+
+  if (outcome.kind === 'empty') {
+    return { callId, status: 'skipped', kind: 'empty', reason: 'silent misdial / no caller speech, no data, no transfer' };
   }
+
   const lead = extractLead(call);
-  const subject = leadSubject(lead);
   const to = opts.toOverride?.length ? opts.toOverride : recipients();
 
-  if (opts.dryRun) {
-    return { callId, status: 'would-send', subject, email: lead.email, premium: lead.premium, to };
+  if (outcome.kind === 'lead') {
+    const subject = leadSubject(lead);
+    if (opts.dryRun) {
+      return { callId, status: 'would-send', kind: 'lead', subject, email: lead.email, premium: lead.premium, to };
+    }
+    await sendLeadSummary({
+      to,
+      subject,
+      bodyHtml: renderLeadBodyHtml(lead),
+      text: renderLeadText(lead),
+      // Recipient set folded into the key so a NEW audience (e.g. adding John's
+      // team) is a distinct send, not deduped against the José-only one.
+      idempotencyKey: `br-lead-${callId}-${recipientsToken(to)}`,
+    });
+    return { callId, status: 'sent', kind: 'lead', subject, email: lead.email, premium: lead.premium, to };
   }
 
+  // transfer | other → light outcome email
+  const subject = outcomeSubject(lead, outcome);
+  if (opts.dryRun) {
+    return { callId, status: 'would-send', kind: outcome.kind, subject, email: lead.email, to };
+  }
   await sendLeadSummary({
     to,
     subject,
-    bodyHtml: renderLeadBodyHtml(lead),
-    text: renderLeadText(lead),
-    // Recipient set folded into the key so a NEW audience (e.g. adding John's
-    // team) is a distinct send, not deduped against the José-only one.
-    idempotencyKey: `br-lead-${callId}-${recipientsToken(to)}`,
+    bodyHtml: renderOutcomeBodyHtml(lead, outcome),
+    text: renderOutcomeText(lead, outcome),
+    // Distinct prefix from leads so the two email kinds never dedupe together.
+    idempotencyKey: `br-call-${callId}-${recipientsToken(to)}`,
   });
-
-  return { callId, status: 'sent', subject, email: lead.email, premium: lead.premium, to };
+  return { callId, status: 'sent', kind: outcome.kind, subject, email: lead.email, to };
 }
 
 /** Messages from an informational server message (conversation-update etc.). */
@@ -278,7 +312,7 @@ export const POST: APIRoute = async ({ request, url }) => {
 
 export const GET: APIRoute = async ({ request, url }) => {
   if (url.searchParams.get('ping')) {
-    return json({ ok: true, service: 'vapi-lead-email', build: 'h9-partials-to-leads' }, 200);
+    return json({ ok: true, service: 'vapi-lead-email', build: 'h10-all-calls-classified' }, 200);
   }
 
   const secret = import.meta.env.CRON_SECRET;

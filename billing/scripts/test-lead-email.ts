@@ -8,6 +8,12 @@ import {
   renderLeadBodyHtml,
   renderLeadText,
   leadSubject,
+  classifyCall,
+  hasCustomerSpeech,
+  outcomeSubject,
+  renderOutcomeBodyHtml,
+  renderOutcomeText,
+  type CallOutcome,
 } from '../src/lib/leadEmail.ts';
 
 let pass = 0;
@@ -179,6 +185,113 @@ const htpLead = extractLead(htp);
 ok(htpLead.premium === null, 'htp no premium');
 ok(leadSubject(htpLead).includes('hard-to-place'), 'htp subject: ' + leadSubject(htpLead));
 ok(renderLeadBodyHtml(htpLead).includes('Hard-to-place'), 'htp html banner');
+
+// ── classifyCall: outcomes beyond the lead ───────────────────────────────────
+function transfer(toolName: string) {
+  return {
+    role: 'tool_calls',
+    toolCalls: [{ id: 'tc', type: 'function', function: { name: toolName, arguments: '{}' } }],
+  };
+}
+
+console.log('classify — lead:');
+ok(classifyCall(fullQuote).kind === 'lead', 'full quote classifies as lead');
+
+// A real lead that ends with a live-agent transfer must STILL be a lead.
+const leadThenTransfer = {
+  id: 'test-lead-transfer',
+  artifact: {
+    transcript: 'AI: hi\nUser: I need a quote',
+    messages: [
+      { role: 'user', message: 'I need a quote' },
+      sq({ email: 'x@y.com', builders_risk_submission: { first_name: 'Al', phone: '5' } }),
+      transfer('transfer_to_live_agent_builders_risk'),
+    ],
+  },
+};
+ok(classifyCall(leadThenTransfer).kind === 'lead', 'lead + final transfer stays lead (not transfer)');
+
+console.log('classify — Spanish transfer:');
+const spanish = {
+  id: 'test-spanish',
+  startedAt: '2026-07-11T15:00:00.000Z',
+  endedAt: '2026-07-11T15:01:10.000Z',
+  endedReason: 'assistant-forwarded-call',
+  customer: { number: '+13125559999' },
+  analysis: { summary: 'Spanish-speaking caller; routed to the Spanish team.' },
+  artifact: {
+    transcript: 'AI: Thanks for calling.\nUser: Hola, necesito ayuda en español.\nAI: One moment.',
+    messages: [
+      { role: 'bot', message: 'Thanks for calling.' },
+      { role: 'user', message: 'Hola, necesito ayuda en español.' },
+      transfer('transfer_to_spanish_team'),
+    ],
+  },
+};
+const spOut = classifyCall(spanish) as CallOutcome;
+ok(spOut.kind === 'transfer', 'Spanish call classifies as transfer');
+ok(spOut.kind === 'transfer' && spOut.label === 'Spanish team', 'Spanish label');
+ok(!reachedJenniferWithData(spanish), 'Spanish call is NOT a lead');
+const spLead = extractLead(spanish);
+ok(outcomeSubject(spLead, spOut).includes('Spanish team'), 'Spanish subject: ' + outcomeSubject(spLead, spOut));
+const spHtml = renderOutcomeBodyHtml(spLead, spOut);
+ok(spHtml.includes('Spanish team'), 'Spanish html banner');
+ok(spHtml.includes('necesito ayuda'), 'Spanish html has transcript');
+ok(!/vapi/i.test(spHtml), 'Spanish html has NO vapi reference');
+ok(!/recording/i.test(spHtml), 'Spanish html has NO recording reference');
+const spText = renderOutcomeText(spLead, spOut);
+ok(spText.includes('SPANISH TEAM'), 'Spanish text header');
+ok(!/vapi/i.test(spText), 'Spanish text has NO vapi reference');
+
+console.log('classify — service transfer (label mapping):');
+const service = {
+  id: 'test-service',
+  artifact: {
+    transcript: 'AI: hi\nUser: I need to make a payment',
+    messages: [
+      { role: 'user', message: 'I need to make a payment' },
+      transfer('transfer_to_service_team'),
+    ],
+  },
+};
+const svOut = classifyCall(service) as CallOutcome;
+ok(svOut.kind === 'transfer' && svOut.label === 'service team', 'service label');
+
+console.log('classify — unknown transfer tool still classifies as transfer:');
+const unknownXfer = {
+  id: 'test-unknown-xfer',
+  artifact: { transcript: 'AI: hi\nUser: hello', messages: [{ role: 'user', message: 'hello' }, transfer('transfer_to_brand_new_team')] },
+};
+const unkOut = classifyCall(unknownXfer) as CallOutcome;
+ok(unkOut.kind === 'transfer' && unkOut.label === 'brand new team', 'unknown transfer label derived: ' + JSON.stringify(unkOut));
+
+console.log('classify — caller spoke, no lead/transfer → other:');
+const spokeNoIntake = {
+  id: 'test-other',
+  endedReason: 'customer-ended-call',
+  artifact: {
+    transcript: 'AI: Are you calling for a new quote?\nUser: Actually never mind, wrong number.',
+    messages: [
+      { role: 'bot', message: 'Are you calling for a new quote?' },
+      { role: 'user', message: 'Actually never mind, wrong number.' },
+    ],
+  },
+};
+ok(hasCustomerSpeech(spokeNoIntake), 'other: caller speech detected');
+const otherOut = classifyCall(spokeNoIntake) as CallOutcome;
+ok(otherOut.kind === 'other', 'spoke-but-no-intake classifies as other');
+ok(outcomeSubject(extractLead(spokeNoIntake), otherOut).includes('no lead'), 'other subject says no lead');
+
+console.log('classify — silent misdial → empty (the noise floor):');
+// The original triage fixture: user message empty + "[hung up]" marker only.
+ok(!hasCustomerSpeech(triage), 'misdial: no real caller speech');
+ok(classifyCall(triage).kind === 'empty', 'silent triage/misdial classifies as empty (skipped)');
+const trulyEmpty = {
+  id: 'test-empty-call',
+  endedReason: 'customer-did-not-answer',
+  artifact: { transcript: 'AI: Thanks for calling Builders Risk.', messages: [{ role: 'bot', message: 'Thanks for calling Builders Risk.' }] },
+};
+ok(classifyCall(trulyEmpty).kind === 'empty', 'no user turn at all classifies as empty');
 
 console.log(`\n${pass} passed, ${fail} failed`);
 if (fail > 0) process.exit(1);

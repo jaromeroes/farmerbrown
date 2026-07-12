@@ -280,6 +280,108 @@ export function extractLead(call: VapiCallLike): BrLead {
   };
 }
 
+/** Every tool-call function name in a message list, in chronological order. */
+export function extractToolCallNames(messages: unknown[]): string[] {
+  const out: string[] = [];
+  for (const m of messages) {
+    if (!m || typeof m !== 'object') continue;
+    const msg = m as Record<string, unknown>;
+    const toolCalls =
+      (msg.toolCalls as unknown[]) ?? (msg.tool_calls as unknown[]) ?? [];
+    if (!Array.isArray(toolCalls)) continue;
+    for (const tc of toolCalls) {
+      if (!tc || typeof tc !== 'object') continue;
+      const fn = (tc as Record<string, unknown>).function as Record<string, unknown> | undefined;
+      const name = (fn?.name ?? (tc as Record<string, unknown>).name) as string | undefined;
+      if (typeof name === 'string' && name) out.push(name);
+    }
+  }
+  return out;
+}
+
+// Known transfer tools → the human-readable team the caller was routed to.
+// Any unknown `transfer_to_*` still classifies as a transfer (label derived).
+const TRANSFER_LABELS: Record<string, string> = {
+  transfer_to_spanish_team: 'Spanish team',
+  transfer_to_service_team: 'service team',
+  transfer_to_existing_quote_team: 'existing-quote team',
+  transfer_to_specific_person: 'a specific person (direct dial)',
+  transfer_to_live_agent_builders_risk: 'live agent',
+  transfer_to_live_agent_farmer_brown: 'live agent',
+  transfer_to_live_agent_contractors_liability: 'live agent',
+  transfer_to_home_auto_team: 'Home & Auto team',
+};
+
+/** Turn a `transfer_to_x_y` tool name into a readable label. */
+function transferLabel(toolName: string): string {
+  if (TRANSFER_LABELS[toolName]) return TRANSFER_LABELS[toolName];
+  return toolName.replace(/^transfer_to_/, '').replace(/_/g, ' ').trim() || 'a live agent';
+}
+
+/**
+ * The LAST `transfer_to_*` tool call in the message list, if any. Last, not
+ * first, so the *final* routing wins (a caller can bounce through more than one).
+ */
+function detectTransfer(messages: unknown[]): { toolName: string; label: string } | null {
+  const transfers = extractToolCallNames(messages).filter((n) => n.startsWith('transfer_to_'));
+  if (transfers.length === 0) return null;
+  const toolName = transfers[transfers.length - 1];
+  return { toolName, label: transferLabel(toolName) };
+}
+
+/** A user/customer message (or transcript line) with real words — bracketed
+ * markers like `[hung up]` don't count as the caller actually speaking. */
+function isRealCallerText(s: unknown): boolean {
+  if (typeof s !== 'string') return false;
+  const t = s.trim();
+  return Boolean(t) && !/^\[.*\]$/.test(t);
+}
+
+/** Did the human caller actually say anything? Distinguishes a real (if
+ * incomplete) conversation from a silent misdial / instant hang-up. */
+export function hasCustomerSpeech(call: VapiCallLike): boolean {
+  for (const m of getMessages(call)) {
+    if (!m || typeof m !== 'object') continue;
+    const msg = m as Record<string, unknown>;
+    const role = String(msg.role ?? '').toLowerCase();
+    if (role !== 'user' && role !== 'customer') continue;
+    if (isRealCallerText(msg.message ?? msg.content ?? msg.transcript)) return true;
+  }
+  const t = call.artifact?.transcript ?? call.transcript ?? '';
+  if (typeof t === 'string') {
+    for (const line of t.split('\n')) {
+      const mm = line.match(/^\s*(?:user|customer)\s*:\s*(.+)$/i);
+      if (mm && isRealCallerText(mm[1])) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Every finished BR call classified by outcome:
+ *   • `lead`     — reached Jennifer AND captured data (rich form email)
+ *   • `transfer` — routed to a human team (Spanish / service / etc.)
+ *   • `other`    — the caller spoke but no lead and no transfer
+ *   • `empty`    — silent misdial / instant hang-up (the noise floor: skipped)
+ *
+ * `lead` is checked first: a real lead also fires a live-agent transfer at the
+ * end (Jennifer's post-quote FAST TRANSFER), and must render as a lead, not a
+ * "routed to live agent" outcome.
+ */
+export type CallOutcome =
+  | { kind: 'lead' }
+  | { kind: 'transfer'; toolName: string; label: string }
+  | { kind: 'other' }
+  | { kind: 'empty' };
+
+export function classifyCall(call: VapiCallLike): CallOutcome {
+  if (reachedJenniferWithData(call)) return { kind: 'lead' };
+  const transfer = detectTransfer(getMessages(call));
+  if (transfer) return { kind: 'transfer', toolName: transfer.toolName, label: transfer.label };
+  if (hasCustomerSpeech(call)) return { kind: 'other' };
+  return { kind: 'empty' };
+}
+
 /**
  * "Reached Jennifer with data": a submit_quote tool call happened AND at least
  * one identifying field (email / name / phone) was captured. Pure-triage
@@ -541,6 +643,88 @@ export function renderLeadText(lead: BrLead): string {
     lines.push('  [Other captured fields]');
     for (const k of otherKeys) lines.push(`    ${k}: ${display(lead.fields[k])}`);
   }
+  // Recording deliberately never included (would reveal the voice platform).
+  lines.push('', 'FULL TRANSCRIPT', lead.transcript || '(no transcript)');
+  return lines.join('\n');
+}
+
+// ─── Render: non-lead "call outcome" email ───────────────────────────────────
+// Lighter than the lead form: no quote form (there is none), just the outcome
+// banner + metadata + summary + full transcript. Same external-comms discipline
+// as the lead email — the recording is NEVER rendered and the voice platform is
+// never named.
+
+/** Scannable subject line for a non-lead call. */
+export function outcomeSubject(lead: BrLead, outcome: CallOutcome): string {
+  if (outcome.kind === 'transfer') return `BR call — routed to ${outcome.label}`;
+  return `BR call — no lead (ended: ${lead.endedReason ?? 'unknown'})`;
+}
+
+function outcomeBanner(outcome: CallOutcome): string {
+  if (outcome.kind === 'transfer') {
+    const spanish = outcome.toolName === 'transfer_to_spanish_team';
+    const bg = spanish ? '#ecfdf5' : '#eff6ff';
+    const border = spanish ? '#a7f3d0' : '#bfdbfe';
+    const icon = spanish ? '✅' : '➡️';
+    return `
+      <p style="margin:0 0 1.25rem;padding:0.75rem 1rem;background:${bg};
+                border:1px solid ${border};border-radius:8px;font-size:1.05rem;">
+        ${icon} <strong>Caller routed to the ${escapeHtml(outcome.label)}.</strong>
+      </p>`;
+  }
+  return `
+    <p style="margin:0 0 1.25rem;padding:0.75rem 1rem;background:#f9fafb;
+              border:1px solid #e5e7eb;border-radius:8px;">
+      <strong>No quote captured and no transfer</strong> — the caller reached the
+      line and spoke, but did not complete an intake.
+    </p>`;
+}
+
+export function renderOutcomeBodyHtml(lead: BrLead, outcome: CallOutcome): string {
+  const rows: string[] = [outcomeBanner(outcome)];
+
+  const metaItems = [
+    ['Caller', lead.callerNumber],
+    ['When', fmtTime(lead.callTime)],
+    ['Duration', fmtDuration(lead.durationSec)],
+    ['Ended', lead.endedReason],
+  ].filter(([, v]) => v) as [string, string][];
+  rows.push(metaTable(metaItems));
+
+  if (lead.summary) {
+    rows.push(`
+      <h3 style="margin:1.5rem 0 0.5rem;font-size:1rem;">Call summary</h3>
+      <p style="margin:0 0 1rem;color:#374151;">${escapeHtml(lead.summary)}</p>`);
+  }
+
+  // NOTE: recording deliberately NEVER rendered — its URL host reveals the
+  // voice platform. No recording link, ever.
+
+  rows.push(`<h3 style="margin:1.5rem 0 0.5rem;font-size:1rem;">Full transcript</h3>`);
+  rows.push(`
+    <pre style="white-space:pre-wrap;word-break:break-word;background:#f9fafb;
+                border:1px solid #e5e7eb;border-radius:8px;padding:1rem;
+                font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+                font-size:0.8125rem;line-height:1.5;color:#111;">${escapeHtml(
+                  lead.transcript || '(no transcript)'
+                )}</pre>`);
+
+  return rows.join('\n');
+}
+
+export function renderOutcomeText(lead: BrLead, outcome: CallOutcome): string {
+  const lines: string[] = [];
+  if (outcome.kind === 'transfer') {
+    lines.push(`BR CALL — ROUTED TO ${outcome.label.toUpperCase()}`);
+  } else {
+    lines.push('BR CALL — NO LEAD, NO TRANSFER');
+  }
+  lines.push('');
+  if (lead.callerNumber) lines.push(`Caller: ${lead.callerNumber}`);
+  lines.push(`When: ${fmtTime(lead.callTime)}`);
+  lines.push(`Duration: ${fmtDuration(lead.durationSec)}`);
+  if (lead.endedReason) lines.push(`Ended: ${lead.endedReason}`);
+  if (lead.summary) lines.push('', 'CALL SUMMARY', lead.summary);
   // Recording deliberately never included (would reveal the voice platform).
   lines.push('', 'FULL TRANSCRIPT', lead.transcript || '(no transcript)');
   return lines.join('\n');
