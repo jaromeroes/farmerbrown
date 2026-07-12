@@ -29,7 +29,7 @@ function emailHeaderHtml(): string {
     <p style="margin: 0 0 1.5rem;">
       <img src="${SITE_URL}/farmerbrown-logo.webp"
            alt="Farmer Brown"
-           width="186" height="48"
+           width="192" height="48"
            style="display:block;height:48px;width:auto;border:0;outline:none;text-decoration:none;" />
     </p>
   `;
