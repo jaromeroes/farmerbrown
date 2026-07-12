@@ -662,14 +662,12 @@ export function outcomeSubject(lead: BrLead, outcome: CallOutcome): string {
 
 function outcomeBanner(outcome: CallOutcome): string {
   if (outcome.kind === 'transfer') {
-    const spanish = outcome.toolName === 'transfer_to_spanish_team';
-    const bg = spanish ? '#ecfdf5' : '#eff6ff';
-    const border = spanish ? '#a7f3d0' : '#bfdbfe';
-    const icon = spanish ? '✅' : '➡️';
+    // Any completed transfer — to ANY team or person — is a success: the agent
+    // triaged the caller and routed them correctly. Green banner for all.
     return `
-      <p style="margin:0 0 1.25rem;padding:0.75rem 1rem;background:${bg};
-                border:1px solid ${border};border-radius:8px;font-size:1.05rem;">
-        ${icon} <strong>Caller routed to the ${escapeHtml(outcome.label)}.</strong>
+      <p style="margin:0 0 1.25rem;padding:0.75rem 1rem;background:#ecfdf5;
+                border:1px solid #a7f3d0;border-radius:8px;font-size:1.05rem;">
+        ✅ <strong>Handled by the agent — call routed to the ${escapeHtml(outcome.label)}.</strong>
       </p>`;
   }
   return `

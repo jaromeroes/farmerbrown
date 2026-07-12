@@ -312,7 +312,7 @@ export const POST: APIRoute = async ({ request, url }) => {
 
 export const GET: APIRoute = async ({ request, url }) => {
   if (url.searchParams.get('ping')) {
-    return json({ ok: true, service: 'vapi-lead-email', build: 'h10-all-calls-classified' }, 200);
+    return json({ ok: true, service: 'vapi-lead-email', build: 'h11-any-transfer-is-success' }, 200);
   }
 
   const secret = import.meta.env.CRON_SECRET;

@@ -236,6 +236,7 @@ const spLead = extractLead(spanish);
 ok(outcomeSubject(spLead, spOut).includes('Spanish team'), 'Spanish subject: ' + outcomeSubject(spLead, spOut));
 const spHtml = renderOutcomeBodyHtml(spLead, spOut);
 ok(spHtml.includes('Spanish team'), 'Spanish html banner');
+ok(spHtml.includes('✅') && spHtml.includes('Handled by the agent'), 'Spanish transfer = success banner');
 ok(spHtml.includes('necesito ayuda'), 'Spanish html has transcript');
 ok(!/vapi/i.test(spHtml), 'Spanish html has NO vapi reference');
 ok(!/recording/i.test(spHtml), 'Spanish html has NO recording reference');
@@ -256,6 +257,8 @@ const service = {
 };
 const svOut = classifyCall(service) as CallOutcome;
 ok(svOut.kind === 'transfer' && svOut.label === 'service team', 'service label');
+const svHtml = renderOutcomeBodyHtml(extractLead(service), svOut);
+ok(svHtml.includes('✅') && svHtml.includes('service team'), 'non-Spanish transfer ALSO gets success banner');
 
 console.log('classify — unknown transfer tool still classifies as transfer:');
 const unknownXfer = {
