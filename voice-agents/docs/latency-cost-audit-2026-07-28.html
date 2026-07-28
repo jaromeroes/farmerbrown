@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Farmer Brown — Auditoría de latencia y coste</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+</style>
+<style>
+  :root {
+    --ground:      #ECEEF1;
+    --panel:       #F6F7F9;
+    --panel-sunk:  #E3E7EB;
+    --ink:         #171B21;
+    --ink-soft:    #3E4750;
+    --ink-mute:    #6C7885;
+    --rule:        #C9D0D8;
+    --rule-soft:   #DBE0E6;
+
+    --hot:         #B54A1C;
+    --hot-soft:    #E0A588;
+    --warm:        #A8721A;
+    --cool:        #16716A;
+    --cool-soft:   #9DC5C0;
+    --crit:        #92211D;
+
+    --font-ui:   system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+
+    --measure: 68ch;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground:     #15181C;
+      --panel:      #1C2026;
+      --panel-sunk: #23282F;
+      --ink:        #E4E8EC;
+      --ink-soft:   #B3BCC6;
+      --ink-mute:   #7E8B98;
+      --rule:       #333A43;
+      --rule-soft:  #272D34;
+
+      --hot:        #E27C4A;
+      --hot-soft:   #6E3A22;
+      --warm:       #D9A441;
+      --cool:       #4FC0B2;
+      --cool-soft:  #2A5B57;
+      --crit:       #E0736C;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground:     #15181C;
+    --panel:      #1C2026;
+    --panel-sunk: #23282F;
+    --ink:        #E4E8EC;
+    --ink-soft:   #B3BCC6;
+    --ink-mute:   #7E8B98;
+    --rule:       #333A43;
+    --rule-soft:  #272D34;
+    --hot:        #E27C4A;
+    --hot-soft:   #6E3A22;
+    --warm:       #D9A441;
+    --cool:       #4FC0B2;
+    --cool-soft:  #2A5B57;
+    --crit:       #E0736C;
+  }
+
+  :root[data-theme="light"] {
+    --ground:     #ECEEF1;
+    --panel:      #F6F7F9;
+    --panel-sunk: #E3E7EB;
+    --ink:        #171B21;
+    --ink-soft:   #3E4750;
+    --ink-mute:   #6C7885;
+    --rule:       #C9D0D8;
+    --rule-soft:  #DBE0E6;
+    --hot:        #B54A1C;
+    --hot-soft:   #E0A588;
+    --warm:       #A8721A;
+    --cool:       #16716A;
+    --cool-soft:  #9DC5C0;
+    --crit:       #92211D;
+  }
+
+  .page {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    padding: 0 24px 96px;
+  }
+
+  .wrap {
+    max-width: 940px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 56px;
+  }
+
+  /* ---- shared type ---- */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    margin: 0;
+  }
+  .prose { max-width: var(--measure); }
+  .prose p { margin: 0 0 14px; color: var(--ink-soft); }
+  .prose p:last-child { margin-bottom: 0; }
+  .prose strong { color: var(--ink); font-weight: 650; }
+  code {
+    font-family: var(--font-mono);
+    font-size: 0.87em;
+    background: var(--panel-sunk);
+    padding: 1px 5px;
+    border-radius: 2px;
+    color: var(--ink);
+  }
+  .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+  /* ---- masthead ---- */
+  .masthead {
+    padding-top: 64px;
+    border-bottom: 1px solid var(--rule);
+    padding-bottom: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .masthead h1 {
+    margin: 0;
+    font-size: clamp(30px, 4.6vw, 46px);
+    line-height: 1.08;
+    letter-spacing: -0.028em;
+    font-weight: 680;
+    text-wrap: balance;
+    max-width: 20ch;
+  }
+  .masthead .lede {
+    margin: 0;
+    max-width: var(--measure);
+    color: var(--ink-soft);
+    font-size: 17px;
+  }
+  .meta-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 28px;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+  .meta-strip span b { color: var(--ink-soft); font-weight: 500; }
+
+  /* ---- readout tiles ---- */
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(158px, 1fr));
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+  }
+  .tile {
+    background: var(--panel);
+    padding: 18px 18px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .tile .k {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+  .tile .v {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 30px;
+    line-height: 1;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+  }
+  .tile .v.is-hot { color: var(--hot); }
+  .tile .v.is-cool { color: var(--cool); }
+  .tile .n { font-size: 12.5px; color: var(--ink-mute); line-height: 1.4; }
+
+  /* ---- section ---- */
+  .section { display: flex; flex-direction: column; gap: 22px; }
+  .section > h2 {
+    margin: 0;
+    font-size: 13px;
+    font-family: var(--font-mono);
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--rule);
+    font-weight: 500;
+  }
+  .section h3 {
+    margin: 0;
+    font-size: 21px;
+    letter-spacing: -0.018em;
+    font-weight: 650;
+    text-wrap: balance;
+  }
+
+  /* ---- latency ruler ---- */
+  .ruler { display: flex; flex-direction: column; gap: 0; }
+  .ruler-head {
+    display: flex;
+    justify-content: space-between;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-mute);
+    letter-spacing: 0.06em;
+    padding-left: 148px;
+    margin-bottom: 6px;
+  }
+  .track-row {
+    display: grid;
+    grid-template-columns: 148px 1fr;
+    align-items: center;
+    gap: 14px;
+    padding: 11px 0;
+    border-top: 1px solid var(--rule-soft);
+  }
+  .track-row:first-of-type { border-top: 1px solid var(--rule); }
+  .track-label {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-soft);
+    line-height: 1.35;
+  }
+  .track-label i { display: block; font-style: normal; color: var(--ink-mute); font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; }
+  .track {
+    position: relative;
+    height: 30px;
+    background: var(--panel-sunk);
+  }
+  .track .band {
+    position: absolute;
+    top: 0; bottom: 0;
+    left: 17.8%; width: 8.9%;
+    background: var(--cool-soft);
+  }
+  .track .worst {
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    background: var(--hot-soft);
+    animation: grow 700ms ease-out both;
+  }
+  .track .median {
+    position: absolute;
+    top: 0; bottom: 0; left: 0;
+    background: var(--hot);
+    animation: grow 700ms ease-out both;
+  }
+  .track .val {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 12px;
+    padding-left: 8px;
+    color: var(--ink);
+  }
+  @keyframes grow { from { transform: scaleX(0); transform-origin: left; } to { transform: scaleX(1); transform-origin: left; } }
+  @media (prefers-reduced-motion: reduce) {
+    .track .worst, .track .median { animation: none; }
+  }
+  .ruler-foot {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    padding-top: 12px;
+    border-top: 1px solid var(--rule);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--ink-mute);
+  }
+  .key { display: inline-flex; align-items: center; gap: 6px; }
+  .key i { width: 11px; height: 11px; display: inline-block; }
+  .key .sw-median { background: var(--hot); }
+  .key .sw-worst { background: var(--hot-soft); }
+  .key .sw-band { background: var(--cool-soft); }
+
+  /* ---- callout ---- */
+  .callout {
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--warm);
+    padding: 18px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .callout.is-crit { border-left-color: var(--crit); }
+  .callout .tag {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--warm);
+  }
+  .callout.is-crit .tag { color: var(--crit); }
+  .callout p { margin: 0; color: var(--ink-soft); max-width: var(--measure); }
+  .callout p + p { margin-top: 8px; }
+
+  /* ---- findings ---- */
+  .finding {
+    background: var(--panel);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--hot);
+    padding: 22px 24px;
+    display: grid;
+    grid-template-columns: 46px 1fr;
+    gap: 4px 18px;
+  }
+  .finding.rank-cool { border-left-color: var(--cool); }
+  .finding .rank {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 26px;
+    line-height: 1;
+    color: var(--ink-mute);
+    padding-top: 2px;
+  }
+  .finding .body { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .finding .body > h3 { margin: 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 7px; }
+  .chip {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border: 1px solid var(--rule);
+    color: var(--ink-mute);
+    background: var(--ground);
+  }
+  .chip.is-hot { color: var(--hot); border-color: var(--hot); }
+  .chip.is-cool { color: var(--cool); border-color: var(--cool); }
+  .chip.is-crit { color: var(--crit); border-color: var(--crit); }
+
+  /* ---- comparison bars ---- */
+  .compare { display: flex; flex-direction: column; gap: 14px; }
+  .cmp-row { display: flex; flex-direction: column; gap: 5px; }
+  .cmp-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-soft);
+  }
+  .cmp-top b { color: var(--ink); font-weight: 500; font-variant-numeric: tabular-nums; }
+  .cmp-bar { height: 20px; background: var(--panel-sunk); position: relative; }
+  .cmp-bar span {
+    position: absolute; inset: 0 auto 0 0;
+    background: var(--hot);
+    animation: grow 700ms ease-out both;
+  }
+  .cmp-bar.is-cool span { background: var(--cool); }
+  @media (prefers-reduced-motion: reduce) { .cmp-bar span { animation: none; } }
+
+  /* ---- tables ---- */
+  .table-scroll { overflow-x: auto; border: 1px solid var(--rule); background: var(--panel); }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 520px; }
+  th, td { text-align: left; padding: 11px 16px; border-bottom: 1px solid var(--rule-soft); vertical-align: top; }
+  thead th {
+    font-family: var(--font-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.11em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+    font-weight: 500;
+    background: var(--panel-sunk);
+    border-bottom: 1px solid var(--rule);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 13px; }
+  td .was { color: var(--ink-mute); }
+  td .now { color: var(--hot); }
+
+  /* ---- plan ---- */
+  .batch {
+    border: 1px solid var(--rule);
+    background: var(--panel);
+    display: flex;
+    flex-direction: column;
+  }
+  .batch-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 10px 14px;
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--rule);
+    background: var(--panel-sunk);
+  }
+  .batch-head .bn {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-mute);
+  }
+  .batch-head .bt { font-weight: 640; font-size: 16px; letter-spacing: -0.01em; }
+  .batch ol { margin: 0; padding: 14px 20px 16px 40px; display: flex; flex-direction: column; gap: 9px; }
+  .batch li { color: var(--ink-soft); max-width: var(--measure); }
+  .batch li::marker { font-family: var(--font-mono); color: var(--ink-mute); font-size: 13px; }
+
+  /* ---- decisions ---- */
+  .decisions { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+  .decision {
+    border: 1px solid var(--rule);
+    background: var(--panel);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .decision h3 { font-size: 17px; }
+  .decision p { margin: 0; color: var(--ink-soft); font-size: 14.5px; }
+
+  .foot {
+    border-top: 1px solid var(--rule);
+    padding-top: 20px;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    color: var(--ink-mute);
+    line-height: 1.7;
+    max-width: var(--measure);
+  }
+
+  a { color: var(--hot); }
+  a:focus-visible, summary:focus-visible { outline: 2px solid var(--cool); outline-offset: 2px; }
+
+  @media (max-width: 620px) {
+    .ruler-head { padding-left: 0; }
+    .track-row { grid-template-columns: 1fr; gap: 7px; }
+    .finding { grid-template-columns: 1fr; gap: 12px; }
+    .finding .rank { font-size: 20px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+<div class="wrap">
+
+  <header class="masthead">
+    <p class="eyebrow">Auditoría técnica · Agentes de voz</p>
+    <h1>Latencia y coste en los agentes de Farmer Brown</h1>
+    <p class="lede">Assessment de los 19 assistants en producción, medido contra la configuración viva de la plataforma y las llamadas reales de la ventana de retención. El objetivo declarado es bajar la latencia.</p>
+    <div class="meta-strip">
+      <span>Fecha <b>28 jul 2026</b></span>
+      <span>Alcance <b>19 assistants</b></span>
+      <span>Ventana <b>14 días</b></span>
+      <span>Muestra <b>5 llamadas · 17 turnos</b></span>
+    </div>
+  </header>
+
+  <section class="section">
+    <h2>Lectura rápida</h2>
+    <div class="tiles">
+      <div class="tile">
+        <span class="k">Mediana global</span>
+        <span class="v is-hot">2.14<small style="font-size:15px">s</small></span>
+        <span class="n">Turno de usuario → primer audio del bot</span>
+      </div>
+      <div class="tile">
+        <span class="k">Objetivo natural</span>
+        <span class="v is-cool">1.0<small style="font-size:15px">s</small></span>
+        <span class="n">Estás a ~2× de la zona cómoda</span>
+      </div>
+      <div class="tile">
+        <span class="k">Peor turno</span>
+        <span class="v is-hot">4.12<small style="font-size:15px">s</small></span>
+        <span class="n">Silencio muerto en línea</span>
+      </div>
+      <div class="tile">
+        <span class="k">Assistants en gpt-4o</span>
+        <span class="v">18<small style="font-size:15px">/19</small></span>
+        <span class="n">Solo Grace Unified migró</span>
+      </div>
+      <div class="tile">
+        <span class="k">startSpeakingPlan</span>
+        <span class="v">0<small style="font-size:15px">/19</small></span>
+        <span class="n">La palanca #1, sin tocar</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Latencia medida por agente</h2>
+    <div class="ruler">
+      <div class="ruler-head"><span>0s</span><span>escala 0 – 4.5s</span><span>4.5s</span></div>
+
+      <div class="track-row">
+        <div class="track-label">Jennifer<i>Builders Risk v2.20</i></div>
+        <div class="track">
+          <div class="band"></div>
+          <div class="worst" style="width:86.0%"></div>
+          <div class="median" style="width:54.9%"></div>
+          <div class="val" style="left:86.0%">2.47s · máx 3.87s</div>
+        </div>
+      </div>
+
+      <div class="track-row">
+        <div class="track-label">Grace<i>BR Receptionist v1.23</i></div>
+        <div class="track">
+          <div class="band"></div>
+          <div class="worst" style="width:91.6%"></div>
+          <div class="median" style="width:47.6%"></div>
+          <div class="val" style="left:91.6%">2.14s · máx 4.12s</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ruler-foot">
+      <span class="key"><i class="sw-median"></i> Mediana</span>
+      <span class="key"><i class="sw-worst"></i> Peor turno observado</span>
+      <span class="key"><i class="sw-band"></i> Zona objetivo 0.8 – 1.2s</span>
+    </div>
+
+    <div class="callout">
+      <span class="tag">Fiabilidad de la muestra</span>
+      <p>Son <strong>17 turnos de 2 llamadas aprovechables</strong>. El plan de la plataforma retiene 14 días de historial y en esa ventana hubo 5 llamadas en total. La dirección del hallazgo es clara; la precisión estadística no lo es.</p>
+      <p>Ninguna de las mejoras de abajo se podrá demostrar con antes/después mientras no capturemos latencia por turno nosotros mismos.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Los cuatro hallazgos que mueven la aguja</h2>
+
+    <article class="finding">
+      <span class="rank">01</span>
+      <div class="body">
+        <h3><code>startSpeakingPlan</code> está sin configurar en los 19 assistants</h3>
+        <div class="chips">
+          <span class="chip is-cool">Riesgo cero</span>
+          <span class="chip">No toca comportamiento</span>
+          <span class="chip is-hot">300–500 ms</span>
+        </div>
+        <div class="prose">
+          <p>Es la palanca de latencia principal de la plataforma y nadie la ha tocado: todo corre con el valor por defecto (<code>waitSeconds: 0.4</code>, sin endpointing inteligente). Ajustarla y activar detección inteligente de fin de turno es el cambio más barato y directo de toda la lista.</p>
+        </div>
+      </div>
+    </article>
+
+    <article class="finding">
+      <span class="rank">02</span>
+      <div class="body">
+        <h3>Los 7 proxies silenciosos ejecutan gpt-4o para decir dos palabras</h3>
+        <div class="chips">
+          <span class="chip is-cool">Riesgo cero</span>
+          <span class="chip is-hot">Camino crítico</span>
+          <span class="chip">Prompt de ~150–325 tokens</span>
+        </div>
+        <div class="prose">
+          <p>El prompt entero de un proxy es <em>«di “One moment.” e invoca el tool de transferencia»</em>. Se está pagando —y esperando— a gpt-4o para eso, <strong>justo en el momento de cada transferencia</strong>, que es exactamente donde la muestra registra los peores turnos: 3.87s y 4.12s. Mejor ratio esfuerzo/impacto de toda la auditoría.</p>
+        </div>
+      </div>
+    </article>
+
+    <article class="finding">
+      <span class="rank">03</span>
+      <div class="body">
+        <h3>gpt-4o sigue en 18 de 19 assistants — el experimento ya está hecho</h3>
+        <div class="chips">
+          <span class="chip is-hot">27× de diferencia</span>
+          <span class="chip">Requiere validación</span>
+          <span class="chip is-crit">Jennifer bloqueada</span>
+        </div>
+        <div class="prose">
+          <p>Grace Unified ya migró a <code>gpt-4.1-mini</code> en la v1.23. En la <strong>misma llamada</strong>, el contraste es directo — y gpt-4o está además entre los modelos con peor tiempo hasta el primer token del catálogo actual.</p>
+        </div>
+        <div class="compare">
+          <div class="cmp-row">
+            <div class="cmp-top"><span>Grace · gpt-4.1-mini</span><b>$0.016 · 48.242 tok</b></div>
+            <div class="cmp-bar is-cool"><span style="width:3.7%"></span></div>
+          </div>
+          <div class="cmp-row">
+            <div class="cmp-top"><span>Jennifer · gpt-4o</span><b>$0.433 · 172.947 tok</b></div>
+            <div class="cmp-bar"><span style="width:100%"></span></div>
+          </div>
+        </div>
+        <div class="callout is-crit">
+          <span class="tag">Secuencia obligatoria</span>
+          <p><strong>Jennifer no debe migrar todavía.</strong> Su punto débil documentado es que gpt-4o ya calcula mal la prima ($875 en un proyecto de $2M). Bajarla a un modelo más pequeño empeora eso.</p>
+          <p>Orden correcto: desplegar primero el tool <code>calculate_premium</code> que ya está construido en <code>premium-api/</code> —saca la matemática del LLM—, y solo después evaluar el cambio de modelo. Al revés, se rompe pricing en producción.</p>
+        </div>
+      </div>
+    </article>
+
+    <article class="finding">
+      <span class="rank">04</span>
+      <div class="body">
+        <h3>Prompts de 9–10k tokens reenviados en cada turno</h3>
+        <div class="chips">
+          <span class="chip">Requiere validación</span>
+          <span class="chip is-hot">Impacto directo en TTFT</span>
+        </div>
+        <div class="prose">
+          <p>Grace son 40.640 caracteres (~10.1k tokens) y Jennifer 37.696 (~9.4k). Cada turno los reenvía enteros. Grace v1.23 ya sacó el <em>changelog</em> del prompt vivo — buen precedente que no se aplicó al resto de agentes.</p>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <section class="section">
+    <h2>Prompt caching — el matiz que hay que decir</h2>
+    <div class="prose">
+      <p>La variable <code>{{currentDateTime}}</code> aparece en el <strong>primer 0.6–5.3%</strong> de los 12 prompts que la usan (en Jennifer, en el carácter 245 de 37.696). Eso deja el prefijo cacheable por debajo del mínimo de 1024 tokens, así que el caching <em>entre llamadas</em> está muerto. Moverla al final del prompt lo arregla.</p>
+    </div>
+    <div class="callout">
+      <span class="tag">Pero no lo vendas como mejora de hoy</span>
+      <p>El TTL de caché son ~5–10 minutos y las llamadas actuales están separadas por horas. <strong>A volumen actual, este fix no cambia nada.</strong> Es correcto, gratis y sin riesgo, pero solo paga cuando haya llamadas consecutivas.</p>
+      <p>Dentro de una misma llamada el caching ya funciona: 24.3% de aciertos en gpt-4o, 12.3% en gpt-4.1-mini.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Deriva entre documentación y producción</h2>
+    <div class="prose">
+      <p><code>CLAUDE.md</code> no refleja producción en 8 de 12 agentes. El stack documentado dice <em>«LLM: GPT-4o · Transcriber: nova-2»</em> cuando ya hay dos modelos y dos transcribers vivos.</p>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr><th>Agente</th><th>Documentado</th><th>En producción</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Grace BR Unified</td><td class="mono was">v1.22 · gpt-4o · nova-2</td><td class="mono now">v1.23 · gpt-4.1-mini · nova-3</td></tr>
+          <tr><td>Wendy Workers' Comp</td><td class="mono was">v2.0</td><td class="mono now">v2.1</td></tr>
+          <tr><td>Rachel Home &amp; Auto</td><td class="mono was">v2.4</td><td class="mono now">v2.5</td></tr>
+          <tr><td>Valeria GL Spanish</td><td class="mono was">v1.0</td><td class="mono now">v1.2</td></tr>
+          <tr><td>Nora Commercial Auto</td><td class="mono was">v1.0</td><td class="mono now">v1.1</td></tr>
+          <tr><td>Emma / Olivia / Grace Service</td><td class="mono was">v1.1</td><td class="mono now">v1.2</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose">
+      <p><strong>Deriva adicional de configuración:</strong> el transcriber está partido —11 assistants en <code>nova-2</code>, 8 en <code>nova-3</code>, que es más rápido y más preciso—. El modelo de voz está sin especificar en 18 de 19; la única explícita es Valeria con <code>eleven_multilingual_v2</code>, la más lenta del catálogo. Y <code>stopSpeakingPlan</code> solo existe en Jennifer y Grace Unified.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Plan propuesto — ordenado por riesgo</h2>
+
+    <div class="batch">
+      <div class="batch-head">
+        <span class="bn">Tanda 1</span>
+        <span class="bt">Riesgo cero · no toca lo que dicen los agentes</span>
+      </div>
+      <ol>
+        <li>Afinar <code>startSpeakingPlan</code> en los 19 assistants.</li>
+        <li>Mover los 7 proxies a un modelo rápido y barato.</li>
+        <li>Pasar de <code>nova-2</code> a <code>nova-3</code> los 11 que faltan (Valeria/es se verifica aparte).</li>
+        <li>Fijar modelo de voz rápido donde no comprometa la calidad.</li>
+        <li>Mover <code>{{currentDateTime}}</code> al final de los 12 prompts.</li>
+      </ol>
+    </div>
+
+    <div class="batch">
+      <div class="batch-head">
+        <span class="bn">Tanda 2</span>
+        <span class="bt">Requiere validación en llamada</span>
+      </div>
+      <ol start="6">
+        <li>Migrar a <code>gpt-4.1-mini</code> los agentes sin matemática: receptionists (Emma y Olivia ×2), Nora y Rachel.</li>
+        <li>Podar prompts — sacar changelogs e histórico, como ya se hizo en Grace v1.23.</li>
+      </ol>
+    </div>
+
+    <div class="batch">
+      <div class="batch-head">
+        <span class="bn">Tanda 3</span>
+        <span class="bt">Secuencia obligatoria — el orden importa</span>
+      </div>
+      <ol start="8">
+        <li>Desplegar <code>calculate_premium</code> → validar pricing → <em>entonces</em> evaluar modelo en Jennifer.</li>
+        <li>Wendy, Sarah y Valeria caso a caso (Wendy tiene el flash quote de $1.280).</li>
+      </ol>
+    </div>
+
+    <div class="callout">
+      <span class="tag">Transversal</span>
+      <p>Sincronizar <code>CLAUDE.md</code> con producción <strong>antes</strong> de tocar nada. Si no, la próxima auditoría vuelve a partir de datos falsos.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Dos decisiones que necesito de ti</h2>
+    <div class="decisions">
+      <div class="decision">
+        <h3>Medición</h3>
+        <p>Con 14 días de retención y 5 llamadas no se puede demostrar el antes/después. Para medir de verdad hay que capturar la latencia por turno nosotros. El portal de facturación ya consume datos de la plataforma — es el sitio natural para persistirlo.</p>
+      </div>
+      <div class="decision">
+        <h3>El loop recurrente</h3>
+        <p>Uno semanal sí tiene sentido: comparar repo contra producción y avisar de deriva, y revisar las métricas de Model Intelligence —que se refrescan cada semana— por si aparece una opción mejor.</p>
+      </div>
+    </div>
+    <div class="prose">
+      <p><strong>La Tanda 1 es la que baja latencia sin tocar ni una palabra de lo que dicen los agentes.</strong> Es por donde propongo arrancar.</p>
+    </div>
+  </section>
+
+  <p class="foot">
+    Metodología · Configuración leída en vivo de los 19 assistants. Latencia calculada como el intervalo entre el fin del audio transcrito del usuario y el inicio del audio del bot; incluye espera de endpointing, cierre de transcripción, primer token del modelo y arranque de la voz. Coste y tokens tomados del desglose por llamada. Ventana de 14 días por límite de retención del plan.
+  </p>
+
+</div>
+</div>
+</body>
+</html>

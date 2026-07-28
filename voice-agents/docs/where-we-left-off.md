@@ -1,5 +1,45 @@
 # Where we left off — Farmer Brown
-**Last touched:** 2026-07-10 — Lead-email webhook was silently DOWN since ~2026-07-06 (secret mismatch on the BR number) → re-set + partials now also go to `leads@`; Pablo's Builders Risk *sessions* staging API under negotiation; Jennifer price-hook agreed but NOT built yet. (Prev: 2026-07-06 monorepo + cleanup; 2026-06-14 Jennifer v2.20 pricing fix.)
+**Last touched:** 2026-07-28 — Latency/cost audit of all 19 live assistants ([latency-cost-audit-2026-07-28.html](latency-cost-audit-2026-07-28.html)). Measured median 2.14s per turn (~2× the natural 1.0s target); `startSpeakingPlan` unset on all 19; the 7 silent proxies run gpt-4o to say "One moment."; 18/19 still on gpt-4o. **NEXT: Batch 1** (zero-risk latency work, below). (Prev: 2026-07-10 lead-email webhook outage; 2026-07-06 monorepo + cleanup.)
+
+---
+
+## 2026-07-28 — Latency + cost audit (all 19 assistants) → Batch 1 is the next step
+
+**Trigger:** VAPI announced **Model Intelligence** (2026-07-21) — per-component latency/cost/quality metrics refreshed weekly + 4 curated presets (Balanced / High Intelligence / Ultra Fast / Cost Saver), applied from the assistant's dashboard tab. Docs: `docs.vapi.ai/assistants/model-intelligence/`. Its latency numbers are **VAPI-wide production medians, not our traffic**; quality comes from third-party benchmarks (Daily for STT, Artificial Analysis for LLMs) + VAPI's own Humanness Index for voices. **Do not one-click a preset on a production agent** — it overwrites transcriber + model + voice together, and the voice is caller-facing (and Valeria's transcriber is `es`-tuned).
+
+**What was measured** (live config pulled from the API + the 5 calls inside the 14-day retention window):
+
+| | Median | Worst |
+|---|---|---|
+| Jennifer BR v2.20 | 2.47s | 3.87s |
+| Grace BR Unified v1.23 | 2.14s | 4.12s |
+
+Latency = end of the user's transcribed audio → start of the bot's audio. **Caveat: 17 turns from 2 usable calls.** Directionally clear, statistically weak — and we cannot prove any before/after until we capture per-turn latency ourselves (see "open decisions").
+
+**Findings, ranked by impact:**
+1. **`startSpeakingPlan` is `null` on all 19 assistants** — the platform's main latency lever, untouched (default `waitSeconds: 0.4`, no smart endpointing). Zero-risk, ~300–500ms.
+2. **The 7 silent proxies run gpt-4o** just to say "One moment." + fire one transfer tool (~150–325 token prompt). Sits on the critical path of *every* transfer — exactly where the worst observed turns are (3.87s, 4.12s).
+3. **gpt-4o on 18/19.** Grace Unified already migrated to `gpt-4.1-mini` in v1.23 — same call, same moment: Grace $0.016 / 48,242 tok vs **Jennifer $0.433 / 172,947 tok (27×)**.
+4. **9–10k-token prompts resent every turn** (Grace 40,640 chars ≈ 10.1k tok; Jennifer 37,696 ≈ 9.4k). Grace v1.23 already moved its changelog out of the live prompt — that precedent wasn't applied elsewhere.
+
+**Prompt caching — real but oversold.** `{{currentDateTime}}` sits in the first 0.6–5.3% of the 12 prompts that use it (Jennifer: char 245 of 37,696), leaving the cacheable prefix under the 1024-token minimum, so cross-call caching is dead. Moving it to the END of the prompt fixes it — **but at current volume it changes nothing** (cache TTL ~5–10 min; our calls are hours apart). Within a call caching already works: 24.3% hit on gpt-4o, 12.3% on gpt-4.1-mini. Do it because it's free and correct, not as a latency win.
+
+**Config drift found.** `CLAUDE.md` is stale on 8 of 12 agents: Grace Unified is live at **v1.23 / gpt-4.1-mini / nova-3** (documented v1.22 / gpt-4o / nova-2); Wendy v2.1 (doc v2.0), Rachel v2.5 (v2.4), Valeria v1.2 (v1.0), Nora v1.1 (v1.0), Emma/Olivia/Grace Service v1.2 (v1.1). Also: transcriber split 11× `nova-2` / 8× `nova-3`; voice `model` unset on 18/19 (Valeria is the only explicit one, on `eleven_multilingual_v2` — the slowest); `stopSpeakingPlan` only on Jennifer + Grace Unified.
+
+**THE NEXT STEP — Batch 1 (zero risk, changes nothing the agents say):**
+1. Tune `startSpeakingPlan` on all 19.
+2. Move the 7 proxies to a fast/cheap model.
+3. `nova-2` → `nova-3` on the remaining 11 (verify Valeria/`es` separately).
+4. Set a fast voice model where it doesn't cost quality.
+5. Move `{{currentDateTime}}` to the end of the 12 prompts.
+
+*Batch 2 (needs call validation):* migrate the no-math agents to `gpt-4.1-mini` — receptionists (Emma ×2, Olivia ×2), Nora, Rachel; prune prompts.
+*Batch 3 (order is mandatory):* ship `calculate_premium` → validate pricing → **only then** touch Jennifer's model (she already miscomputes premiums on gpt-4o; a smaller model makes it worse). This is the same sequencing already agreed in the 2026-07-06 entry §3. Wendy/Sarah/Valeria case by case (Wendy has the $1,280 flash quote).
+**Cross-cutting:** sync `CLAUDE.md` with production BEFORE touching anything, or the next audit starts from false data again.
+
+**Open decisions for José:** (a) persist per-turn latency ourselves — the billing app already consumes VAPI data and is the natural place, without it there's no before/after; (b) a weekly recurring loop that diffs repo vs production and re-checks the Model Intelligence metrics.
+
+**Billing note (correction).** Lower VAPI cost does **not** raise margin — with `cost × 1.35` the margin is a fixed 35% of cost, so cutting cost cuts absolute margin too. The win is latency, competitiveness and volume headroom, not margin.
 
 ---
 
