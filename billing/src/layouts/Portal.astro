@@ -147,6 +147,7 @@ const { title, showLogout = true } = Astro.props;
       <div class="right">
         <a href="/portal" class="navlink">Operations</a>
         <a href="/portal/system" class="navlink">System</a>
+        <a href="/portal/voices" class="navlink">Voices</a>
         {showLogout && (
           <form method="POST" action="/auth/callback?logout=1">
             <button type="submit" class="linklike">Sign out</button>

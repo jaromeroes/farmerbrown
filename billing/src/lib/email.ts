@@ -70,6 +70,14 @@ async function send(
  * The big one for URLs is `&`, which strictly should be `&amp;` — some email
  * clients refuse or mis-parse hrefs with raw `&`.
  */
+/** Escape text destined for HTML element content. */
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 function escapeHtmlAttr(s: string): string {
   return s
     .replace(/&/g, '&amp;')
@@ -148,6 +156,54 @@ export async function sendLeadSummary(args: {
   await send(args.to, args.subject, html, args.text, {
     idempotencyKey: args.idempotencyKey,
   });
+}
+
+/**
+ * Voice Lab shortlist. Sent to operations when the customer marks their
+ * preferred agent voices in /portal/voices. Labels only — the label → vendor
+ * mapping lives in voice-agents/docs/voice-lab-registry.json, never here.
+ */
+export async function sendVoicePicks(args: {
+  to: string[];
+  customerName: string;
+  senderEmail: string;
+  picks: { label: string; note: string }[];
+  comment: string;
+}): Promise<void> {
+  const rows = args.picks
+    .map(
+      (p) => `
+      <tr>
+        <td style="padding:0.4rem 0.75rem;border-bottom:1px solid #e5e5e5;
+                   font-family:ui-monospace,Menlo,monospace;font-weight:600;">${escapeHtml(p.label)}</td>
+        <td style="padding:0.4rem 0.75rem;border-bottom:1px solid #e5e5e5;color:#6b6b6b;">${escapeHtml(p.note)}</td>
+      </tr>`
+    )
+    .join('');
+
+  const html = `
+    ${emailHeaderHtml()}
+    <p><strong>${escapeHtml(args.customerName)}</strong> picked
+    ${args.picks.length} voice${args.picks.length === 1 ? '' : 's'} in the Voice Lab.</p>
+    <table style="border-collapse:collapse;width:100%;max-width:520px;">${rows}</table>
+    ${
+      args.comment
+        ? `<p style="margin-top:1.25rem;"><strong>Their notes</strong><br/>
+             <span style="color:#6b6b6b;white-space:pre-wrap;">${escapeHtml(args.comment)}</span></p>`
+        : ''
+    }
+    <p style="color:#9ca3af;font-size:0.8rem;margin-top:1.5rem;">
+      Sent by ${escapeHtml(args.senderEmail)} — Farmer Brown AI Hub
+    </p>
+  `;
+
+  const text =
+    `${args.customerName} picked ${args.picks.length} voice(s):\n\n` +
+    args.picks.map((p) => `  ${p.label}  ${p.note}`).join('\n') +
+    (args.comment ? `\n\nNotes:\n${args.comment}` : '') +
+    `\n\nSent by ${args.senderEmail}`;
+
+  await send(args.to, `Voice picks — ${args.customerName} (${args.picks.length})`, html, text);
 }
 
 export async function sendMagicLink(args: {

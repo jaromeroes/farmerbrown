@@ -1,5 +1,64 @@
 # Where we left off — Farmer Brown
-**Last touched:** 2026-07-28 — Latency/cost audit of all 19 live assistants ([latency-cost-audit-2026-07-28.html](latency-cost-audit-2026-07-28.html)). Measured median 2.14s per turn (~2× the natural 1.0s target); `startSpeakingPlan` unset on all 19; the 7 silent proxies run gpt-4o to say "One moment."; 18/19 still on gpt-4o. **NEXT: Batch 1** (zero-risk latency work, below). (Prev: 2026-07-10 lead-email webhook outage; 2026-07-06 monorepo + cleanup.)
+**Last touched:** 2026-09-04 — **Voice Lab shipped** ([voice-lab.md](voice-lab.md)): the
+client can now audition 33 candidate agent voices at `/portal/voices`, each one playable
+both clean and through a simulated phone line, and send us a shortlist. Also found while
+building it: the BR line is **back up** (the August TTS outage is over) and **Jennifer +
+Grace Unified were quietly moved onto native platform voices** — a production change no
+doc records. **NEXT is still Batch 1** of the latency audit (below).
+
+---
+
+## 2026-09-04 — Voice Lab: letting the client pick the voices
+
+**Trigger:** John wants a way to try different voices. Standing problem behind it: 19
+assistants run on **5 voices**, 11 of them sharing literally the same
+`Ne7VRnu9eE7lobTDr8Pw`, and "distinctive voice per agent" is a TODO written into six
+deploy scripts. Picking voices is the client's call — but the client can't be handed an
+API key, a vendor dashboard, or the name of the stack.
+
+**What shipped** (full notes in [voice-lab.md](voice-lab.md)):
+`/portal/voices` in the billing portal, behind the login John already has. 33 candidate
+voices, each published **twice** — a clean *Studio* track and a *Phone line* track
+band-passed to 300–3400 Hz and round-tripped through 8 kHz G.711 µ-law, i.e. what the
+caller actually hears. The gallery defaults to Phone line, because a browser MP3 flatters
+every voice and the line does not. Everything is loudness-normalised so the loudest
+sample doesn't win the audition. He stars what he likes, adds notes, and hits send — the
+shortlist emails `OPERATIONS_EMAIL`.
+
+Built by `scripts/voice-lab-build.js` (idempotent, `--dry-run` / `--force`). It emits two
+deliberately separated artefacts: `billing/src/lib/voiceCatalog.ts`, which ships to the
+browser carrying **labels only**, and `docs/voice-lab-registry.json`, which keeps the
+`FB-NN → provider + voiceId` mapping here. Labels are stable across rebuilds, so a
+shortlist sent last week still means the same voices today.
+
+**Two things found while building this — both worth acting on:**
+
+1. **The BR line is back.** Real calls with real cost on 2026-08-28 and 2026-09-02
+   (including a completed transfer). The 11labs credential in the platform shows
+   `updatedAt: 2026-08-18` — the key rotation from the outage investigation took. The
+   memory entry describing this as an open incident is now closed.
+2. **🔴 Undocumented production drift on the BR pair.** `Jennifer — Builders Risk v2.20`
+   is on the native voice **`Layla`** and `Grace — BR Receptionist EN Unified v1.23` on
+   **`Savannah`** — both moved off 11labs, presumably as the August workaround, and
+   **nobody validated how they sound**. The other 17 assistants are still on 11labs. This
+   is exactly the kind of drift the 2026-07-28 audit warned about; the BR line is the one
+   with real traffic, so these two are the natural first customers for the Voice Lab.
+
+**The limit worth knowing:** only **2 of the 11** voice libraries publish sample audio
+(`11labs` and `vapi` — the two we already run). `cartesia` (924 voices), `azure` (781),
+`rime-ai` (694), `deepgram`, `minimax`, `hume`, `lmnt`, `neuphonic`, `inworld` return
+metadata with no audio, and the platform has no synthesis endpoint (probed four
+candidates, all 404). So the gallery cannot yet audition an alternative vendor — which is
+awkward, because "add a fallback voice provider" has been an open action since the outage
+took all 19 assistants down for a month on a single vendor. **An ElevenLabs API key in
+`.env`** (that account already exists and is paid) would also let us render **our own
+scripts** instead of the vendors' generic sentences — Grace's greeting, Jennifer's quote
+line — which is a much better audition. Cartesia/Deepgram/Rime have free tiers for the
+multi-vendor comparison.
+
+**Also not covered:** no Spanish voice has published audio, so Valeria's line is outside
+the gallery. And no browser gallery can tell you about latency, barge-in, or how a voice
+holds up over a 7-minute quote intake — that needs a real call.
 
 ---
 

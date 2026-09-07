@@ -100,11 +100,24 @@ Key tables (full DDL in `supabase/migrations/20260508_000000_init.sql`):
 
 ```
 src/lib/        — Framework-free core (pricing, ledger, vapi, stripe, email)
-src/pages/api/  — Server endpoints (cron, webhook, checkout, topup-status)
-src/pages/      — Astro pages (login, portal, portal/topup, portal/success)
+src/pages/api/  — Server endpoints (cron, webhook, checkout, topup-status,
+                  vapi-lead-email, voice-lab/picks)
+src/pages/      — Astro pages (login, portal, portal/topup, portal/success,
+                  portal/system, portal/voices)
+public/voice-lab/ — Voice Lab audio samples (generated, see below)
 supabase/       — Schema migrations + local dev config
 scripts/        — Dev-only utilities (Stripe listen, VAPI call simulator)
 ```
+
+**The Voice Lab (`/portal/voices`) belongs to the voice-agent system, not to
+billing** — same arrangement as the lead-email notifier. It lets the customer
+audition candidate agent voices and send us a shortlist. `src/lib/voiceCatalog.ts`
+and everything under `public/voice-lab/` are **generated** by
+`voice-agents/scripts/voice-lab-build.js`; do not hand-edit them. The catalogue
+that ships to the browser carries labels only — no vendor name, no voice id —
+because the customer must not learn the stack. The label → vendor mapping lives
+in `voice-agents/docs/voice-lab-registry.json`. Full notes:
+`voice-agents/docs/voice-lab.md`.
 
 The framework-free `lib/` is the testable boundary. Cron, webhook, and the
 portal pages all import the same `ledger.ts` / `pricing.ts` so the margin and
