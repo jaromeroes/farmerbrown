@@ -1,0 +1,35 @@
+---
+/**
+ * /voices/<token> — the Voice Lab behind an unguessable link, no login.
+ *
+ * Why this exists: the person who has to choose the voices had never signed
+ * into the portal once. A magic-link round-trip to an unused mailbox is a
+ * high price for clicking play on ten MP3s.
+ *
+ * What it does NOT expose: this route renders the gallery only. Balance,
+ * ledger, top-ups, calls and transcripts stay behind the portal login, which
+ * is unchanged. The gallery carries no personal data, no vendor names and
+ * nothing billable, so an unguessable URL is proportionate to it.
+ *
+ * Fails closed: with VOICE_LAB_TOKEN unset the route 404s, so a missing
+ * environment variable can never publish the page. Rotate the variable to
+ * revoke every link that has been handed out.
+ */
+import Portal from '@layouts/Portal.astro';
+import VoiceGallery from '@components/VoiceGallery.astro';
+import { timingSafeEqualString } from '@lib/shareToken';
+
+export const prerender = false;
+
+const expected = import.meta.env.VOICE_LAB_TOKEN ?? '';
+const provided = Astro.params.token ?? '';
+
+if (!expected || !timingSafeEqualString(provided, expected)) {
+  // 404, not 403: a wrong token shouldn't confirm that the route exists.
+  return new Response(null, { status: 404 });
+}
+---
+
+<Portal title="Voices" showNav={false}>
+  <VoiceGallery shareToken={provided} />
+</Portal>

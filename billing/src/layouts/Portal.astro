@@ -6,8 +6,15 @@
 interface Props {
   title: string;
   showLogout?: boolean;
+  /**
+   * Hidden for pages reachable without a session (the Voice Lab share link):
+   * every nav target requires auth, so showing them would bounce the visitor
+   * to a login they don't have. The brand stops being a link for the same
+   * reason.
+   */
+  showNav?: boolean;
 }
-const { title, showLogout = true } = Astro.props;
+const { title, showLogout = true, showNav = true } = Astro.props;
 ---
 
 <!DOCTYPE html>
@@ -140,20 +147,29 @@ const { title, showLogout = true } = Astro.props;
   </head>
   <body>
     <header class="site">
-      <a href="/portal" class="brand" aria-label="Farmer Brown AI Hub home">
-        <img src="/farmerbrown-logo.webp" alt="Farmer Brown" width="160" height="40" />
-        <span>AI Hub</span>
-      </a>
-      <div class="right">
-        <a href="/portal" class="navlink">Operations</a>
-        <a href="/portal/system" class="navlink">System</a>
-        <a href="/portal/voices" class="navlink">Voices</a>
-        {showLogout && (
-          <form method="POST" action="/auth/callback?logout=1">
-            <button type="submit" class="linklike">Sign out</button>
-          </form>
-        )}
-      </div>
+      {showNav ? (
+        <a href="/portal" class="brand" aria-label="Farmer Brown AI Hub home">
+          <img src="/farmerbrown-logo.webp" alt="Farmer Brown" width="160" height="40" />
+          <span>AI Hub</span>
+        </a>
+      ) : (
+        <div class="brand">
+          <img src="/farmerbrown-logo.webp" alt="Farmer Brown" width="160" height="40" />
+          <span>AI Hub</span>
+        </div>
+      )}
+      {showNav && (
+        <div class="right">
+          <a href="/portal" class="navlink">Operations</a>
+          <a href="/portal/system" class="navlink">System</a>
+          <a href="/portal/voices" class="navlink">Voices</a>
+          {showLogout && (
+            <form method="POST" action="/auth/callback?logout=1">
+              <button type="submit" class="linklike">Sign out</button>
+            </form>
+          )}
+        </div>
+      )}
     </header>
     <main class="container">
       <slot />

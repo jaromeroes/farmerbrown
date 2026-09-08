@@ -1,7 +1,30 @@
 # Voice Lab — how the client picks agent voices
 
-**Live:** <https://farmerbrown.theb2btinkerers.com/portal/voices> (behind the
-portal login, nav item **Voices**).
+**Live, two doors onto the same gallery:**
+
+| URL | Who | Lock |
+|---|---|---|
+| `/portal/voices` | us, and any portal user | Portal magic-link login, nav item **Voices** |
+| `/voices/<token>` | whoever we send the link to | An unguessable token, no sign-in |
+
+The billing portal holds money — balance, ledger, Stripe top-ups, call
+transcripts. The gallery holds ten MP3s with no personal data, no vendor names
+and nothing billable. Locking both the same way is what made the person who
+actually has to choose the voices do a magic-link round-trip to a mailbox he
+had never signed into. So the portal's security is untouched and the gallery
+got its own, lighter door.
+
+**The token** lives in the `VOICE_LAB_TOKEN` environment variable (Vercel for
+production, `.env` locally). It **fails closed**: with the variable unset the
+route 404s, so a missing env var can never publish the page. A wrong token also
+404s rather than 403s, so probing doesn't confirm the route exists. **Rotating
+the variable revokes every link already handed out** — that is the whole
+revocation story, and it is deliberately that blunt.
+
+The share link also authorises `POST /api/voice-lab/picks`, so someone with the
+link can send a shortlist without an account. That request carries no identity,
+so the email says the picks arrived via the share link rather than naming
+anyone: we know who we sent the link to, the request doesn't.
 
 ## Why
 
@@ -53,7 +76,10 @@ it the loudest sample wins the audition rather than the best one.
 | `voice-agents/docs/voice-lab-registry.json` | **Internal.** `FB-NN → provider + voiceId`. Never ships to the browser. |
 | `billing/src/lib/voiceCatalog.ts` | **Public.** Generated. Labels, gender, accent, tone, audio paths — no vendor, no voice id. |
 | `billing/public/voice-lab/*.mp3` | The audio, 20 files, ~0.8 MB. |
-| `billing/src/pages/portal/voices.astro` | The gallery. Auth-gated, no framework, picks in `localStorage`. |
+| `billing/src/components/VoiceGallery.astro` | The gallery itself — markup, styles, player. No framework, picks in `localStorage`. |
+| `billing/src/pages/portal/voices.astro` | Door 1: the auth gate, then the gallery. |
+| `billing/src/pages/voices/[token].astro` | Door 2: the share link. Validates `VOICE_LAB_TOKEN`, 404s otherwise. |
+| `billing/src/lib/shareToken.ts` | Constant-time token comparison. |
 | `billing/src/pages/api/voice-lab/picks.ts` | Shortlist → email to `OPERATIONS_EMAIL`. Validates labels against the catalogue; nothing persisted. |
 
 ## Rebuilding

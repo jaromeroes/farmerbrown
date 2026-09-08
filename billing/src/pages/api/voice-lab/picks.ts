@@ -1,7 +1,12 @@
 /**
  * POST /api/voice-lab/picks — the customer sends their voice shortlist.
  *
- * Body: { labels: string[], comment?: string }
+ * Body: { labels: string[], comment?: string, token?: string }
+ *
+ * Authorised two ways, matching the two doors the gallery is served behind:
+ * a portal session, or the Voice Lab share token. The token path carries no
+ * identity, so the email says the picks arrived via the share link rather
+ * than naming anyone — we know who we sent the link to, the request doesn't.
  *
  * Labels are the neutral `FB-NN` identifiers from the Voice Lab catalogue.
  * They are validated against the generated catalogue, so nothing reaches the
@@ -20,6 +25,7 @@ import { requireCustomerOr401 } from '@lib/auth';
 import { rateLimit } from '@lib/rateLimit';
 import { sendVoicePicks } from '@lib/email';
 import { VOICE_SAMPLES } from '@lib/voiceCatalog';
+import { timingSafeEqualString } from '@lib/shareToken';
 
 export const prerender = false;
 
@@ -28,6 +34,7 @@ const MAX_COMMENT = 2000;
 const bodySchema = z.object({
   labels: z.array(z.string().max(16)).min(1).max(VOICE_SAMPLES.length),
   comment: z.string().max(MAX_COMMENT).optional().default(''),
+  token: z.string().max(128).optional(),
 });
 
 const CATALOG = new Map(VOICE_SAMPLES.map((v) => [v.label, v]));
@@ -45,19 +52,31 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
     return json({ error: 'invalid picks', details: parsed.error.issues }, 400);
   }
 
-  const supabase = createSupabaseServerClient({ request, cookies });
-  let session;
-  try {
-    session = await requireCustomerOr401(supabase);
-  } catch (err) {
-    if (err instanceof Response) return err;
-    throw err;
+  // Door 1: the share token. Checked first so a share-link visitor never pays
+  // for a Supabase round-trip they have no cookie for.
+  const expectedToken = import.meta.env.VOICE_LAB_TOKEN ?? '';
+  const viaShareLink =
+    Boolean(parsed.data.token) &&
+    Boolean(expectedToken) &&
+    timingSafeEqualString(parsed.data.token!, expectedToken);
+
+  // Door 2: a portal session.
+  let session: Awaited<ReturnType<typeof requireCustomerOr401>> | null = null;
+  if (!viaShareLink) {
+    const supabase = createSupabaseServerClient({ request, cookies });
+    try {
+      session = await requireCustomerOr401(supabase);
+    } catch (err) {
+      if (err instanceof Response) return err;
+      throw err;
+    }
   }
 
   // Sending is cheap but it fans out to a mailbox — one submission a minute is
-  // plenty for a human clicking a button.
+  // plenty for a human clicking a button. The share-link path has no user id,
+  // so it is limited by address alone.
   const limit = rateLimit({
-    key: `voice-picks:${session.userId}:${clientAddress ?? 'unknown'}`,
+    key: `voice-picks:${session?.userId ?? 'share'}:${clientAddress ?? 'unknown'}`,
     max: 4,
     windowMs: 60_000,
   });
@@ -95,8 +114,8 @@ export const POST: APIRoute = async ({ request, cookies, clientAddress }) => {
   try {
     await sendVoicePicks({
       to,
-      customerName: session.customerDisplayName,
-      senderEmail: session.email,
+      customerName: session?.customerDisplayName ?? 'Farmer Brown Insurance',
+      senderEmail: session?.email ?? 'the Voice Lab share link (no sign-in)',
       picks,
       comment: parsed.data.comment.trim(),
     });
