@@ -88,6 +88,18 @@ const PROVIDERS = [
 
 const SAMPLE_SECONDS = 14;
 
+// Every persona we run is female (Emma, Olivia, Grace, Jennifer, Sarah, Wendy,
+// Rachel, Nora, Valeria) and the client wants it kept that way, so male and
+// unlabelled-gender voices never enter the gallery. A library that doesn't
+// label gender at all therefore contributes nothing — that is intentional.
+const FEMALE_ONLY = true;
+
+// American only. Farmer Brown sells US insurance to US callers, so a British
+// or Australian voice is a distraction however good it sounds. The match is
+// deliberately loose (`/american/i`) so American variants — "Indian American"
+// and the like — stay in and the gallery's accent filter can tell them apart.
+const AMERICAN_ONLY = true;
+
 // Anything in here is scrubbed from the tone text before it reaches the
 // browser. External comms rule: the client never learns which vendors we run.
 const VENDOR_WORDS = /\b(eleven ?labs|elevenlabs|eleven|vapi|cartesia|deepgram|azure|microsoft|openai|open ai|rime|neuphonic|hume|lmnt|inworld|minimax|play\.?ht|playht|google|amazon|aws|polly|sonic|aura|nova)\b/gi;
@@ -161,13 +173,12 @@ function toneOf(rec) {
 }
 
 /**
- * Rank inside a provider+language bucket. Female first (every persona we run
- * is female), then a labelled American accent, then a written description,
- * then alphabetical so the order — and therefore the labels — is stable.
+ * Rank inside a provider+language bucket: a labelled American accent first,
+ * then a written description, then alphabetical so the order — and therefore
+ * the labels — is stable.
  */
 function rank(a, b) {
   const score = (v) =>
-    (v.gender === 'female' ? 0 : v.gender === null ? 1 : 2) * 100 +
     (/american/i.test(v.accent) ? 0 : 10) +
     (v.tone ? 0 : 5);
   return score(a) - score(b) || String(a.srcName).localeCompare(String(b.srcName));
@@ -179,6 +190,8 @@ function select(records, cfg) {
     if (!rec.previewUrl) continue;
     const lang = langOf(rec, cfg.assumeEnglish);
     if (lang !== 'en' && lang !== 'es') continue;
+    if (FEMALE_ONLY && genderOf(rec) !== 'female') continue;
+    if (AMERICAN_ONLY && lang === 'en' && !/american/i.test(accentOf(rec, lang))) continue;
     pools[lang].push({
       key: `${rec.provider}:${rec.providerId}`,
       provider: rec.provider,

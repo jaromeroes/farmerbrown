@@ -34,16 +34,15 @@ if (!session) {
 }
 
 const accents = [...new Set(VOICE_SAMPLES.map((v) => v.accent))].sort();
-const femaleCount = VOICE_SAMPLES.filter((v) => v.gender === 'female').length;
 ---
 
 <Portal title="Voices">
   <div class="card">
     <h2>Voice Lab</h2>
     <p class="small text-muted" style="margin-bottom:1rem;">
-      {VOICE_SAMPLES.length} candidate voices for the agents on your lines
-      ({femaleCount} female). Listen, star the ones you like, and send us the
-      list — we'll put your picks on the agents you choose.
+      {VOICE_SAMPLES.length} candidate voices for the agents on your lines —
+      female, American. Listen, star the ones you like, and send us the list —
+      we'll put your picks on the agents you choose.
     </p>
     <p class="small" style="margin:0;">
       <strong>Listen on <em>Phone line</em> before you decide.</strong> The
@@ -63,11 +62,6 @@ const femaleCount = VOICE_SAMPLES.filter((v) => v.gender === 'female').length;
     </div>
     <div class="row">
       <span class="ctl-label">Show</span>
-      <select id="f-gender" aria-label="Filter by voice type">
-        <option value="">All voices</option>
-        <option value="female">Female</option>
-        <option value="male">Male</option>
-      </select>
       <select id="f-accent" aria-label="Filter by accent">
         <option value="">All accents</option>
         {accents.map((a) => <option value={a}>{a}</option>)}
@@ -84,7 +78,6 @@ const femaleCount = VOICE_SAMPLES.filter((v) => v.gender === 'female').length;
       <article
         class="voice"
         data-label={v.label}
-        data-gender={v.gender ?? ''}
         data-accent={v.accent}
         data-studio={v.studio}
         data-phone={v.phone}
@@ -95,9 +88,7 @@ const femaleCount = VOICE_SAMPLES.filter((v) => v.gender === 'female').length;
           </button>
           <div class="voice-id">
             <span class="mono label">{v.label}</span>
-            <span class="meta small text-muted">
-              {v.gender ?? 'unlabelled'} · {v.accent}
-            </span>
+            <span class="meta small text-muted">{v.accent}</span>
           </div>
           <button type="button" class="star" aria-label={`Star ${v.label}`} aria-pressed="false">★</button>
         </div>
@@ -244,7 +235,6 @@ const femaleCount = VOICE_SAMPLES.filter((v) => v.gender === 'female').length;
     }
 
     // ── Filters ────────────────────────────────────────────────────────────
-    const fGender = document.getElementById('f-gender') as HTMLSelectElement;
     const fAccent = document.getElementById('f-accent') as HTMLSelectElement;
     const fStarred = document.getElementById('f-starred') as HTMLInputElement;
 
@@ -252,7 +242,6 @@ const femaleCount = VOICE_SAMPLES.filter((v) => v.gender === 'female').length;
       let shown = 0;
       for (const card of cards) {
         const ok =
-          (!fGender.value || card.dataset.gender === fGender.value) &&
           (!fAccent.value || card.dataset.accent === fAccent.value) &&
           (!fStarred.checked || starred.has(card.dataset.label!));
         card.hidden = !ok;
@@ -262,7 +251,7 @@ const femaleCount = VOICE_SAMPLES.filter((v) => v.gender === 'female').length;
         shown === cards.length ? `${shown} voices` : `${shown} of ${cards.length} voices`;
     }
 
-    for (const el of [fGender, fAccent, fStarred]) {
+    for (const el of [fAccent, fStarred]) {
       el.addEventListener('change', applyFilters);
     }
 

@@ -14,6 +14,21 @@ stack (see the external-comms rule in the root `CLAUDE.md`).
 So: a gallery inside the portal they already log into, with every voice
 anonymised behind an `FB-NN` label.
 
+## What gets into the gallery
+
+Two hard rules, both set by the client and both enforced in the build script:
+
+- **Female only.** Every persona we run is female — Emma, Olivia, Grace,
+  Jennifer, Sarah, Wendy, Rachel, Nora, Valeria. A library that doesn't label
+  gender contributes nothing, by design.
+- **American accents only.** Farmer Brown sells US insurance to US callers, so
+  a British or Australian voice is a distraction however good it sounds. The
+  match is loose (`/american/i`) so American variants such as "Indian American"
+  stay in and the accent filter can tell them apart.
+
+Together these take the ~727 voices the platform exposes down to **10**. That
+is a thin gallery, and the fix is a key — see *Known limits* below.
+
 ## The two renders
 
 Every voice is published twice, and this is the part that matters:
@@ -37,7 +52,7 @@ it the loudest sample wins the audition rather than the best one.
 | `voice-agents/scripts/voice-lab-build.js` | Builds everything. Fetches, curates, downloads, transcodes, emits both artefacts. |
 | `voice-agents/docs/voice-lab-registry.json` | **Internal.** `FB-NN → provider + voiceId`. Never ships to the browser. |
 | `billing/src/lib/voiceCatalog.ts` | **Public.** Generated. Labels, gender, accent, tone, audio paths — no vendor, no voice id. |
-| `billing/public/voice-lab/*.mp3` | The audio, 66 files, ~2 MB. |
+| `billing/public/voice-lab/*.mp3` | The audio, 20 files, ~0.8 MB. |
 | `billing/src/pages/portal/voices.astro` | The gallery. Auth-gated, no framework, picks in `localStorage`. |
 | `billing/src/pages/api/voice-lab/picks.ts` | Shortlist → email to `OPERATIONS_EMAIL`. Validates labels against the catalogue; nothing persisted. |
 
@@ -66,13 +81,17 @@ any new audio; Vercel serves the MP3s straight from `billing/public/`.
 ## Known limits (read before promising anything)
 
 **Only 2 of the 11 voice libraries publish sample audio.** `11labs` (21 voices)
-and `vapi` (22, of which 12 have audio) ship a `previewUrl`; `cartesia` (924),
-`azure` (781), `rime-ai` (694), `minimax`, `deepgram`, `hume`, `lmnt`,
+and `vapi` (22, of which 12 have audio) ship a `previewUrl`; `cartesia` (940+),
+`azure` (790+), `rime-ai` (760), `minimax`, `deepgram`, `hume`, `lmnt`,
 `neuphonic` and `inworld` return metadata with **no audio at all**, and the
 platform exposes no synthesis endpoint (probed: `/voice/synthesize`, `/tts`,
-`/voice/test`, `/speech` — all 404). The gallery therefore covers **33 voices
-from the two providers we already run**. Auditioning any other vendor needs
-that vendor's own API key.
+`/voice/test`, `/speech` — all 404). Auditioning any other vendor needs that
+vendor's own API key.
+
+**Female + American leaves only 10.** The two providers with audio publish 43
+voices between them; the client's two rules cut that to 10, and three of those
+are near-identical stock reads. This is the gallery's real constraint — not the
+player, not the transcoding.
 
 **No Spanish.** Every voice with published audio is English, so Valeria's
 Spanish line is not covered by this gallery.
@@ -87,7 +106,8 @@ An **ElevenLabs API key** in `voice-agents/.env` (the account already exists —
 Creator plan, ~300k credits/mo, and it is the same account whose key rotation
 fixed the August outage). With it the build script could:
 
-- reach the **full** shared voice library instead of the 21 premade voices, and
+- reach the **full** shared voice library instead of the 21 premade voices —
+  hundreds of female American voices instead of seven, and
 - render **our actual scripts** — Grace's greeting, Jennifer's quote line — so
   the client auditions the real thing at a real length.
 

@@ -6,7 +6,7 @@
  * voice id. The label → vendor mapping lives in
  * voice-agents/docs/voice-lab-registry.json and stays out of the app.
  *
- * Generated: 2026-09-04T09:13:05.881Z
+ * Generated: 2026-09-08T07:26:28.228Z
  */
 
 export interface VoiceSample {
@@ -28,9 +28,9 @@ export const VOICE_SAMPLES: VoiceSample[] = [
   {
     "label": "FB-01",
     "lang": "en",
-    "gender": "male",
+    "gender": "female",
     "accent": "American",
-    "tone": "Conversational and laid back.",
+    "tone": "Young and popular, this playful American female voice is perfect for trendy content.",
     "studio": "/voice-lab/fb-01-studio.mp3",
     "phone": "/voice-lab/fb-01-phone.mp3"
   },
@@ -39,25 +39,25 @@ export const VOICE_SAMPLES: VoiceSample[] = [
     "lang": "en",
     "gender": "female",
     "accent": "American",
-    "tone": "Young and popular, this playful American female voice is perfect for trendy content.",
+    "tone": "Young adult woman with a confident and warm, mature quality and a reassuring, professional tone.",
     "studio": "/voice-lab/fb-02-studio.mp3",
     "phone": "/voice-lab/fb-02-phone.mp3"
   },
   {
     "label": "FB-03",
     "lang": "en",
-    "gender": "male",
+    "gender": "female",
     "accent": "American",
-    "tone": "A smooth tenor pitch from a man in his 40s - perfect for agentic use cases.",
+    "tone": "This young adult female voice delivers sunny enthusiasm with a quirky attitude.",
     "studio": "/voice-lab/fb-03-studio.mp3",
     "phone": "/voice-lab/fb-03-phone.mp3"
   },
   {
     "label": "FB-04",
     "lang": "en",
-    "gender": "male",
+    "gender": "female",
     "accent": "American",
-    "tone": "Easy going and perfect for casual conversations.",
+    "tone": "This voice is warm, bright, and professional, characterized by a Standard American accent and a polished, narrative quality. It features a m.",
     "studio": "/voice-lab/fb-04-studio.mp3",
     "phone": "/voice-lab/fb-04-phone.mp3"
   },
@@ -66,7 +66,7 @@ export const VOICE_SAMPLES: VoiceSample[] = [
     "lang": "en",
     "gender": "female",
     "accent": "American",
-    "tone": "Young adult woman with a confident and warm, mature quality and a reassuring, professional tone.",
+    "tone": "A professional woman with a pleasing alto pitch. Suitable for many use cases.",
     "studio": "/voice-lab/fb-05-studio.mp3",
     "phone": "/voice-lab/fb-05-phone.mp3"
   },
@@ -75,7 +75,7 @@ export const VOICE_SAMPLES: VoiceSample[] = [
     "lang": "en",
     "gender": "female",
     "accent": "American",
-    "tone": "This young adult female voice delivers sunny enthusiasm with a quirky attitude.",
+    "tone": "Natural, Female, Adult, American, Professional.",
     "studio": "/voice-lab/fb-06-studio.mp3",
     "phone": "/voice-lab/fb-06-phone.mp3"
   },
@@ -84,242 +84,35 @@ export const VOICE_SAMPLES: VoiceSample[] = [
     "lang": "en",
     "gender": "female",
     "accent": "American",
-    "tone": "This voice is warm, bright, and professional, characterized by a Standard American accent and a polished, narrative quality. It features a m.",
+    "tone": "Natural, Female, Young, American, Friendly.",
     "studio": "/voice-lab/fb-07-studio.mp3",
     "phone": "/voice-lab/fb-07-phone.mp3"
   },
   {
     "label": "FB-08",
     "lang": "en",
-    "gender": "male",
-    "accent": "Australian",
-    "tone": "A young Australian male with a confident and energetic voice.",
+    "gender": "female",
+    "accent": "American",
+    "tone": "Natural, Female, Young, American, Friendly.",
     "studio": "/voice-lab/fb-08-studio.mp3",
     "phone": "/voice-lab/fb-08-phone.mp3"
   },
   {
     "label": "FB-09",
     "lang": "en",
-    "gender": "male",
-    "accent": "American",
-    "tone": "Natural and real, this down-to-earth voice is great across many use-cases.",
+    "gender": "female",
+    "accent": "Indian American",
+    "tone": "Natural, Female, Young, Indian American, Friendly.",
     "studio": "/voice-lab/fb-09-studio.mp3",
     "phone": "/voice-lab/fb-09-phone.mp3"
   },
   {
     "label": "FB-10",
     "lang": "en",
-    "gender": "male",
-    "accent": "British",
-    "tone": "Warm resonance that instantly captivates listeners.",
+    "gender": "female",
+    "accent": "American",
+    "tone": "Natural, Female, Young, American, Friendly.",
     "studio": "/voice-lab/fb-10-studio.mp3",
     "phone": "/voice-lab/fb-10-phone.mp3"
-  },
-  {
-    "label": "FB-11",
-    "lang": "en",
-    "gender": "male",
-    "accent": "American",
-    "tone": "Deceptively gravelly, yet unsettling edge.",
-    "studio": "/voice-lab/fb-11-studio.mp3",
-    "phone": "/voice-lab/fb-11-phone.mp3"
-  },
-  {
-    "label": "FB-12",
-    "lang": "en",
-    "gender": "male",
-    "accent": "American",
-    "tone": "Middle-aged man with a resonant and comforting tone. Great for narrations and advertisements.",
-    "studio": "/voice-lab/fb-12-studio.mp3",
-    "phone": "/voice-lab/fb-12-phone.mp3"
-  },
-  {
-    "label": "FB-13",
-    "lang": "en",
-    "gender": "male",
-    "accent": "British",
-    "tone": "A strong voice perfect for delivering a professional broadcast or news story.",
-    "studio": "/voice-lab/fb-13-studio.mp3",
-    "phone": "/voice-lab/fb-13-phone.mp3"
-  },
-  {
-    "label": "FB-14",
-    "lang": "en",
-    "gender": "female",
-    "accent": "British",
-    "tone": "Velvety British female voice delivers news and narrations with warmth and clarity.",
-    "studio": "/voice-lab/fb-14-studio.mp3",
-    "phone": "/voice-lab/fb-14-phone.mp3"
-  },
-  {
-    "label": "FB-15",
-    "lang": "en",
-    "gender": "male",
-    "accent": "American",
-    "tone": "A bright tenor pitch that immediately cuts through. The delivery is brash and openly confident, speaking with unwavering certainty and a slightly aggressive self-assurance.",
-    "studio": "/voice-lab/fb-15-studio.mp3",
-    "phone": "/voice-lab/fb-15-phone.mp3"
-  },
-  {
-    "label": "FB-16",
-    "lang": "en",
-    "gender": "male",
-    "accent": "American",
-    "tone": "Friendly and comforting voice ready to narrate your stories.",
-    "studio": "/voice-lab/fb-16-studio.mp3",
-    "phone": "/voice-lab/fb-16-phone.mp3"
-  },
-  {
-    "label": "FB-17",
-    "lang": "en",
-    "gender": null,
-    "accent": "American",
-    "tone": "A relaxed, neutral voice ready for narrations or conversational projects.",
-    "studio": "/voice-lab/fb-17-studio.mp3",
-    "phone": "/voice-lab/fb-17-phone.mp3"
-  },
-  {
-    "label": "FB-18",
-    "lang": "en",
-    "gender": "male",
-    "accent": "American",
-    "tone": "An animated warrior ready to charge forward.",
-    "studio": "/voice-lab/fb-18-studio.mp3",
-    "phone": "/voice-lab/fb-18-phone.mp3"
-  },
-  {
-    "label": "FB-19",
-    "lang": "en",
-    "gender": "male",
-    "accent": "American",
-    "tone": "A young adult with energy and warmth - suitable for reels and shorts.",
-    "studio": "/voice-lab/fb-19-studio.mp3",
-    "phone": "/voice-lab/fb-19-phone.mp3"
-  },
-  {
-    "label": "FB-20",
-    "lang": "en",
-    "gender": "female",
-    "accent": "British",
-    "tone": "Clear and engaging, friendly woman with a British accent suitable for e-learning.",
-    "studio": "/voice-lab/fb-20-studio.mp3",
-    "phone": "/voice-lab/fb-20-phone.mp3"
-  },
-  {
-    "label": "FB-21",
-    "lang": "en",
-    "gender": "female",
-    "accent": "American",
-    "tone": "A professional woman with a pleasing alto pitch. Suitable for many use cases.",
-    "studio": "/voice-lab/fb-21-studio.mp3",
-    "phone": "/voice-lab/fb-21-phone.mp3"
-  },
-  {
-    "label": "FB-22",
-    "lang": "en",
-    "gender": "female",
-    "accent": "American",
-    "tone": "Natural, Female, Adult, American, Professional.",
-    "studio": "/voice-lab/fb-22-studio.mp3",
-    "phone": "/voice-lab/fb-22-phone.mp3"
-  },
-  {
-    "label": "FB-23",
-    "lang": "en",
-    "gender": "male",
-    "accent": "Canadian",
-    "tone": "Natural, Male, Young, American, Calm.",
-    "studio": "/voice-lab/fb-23-studio.mp3",
-    "phone": "/voice-lab/fb-23-phone.mp3"
-  },
-  {
-    "label": "FB-24",
-    "lang": "en",
-    "gender": "female",
-    "accent": "American",
-    "tone": "Natural, Female, Young, American, Friendly.",
-    "studio": "/voice-lab/fb-24-studio.mp3",
-    "phone": "/voice-lab/fb-24-phone.mp3"
-  },
-  {
-    "label": "FB-25",
-    "lang": "en",
-    "gender": "male",
-    "accent": "American",
-    "tone": "Natural, Male, Young, American, Professional.",
-    "studio": "/voice-lab/fb-25-studio.mp3",
-    "phone": "/voice-lab/fb-25-phone.mp3"
-  },
-  {
-    "label": "FB-26",
-    "lang": "en",
-    "gender": "male",
-    "accent": "American",
-    "tone": "Natural, Male, Adult, American, Helpful.",
-    "studio": "/voice-lab/fb-26-studio.mp3",
-    "phone": "/voice-lab/fb-26-phone.mp3"
-  },
-  {
-    "label": "FB-27",
-    "lang": "en",
-    "gender": "female",
-    "accent": "American",
-    "tone": "Natural, Female, Young, American, Friendly.",
-    "studio": "/voice-lab/fb-27-studio.mp3",
-    "phone": "/voice-lab/fb-27-phone.mp3"
-  },
-  {
-    "label": "FB-28",
-    "lang": "en",
-    "gender": "female",
-    "accent": "Indian American",
-    "tone": "Natural, Female, Young, Indian American, Friendly.",
-    "studio": "/voice-lab/fb-28-studio.mp3",
-    "phone": "/voice-lab/fb-28-phone.mp3"
-  },
-  {
-    "label": "FB-29",
-    "lang": "en",
-    "gender": "male",
-    "accent": "American",
-    "tone": "Natural, Male, Young, American, Friendly.",
-    "studio": "/voice-lab/fb-29-studio.mp3",
-    "phone": "/voice-lab/fb-29-phone.mp3"
-  },
-  {
-    "label": "FB-30",
-    "lang": "en",
-    "gender": "male",
-    "accent": "American",
-    "tone": "Natural, Male, Young, American, Friendly.",
-    "studio": "/voice-lab/fb-30-studio.mp3",
-    "phone": "/voice-lab/fb-30-phone.mp3"
-  },
-  {
-    "label": "FB-31",
-    "lang": "en",
-    "gender": "male",
-    "accent": "Indian American",
-    "tone": "Natural, Male, Young, Indian American, Friendly.",
-    "studio": "/voice-lab/fb-31-studio.mp3",
-    "phone": "/voice-lab/fb-31-phone.mp3"
-  },
-  {
-    "label": "FB-32",
-    "lang": "en",
-    "gender": "female",
-    "accent": "American",
-    "tone": "Natural, Female, Young, American, Friendly.",
-    "studio": "/voice-lab/fb-32-studio.mp3",
-    "phone": "/voice-lab/fb-32-phone.mp3"
-  },
-  {
-    "label": "FB-33",
-    "lang": "en",
-    "gender": "male",
-    "accent": "American",
-    "tone": "Natural, Male, Young, American, Calm.",
-    "studio": "/voice-lab/fb-33-studio.mp3",
-    "phone": "/voice-lab/fb-33-phone.mp3"
   }
 ];
