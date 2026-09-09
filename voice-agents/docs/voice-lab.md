@@ -100,9 +100,34 @@ any new audio; Vercel serves the MP3s straight from `billing/public/`.
 
 ## Wiring a pick onto an agent
 
-1. Look the label up in `docs/voice-lab-registry.json` → `provider` + `voiceId`.
-2. Edit that agent's `scripts/update-<agent>.js` `voice` block.
-3. Bump the agent version and run the update script.
+```sh
+node scripts/set-voice.js --label FB-07 --match "BR Receptionist EN Unified"
+node scripts/set-voice.js --label FB-07 --match "BR Receptionist EN Unified" --apply
+```
+
+`set-voice.js` resolves the label through the registry and **PATCHes `voice`
+alone**. Do not use the `update-<agent>.js` scripts for this: they PUT the
+whole assistant from the repo, and the repo is stale on 8 of 12 agents, so
+changing one field that way can revert live configuration nobody wrote down.
+Same reasoning as `set-max-duration.js`.
+
+It prints its plan and writes nothing without `--apply` — a voice is the one
+change every caller hears on the first syllable. Applied picks are recorded
+under `assignments` in the registry.
+
+### Keep the handoff audible
+
+Receptionists (L2) and specialists (L3) deliberately run **different** voices:
+when Grace hands a caller to Jennifer, the voice changing is what tells the
+caller they have been passed to someone else. Before putting one pick across
+both tiers, decide you are willing to lose that cue.
+
+**Live assignments**
+
+| Agent | Voice |
+|---|---|
+| Grace — BR Receptionist EN Unified | **FB-07** (client's pick, 2026-09-09) |
+| Jennifer — Builders Risk | unchanged — keeps the handoff audible |
 
 ## Known limits (read before promising anything)
 

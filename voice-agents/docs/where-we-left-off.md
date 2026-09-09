@@ -1,10 +1,31 @@
 # Where we left off — Farmer Brown
-**Last touched:** 2026-09-04 — **Voice Lab shipped** ([voice-lab.md](voice-lab.md)): the
-client can now audition 33 candidate agent voices at `/portal/voices`, each one playable
-both clean and through a simulated phone line, and send us a shortlist. Also found while
-building it: the BR line is **back up** (the August TTS outage is over) and **Jennifer +
-Grace Unified were quietly moved onto native platform voices** — a production change no
-doc records. **NEXT is still Batch 1** of the latency audit (below).
+**Last touched:** 2026-09-09 — **John's first voice pick is live**: Grace BR Unified
+now speaks with FB-07, applied via the new `scripts/set-voice.js` (PATCHes `voice`
+only — never use `update-<agent>.js` for this). Jennifer left unchanged on purpose so
+the L2→L3 handoff stays audible. **NEXT is still Batch 1** of the latency audit.
+
+---
+
+## 2026-09-09 — First pick shipped: Grace BR Unified now speaks with FB-07
+
+John picked **FB-07** out of the Voice Lab — a native platform voice (`vapi:Emma`;
+the name collides with our Emma receptionist, ignore that). It is live on **Grace
+BR Unified only**, the first voice on the one line with real traffic.
+
+**Jennifer was deliberately left alone.** Receptionists and specialists run
+different voices so that the voice changing is what tells a caller they have been
+handed to someone else. Putting one pick across both tiers would have silently
+removed that cue. Extend it only as a decision, not by default.
+
+Shipped `scripts/set-voice.js` to do this safely: it resolves a label through the
+registry and **PATCHes `voice` alone**. The `update-<agent>.js` scripts PUT the
+whole assistant from a repo that is stale on 8 of 12 agents, so using one to change
+a single field can revert live config nobody recorded. Dry-run by default; `--apply`
+to write. Assignments are recorded in the registry.
+
+**Still open:** Jennifer remains on `Layla` from the August workaround, also never
+validated. And the gallery is still 10 voices — the ElevenLabs key is what turns
+that into hundreds of female American voices reading our own scripts.
 
 ---
 
